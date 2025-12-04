@@ -2585,7 +2585,10 @@ function renderBranchChipsSummary(){
 
 </script>
 <script>
-/* ==== Bağımsız: 7-8. sınıflar full liste yazdır ==== */
+/* ==== Bağımsız: sınıf grupları (5-8) için tam liste yazdır ==== */
+// Bu fonksiyon, atanmış grupların sınıf düzeylerine göre (5, 6, 7, 8) kompakt bir
+// tablo halinde yazdırılmasını sağlar. Eğer ilgili sınıf düzeyi için grup ve
+// atama yoksa o sayfa oluşturulmaz. Her sınıf bölümü yeni bir sayfada başlar.
 (function injectPrintAllButton(){
   const host = document.querySelector('#step6 .row.no-print');
   if (!host || document.getElementById('btnPrintAll')) return;
@@ -2593,15 +2596,17 @@ function renderBranchChipsSummary(){
   btn.id = 'btnPrintAll';
   btn.className = 'btn warn';
   btn.textContent = 'Tüm listeyi yazdır';
-  btn.addEventListener('click', printAll_7_8);
+  // Değiştirilen fonksiyon çağrısı: tüm sınıflar için liste yazdırılır
+  btn.addEventListener('click', printAllGrades);
   host.appendChild(btn);
 })();
 
 /**
- * 7. ve 8. sınıfları ayrı sayfalarda, Pazartesi→Cuma ve ders slotlarıyla kompakt tabloda yazdırır.
- * Neden: "Aynı kağıtta olmasın" talebini garanti etmek için sayfa kırımı uyguluyoruz.
+ * Atanmış grupları 5, 6, 7 ve 8. sınıf düzeylerine göre yazdırır. Her bir sınıf
+ * bölümü yeni bir sayfada başlar. Eğer bir sınıfa ait grup yoksa veya o sınıf
+ * için atama bulunmuyorsa, o bölüm atlanır.
  */
-function printAll_7_8() {
+function printAllGrades() {
   const hasAny = Array.isArray(state.assignments) && state.assignments.length > 0;
   if (!hasAny) { alert('Atama yok. Önce atama yapın.'); return; }
 
@@ -2613,11 +2618,13 @@ function printAll_7_8() {
     .replaceAll('&','&amp;').replaceAll('<','&lt;')
     .replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
 
+  // Belirli bir sınıf düzeyine ait, ataması yapılmış grupları getirir
   const byGrade = (grade) => Object.values(state.groups || {})
     .filter(g => (parseGroupName(g.name || g.id || '')?.grade === grade))
     .filter(g => state.assignments.some(a => a.group === g.id))
     .sort(groupComparator);
 
+  // Yazdırma penceresini oluştur
   const w = window.open('', '_blank');
   const css = `
     @page { size: A4; margin: 8mm; }
@@ -2625,7 +2632,7 @@ function printAll_7_8() {
     body { font: 11px/1.25 system-ui, -apple-system, Segoe UI, Roboto, Arial, Helvetica, sans-serif; color:#0a0a0a; }
     h1 { font-size: 16px; margin: 0 0 6px; text-align:center; font-weight:800; }
     h2 { font-size: 13px; margin: 8px 0 6px; font-weight:800; border-bottom:1px solid #ddd; padding-bottom:3px; }
-    .grade-section + .grade-section { break-before: page; page-break-before: always; } /* 8. sınıf yeni sayfa */
+    .grade-section + .grade-section { break-before: page; page-break-before: always; }
     .group-block { margin: 6px 0 10px; page-break-inside: avoid; }
     .g-head { font-weight:700; margin-bottom:4px; }
     .students { font-weight: 500; color:#374151; }
@@ -2648,9 +2655,10 @@ function printAll_7_8() {
 
   w.document.write(`<h1>Fenomen Çocuk Kulübü birebir ve Grup Listesi</h1>`);
 
-  [7,8].forEach((grade, idx) => {
+  // Baskıya dahil edilecek sınıf düzeyleri; 5-8 arasındaki tüm sınıflar
+  [5,6,7,8].forEach(grade => {
     const groups = byGrade(grade);
-    if (groups.length === 0) return;
+    if (groups.length === 0) return; // Bu sınıf için grup veya atama yoksa atla
 
     w.document.write(`<section class="grade-section">`);
     w.document.write(`<h2><span class="grade-badge">${grade}. Sınıflar</span></h2>`);
