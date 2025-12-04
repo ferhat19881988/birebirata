@@ -765,7 +765,7 @@
 const ALLOWED_BRANCHES = [
   'FEN BİLİMLERİ','MATEMATİK','TÜRKÇE','SOSYAL BİLGİLER','İNGİLİZCE','DİN KÜLTÜRÜ'
 ];
-const state = {
+window.state = {
   teachers: [], students: [], groups: {}, branches: [],
   program: { days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"], slots:8, slotLabels:[], cells:{} },
   availability: { teachers:{}, groups:{} },
@@ -3138,20 +3138,37 @@ if (btnProgSaveFb) {
 if (btnProgLoadFb) {
   btnProgLoadFb.addEventListener('click', () => {
     loadDataFromFirebase('program', obj => {
+      // 1. Veri kontrolü
       if (!obj || !Array.isArray(obj.days) || typeof obj.slots !== 'number') {
-        alert('Geçersiz program verisi.');
+        alert('Geçersiz program verisi veya kayıt yok.');
         return;
       }
+
+      // 2. Global state'i güncelle
+      // Modül içinden global state'e erişim için window.state veya direkt state kullanılır 
+      // (1. maddedeki değişikliği yaptıysanız)
       state.program = obj;
+
+      // 3. Eksik alt objeleri tamamla (Hata önleyici kritik kısım)
+      if (!state.program.cells) state.program.cells = {};
       if (!Array.isArray(state.program.slotLabels)) state.program.slotLabels = [];
-      document.getElementById('daysInput').value = obj.days.join(',');
-      document.getElementById('slotsInput').value = obj.slots;
-      buildProgramGrid(true);
-      renderSlotLabels();
-      reconcileAllToProgram(getAssignPolicy());
-      renderAvailGrids();
-      renderAssignCards();
-      refreshPrintFilters();
+
+      // 4. Inputları güncelle
+      const daysInp = document.getElementById('daysInput');
+      const slotsInp = document.getElementById('slotsInput');
+      if (daysInp) daysInp.value = obj.days.join(',');
+      if (slotsInp) slotsInp.value = obj.slots;
+
+      // 5. Gridleri ve görünümü yenile
+      // Global fonksiyonları çağırıyoruz
+      if (typeof buildProgramGrid === 'function') {
+        buildProgramGrid(true);
+        renderSlotLabels();
+        reconcileAllToProgram(getAssignPolicy());
+        renderAvailGrids();
+        renderAssignCards();
+        if (typeof refreshPrintFilters === 'function') refreshPrintFilters();
+      }
     });
   });
 }
@@ -3266,3 +3283,4 @@ if (btnAssgnDeleteFb) {
 
 </body>
 </html>
+
