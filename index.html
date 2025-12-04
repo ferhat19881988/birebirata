@@ -498,22 +498,6 @@
   text-align: center;
 }
 
-/*
- * When the number of days or slots grows, the program grid and availability
- * tables can end up with more columns than will comfortably fit in the
- * available horizontal space.  Without explicit overflow handling this
- * causes the layout to break or compress unpredictably, especially when
- * switching between different counts.  Allow the inner grids to scroll
- * horizontally so that each cell retains its intended minimum width.
- */
-#progGridWrap .kgrid,
-#teacherAvailWrap .kgrid,
-#groupAvailWrap .kgrid,
-#assignCards .kgrid {
-  overflow-x: auto;
-  max-width: 100%;
-}
-
 /* Atama yapılmış hücrelerde ders adı biraz daha büyük gözüksün */
 .kcell.assigned > div:first-child {
   font-weight: 800;
@@ -3158,19 +3142,8 @@ if (btnProgLoadFb) {
         alert('Geçersiz program verisi.');
         return;
       }
-      // Assign the loaded object to the current state.  When the program is
-      // initially saved to Firebase without any notes entered, the `cells`
-      // property can be omitted entirely.  Without this guard, subsequent
-      // reads would leave `state.program.cells` undefined which causes
-      // buildProgramGrid() to throw "Cannot read properties of undefined (reading
-      // '0_0')" when it tries to access state.program.cells[key].  Ensure
-      // that a valid object always exists for cells and slotLabels before
-      // building the UI.
       state.program = obj;
       if (!Array.isArray(state.program.slotLabels)) state.program.slotLabels = [];
-      if (typeof state.program.cells !== 'object' || state.program.cells === null) {
-        state.program.cells = {};
-      }
       document.getElementById('daysInput').value = obj.days.join(',');
       document.getElementById('slotsInput').value = obj.slots;
       buildProgramGrid(true);
