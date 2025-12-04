@@ -1,352 +1,508 @@
+<!-- /index.html -->
+<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fenomen Çocuk Kulübü • Grup Ders Planlama</title>
+<title>Fenomen Çocuk Kulübü • Grup Ders Planlama (tablı)</title>
 <style>
-  /* =========================================
-     1. DEĞİŞKENLER & TEMA (Indigo/Slate)
-     ========================================= */
-  :root {
-    /* Ana Renkler */
-    --primary: #4f46e5;       /* Indigo 600 */
-    --primary-hover: #4338ca; /* Indigo 700 */
-    --primary-light: #eef2ff; /* Indigo 50 */
-    --primary-ink: #312e81;   /* Indigo 900 */
+  :root{
+    --bg:#f6f9fb; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
+    --pri:#14b8a6; --pri-ink:#083c3a; --acc:#6366f1; --warn:#f59e0b; --danger:#ef4444;
+    --chip:#e2f5f2; --grid:#e5e7eb; --radius:16px;
+  }
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+  h1,h2,h3{margin:0 0 .4rem}
+  h1{font-size:clamp(20px,3vw,28px);font-weight:800}
+  h2{font-size:clamp(18px,2.4vw,22px);font-weight:700}
+  h3{font-size:clamp(16px,2vw,18px);font-weight:700}
+  /* Uygulama genişliği büyütüldü */
+  .app{max-width:1680px;margin:auto;padding:18px}
+  .top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--pri),#8b5cf6)}
+  .brand .title small{color:var(--muted)}
+  .content{background:var(--panel);border-radius:var(--radius);box-shadow:0 10px 25px rgba(15,23,42,.06);padding:16px}
+  .grid{display:grid;gap:12px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .btn{appearance:none;border:0;border-radius:12px;padding:10px 14px;background:var(--pri);color:#fff;font-weight:700;cursor:pointer}
+  .btn.sm{padding:7px 10px;font-size:13px}
+  .btn.xs{padding:6px 8px;font-size:12px;border-radius:10px}
+  .btn.sec{background:var(--acc)}
+  .btn.ghost{background:#e2e8f0;color:#0f172a}
+  .btn.warn{background:var(--warn);color:#111827}
+  .btn.danger{background:var(--danger)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  input[type=text], input[type=number], select, textarea{
+    padding:10px 12px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;min-width:220px
+  }
+  table{width:100%;border-collapse:separate;border-spacing:0 8px}
+  th,td{padding:10px 12px;background:#fff;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}
+  th{position:sticky;top:0;background:#f8fafc;z-index:1}
+  tr{border-radius:10px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--chip);font-weight:600;color:var(--pri-ink)}
+  .pill.bad{background:#fee2e2;color:#991b1b}
+  .card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(15,23,42,.06);border:1px solid #e5e7eb;overflow:hidden}
+  .kgrid{display:grid;gap:6px}
+  .kgrid[data-cols]{grid-template-columns:140px repeat(var(--cols), minmax(72px,1fr));}
+  .kcell{border:1px dashed var(--grid);min-height:60px;padding:6px;border-radius:10px;background:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;white-space:pre-line}
+  .kcell.busy{background:#eef2ff;border-color:#c7d2fe}
+  .kcell.bad{background:#fee2e2;border-color:#fecaca}
+  .kcell.ok{background:#dcfce7;border-color:#bbf7d0}
+  /* Atanmış (dersli) hücreler – arka planı JS'de ders rengine boyanır */
+  .kcell.assigned{
+    color:var(--ink);
+    font-weight:700;
+  }
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .legend span{padding:6px 10px;border-radius:20px;background:#f1f5f9}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .wide{width:100%}
+  /* Geniş kart dizilimi */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:14px}
+  .flex{display:flex;gap:10px;align-items:center}
+  .right{margin-left:auto}
+  .muted{color:var(--muted)}
+  .mini{font-size:12px}
+  .mini2{font-size:11px;color:#475569}
+  .tag{display:inline-block;background:#f1f5f9;padding:2px 8px;border-radius:999px;margin-left:6px;color:#334155}
+  .nowrap{white-space:nowrap}
+
+  /* 1. resim – Öğretmen/Grup müsaitlik kartları genişletildi */
+  /* Müsaitlik kartları – gelişmiş hizalama ve stil */
+/* ===========================
+   MÜSAİTLİKLER – SIFIRDAN TASARIM (Drop-in)
+   Uyum: #step3 (Öğretmen/Grup Müsaitlik)
+   =========================== */
+
+#step3 {
+  /* Tema değişkenleri (açık tema) */
+  --avail-bg: #ffffff;
+  --avail-ink: #0f172a;
+  --avail-muted: #64748b;
+  --avail-panel: #ffffff;
+  --avail-border: #e5e7eb;
+  --avail-grid-gap: 8px;
+
+  --day-col-w: 160px;
+  --slot-min-w: 88px;
+  --cell-min-h: 58px;
+  --cell-radius: 12px;
+
+  --head-bg: #f8fafc;
+  --head-ink: #0f172a;
+  --head-border: #e2e8f0;
+
+  --ok-bg: #dcfce7;
+  --ok-ink: #065f46;
+  --ok-bd: #bbf7d0;
+
+  --bad-bg: #fee2e2;
+  --bad-ink: #991b1b;
+  --bad-bd: #fecaca;
+
+  --neutral-bg: #f8fafc;
+  --neutral-ink: #334155;
+  --neutral-bd: #e2e8f0;
+
+  --ring: #94a3b8;
+  --ring-strong: #6366f1;
+
+  color: var(--avail-ink);
+}
+
+/* Kart ızgarası – öğretmen/grup kartları */
+#step3 .avGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* Kart iskeleti */
+#step3 .avGrid .card {
+  display: flex;
+  flex-direction: column;
+  background: var(--avail-panel);
+  border: 1px solid var(--avail-border);
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(2, 8, 23, 0.06);
+  overflow: clip;
+  min-width: 0; /* grid overflow fix */
+}
+
+/* Kart başlığı (sol: isim/etiket, sağ: aksiyon butonları) */
+#step3 .avGrid .card .flex {
+  padding: 12px 14px;
+  gap: 10px;
+  border-bottom: 1px solid var(--avail-border);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+#step3 .avGrid .card .flex b { font-weight: 800; }
+#step3 .avGrid .card .tag {
+  background: #eef2ff;
+  color: #1f2937;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+
+/* Grid: “Gün / Saat” matrisi
+   Not: JS tarafı grid[data-cols] ile --cols atıyor. */
+#step3 .kgrid {
+  display: grid;
+  gap: var(--avail-grid-gap);
+  padding: 12px;
+  background: var(--avail-bg);
+}
+#step3 .kgrid[data-cols] {
+  grid-template-columns: var(--day-col-w) repeat(var(--cols), minmax(var(--slot-min-w), 1fr));
+}
+
+/* Sol başlık hücresi (Gün adları / 'Gün / Saat') */
+#step3 .kgrid > :first-child {
+  background: var(--head-bg);
+  color: var(--head-ink);
+  border: 1px solid var(--head-border);
+  border-radius: var(--cell-radius);
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  min-height: var(--cell-min-h);
+  text-align: center;
+  padding: 6px 8px;
+}
+
+/* Slot başlık hücreleri */
+#step3 .kcell.busy {
+  background: var(--head-bg);
+  color: var(--avail-muted);
+  border: 1px solid var(--head-border);
+  cursor: default;
+}
+
+/* Genel hücre stili */
+#step3 .kcell {
+  border: 1px solid var(--neutral-bd);
+  background: #ffffff;
+  color: var(--neutral-ink);
+  min-height: var(--cell-min-h);
+  border-radius: var(--cell-radius);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 6px;
+  user-select: none;
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease, color .12s ease;
+  outline: none;
+  position: relative;
+}
+
+/* Durumlar */
+#step3 .kcell.ok {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+  border-color: var(--ok-bd);
+  font-weight: 700;
+}
+#step3 .kcell.bad {
+  background: var(--bad-bg);
+  color: var(--bad-ink);
+  border-color: var(--bad-bd);
+  font-weight: 700;
+}
+
+/* Hover/active geri bildirimi (sadece tıklanabilir hücrelerde) */
+#step3 .kgrid .kgrid .kcell:hover { /* nested satır içindeki tıklanabilirler */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(2, 8, 23, 0.06);
+}
+#step3 .kgrid .kgrid .kcell:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(2, 8, 23, 0.08) inset;
+}
+
+/* Klavye odağı (tabindex verilirse otomatik işler) */
+#step3 .kgrid .kgrid .kcell:focus-visible {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Küçük metinler */
+#step3 .mini2 { color: var(--avail-muted); font-size: 11px; }
+
+/* Eylem butonları – kart içi küçük butonlar */
+#step3 .avGrid .card .btn.xs.ghost {
+  background: #f1f5f9;
+  color: #111827;
+  border-radius: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--avail-border);
+}
+#step3 .avGrid .card .btn.xs.ghost:hover {
+  background: #e2e8f0;
+}
+
+/* Efsane/Legend alanı */
+#step3 .legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 12px;
+}
+#step3 .legend span {
+  background: #f1f5f9;
+  color: #334155;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  border: 1px solid var(--avail-border);
+}
+
+/* Sekmeler (Step 3 içi) – var olan .tab ile uyumlu */
+#step3 .tabs {
+  gap: 8px;
+  border: 0;
+  margin-bottom: 12px;
+  position: relative;
+}
+#step3 .tabs::after {
+  content: "";
+  position: absolute; inset-inline: 0; bottom: -1px; height: 1px; background: var(--avail-border);
+}
+#step3 .tab {
+  padding: 10px 14px;
+  border-radius: 12px 12px 0 0;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 800;
+  box-shadow: 0 1px 0 var(--avail-border) inset;
+  border: 1px solid transparent;
+}
+#step3 .tab[aria-selected="true"] {
+  background: #fff;
+  border-color: var(--avail-border);
+  border-bottom-color: #fff;
+  box-shadow: 0 6px 18px rgba(2, 8, 23, .06);
+}
+
+/* Dar ekranlar için optimizasyon */
+@media (max-width: 920px) {
+  #step3 { --day-col-w: 132px; --slot-min-w: 72px; }
+  #step3 .avGrid { grid-template-columns: 1fr; }
+  #step3 .kgrid { padding: 10px; }
+  #step3 .kgrid > :first-child { padding: 6px; }
+  #step3 .kcell { min-height: 52px; }
+}
+
+/* Büyük ekranlar için hafif yoğunluk artışı */
+@media (min-width: 1600px) {
+  #step3 { --slot-min-w: 100px; --cell-min-h: 64px; }
+}
+
+/* Az animasyon tercih eden kullanıcılar */
+@media (prefers-reduced-motion: reduce) {
+  #step3 .kcell { transition: none; }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  #step3 {
+    --avail-bg: #0b1220;
+    --avail-ink: #e5e7eb;
+    --avail-muted: #94a3b8;
+    --avail-panel: #0f172a;
+    --avail-border: #1f2a44;
+
+    --head-bg: #0d1a2d;
+    --head-ink: #e5e7eb;
+    --head-border: #1f2a44;
+
+    --neutral-bg: #0f172a;
+    --neutral-ink: #cbd5e1;
+    --neutral-bd: #1f2a44;
+
+    --ok-bg: #073a28;
+    --ok-ink: #a7f3d0;
+    --ok-bd: #115e43;
+
+    --bad-bg: #3a0c0c;
+    --bad-ink: #fecaca;
+    --bad-bd: #7f1d1d;
+
+    --ring: #334155;
+    --ring-strong: #818cf8;
+  }
+
+  #step3 .avGrid .card {
+    box-shadow: 0 12px 28px rgba(0,0,0,.36);
+  }
+  #step3 .avGrid .card .btn.xs.ghost {
+    background: #0d1a2d; color: #e2e8f0; border-color: #1f2a44;
+  }
+  #step3 .avGrid .card .btn.xs.ghost:hover {
+    background: #12233c;
+  }
+}
+
+/* ---- İsteğe bağlı: İnteraktif “toggle” imleci sadece tıklanabilir hücrelerde ---- */
+#step3 .kgrid .kgrid .kcell { cursor: pointer; }
+#step3 .kcell.busy { cursor: default; }
+
+  /* Üst sekmeler */
+  .tabs{display:flex;gap:6px;border-bottom:1px solid #e5e7eb;margin-bottom:8px}
+  .tab{padding:10px 14px;border-radius:10px 10px 0 0;background:#eef2ff;color:#1f2937;cursor:pointer;font-weight:700;user-select:none}
+  .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;border-bottom-color:#fff}
+  .tabpanel[hidden]{display:none !important}
+
+  /* Talep sayacı kutucukları */
+  .qty{display:inline-flex;align-items:center;border:1px solid #cbd5e1;border-radius:12px;overflow:hidden}
+  .qty input{border:0;min-width:56px;text-align:center;padding:8px 10px}
+  .qty button{border:0;background:#eef2ff;padding:8px 10px;cursor:pointer}
+
+  /* Yazdırma */
+  @media print{
+    @page{size:A4;margin:10mm}
+    body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .no-print{display:none !important}
+    .printable{display:block}
+    .print-header{font-weight:900;text-align:center;margin-bottom:6px}
+    .print-sub{color:#475569;text-align:center;margin-bottom:8px}
+    .print-page{page-break-after:always;break-after:page}
+    /* Increased font-size for print clarity */
+    .print-table{width:100%;border-collapse:collapse;font-size:11px}
+    .print-table th,.print-table td{border:1px solid #000;padding:5px 6px;vertical-align:top}
+    .print-table thead th{background:#f3f4f6}
+    .tight th,.tight td{padding:4px 5px;font-size:10.5px}
+    .avoid-break{page-break-inside:avoid;break-inside:avoid}
+    .students-2col{columns:2;column-gap:12px}
+    .students-2col ul{margin:0;padding-left:0;list-style:none}
+    .students-2col li{break-inside:avoid;padding:2px 0;border-bottom:1px dotted #94a3b8}
+    .att-table{width:100%;border-collapse:collapse;font-size:10px;margin-top:6px}
+    .att-table th,.att-table td{border:1px solid #000;padding:3px 4px;text-align:center}
+    .att-table th:first-child,.att-table td:first-child{text-align:left}
+  }
+
+/*
+  Manuel atama modalinin boyutu ve içindeki seçim kutuları büyütüldü. Öğretmen
+  kapasiteleri ve mevcut ders sayıları gösterildiğinden metinler uzayabilir.
+  Bu nedenle dialog geniş bir alana yayılır ve öğretmen seçenekleri için
+  minimum genişlik tanımlanır.
+*/
+#dlgAssign {
+  max-width: 600px;
+  width: 100%;
+}
+#dlgAssign select {
+  min-width: 280px;
+}
+/* === 1. KUTU BOYUTUNU ORİJİNAL HALİNE ZORLA === */
+.kcell {
+    /* Orijinal yükseklik ayarı */
+    min-height: 60px !important;
+    height: 60px !important; 
     
-    /* Nötr Renkler (Arka plan & Metin) */
-    --bg-body: #f8fafc;       /* Slate 50 */
-    --bg-surface: #ffffff;
-    --text-main: #0f172a;     /* Slate 900 */
-    --text-muted: #64748b;    /* Slate 500 */
-    --border: #e2e8f0;        /* Slate 200 */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    /* İç boşluğu azaltarak şişmeyi önle */
+    padding: 2px 4px !important;
     
-    /* Durum Renkleri */
-    --success-bg: #dcfce7; --success-text: #166534; --success-border: #bbf7d0;
-    --danger-bg: #fee2e2;  --danger-text: #991b1b;  --danger-border: #fecaca;
-    --warn-bg: #fef3c7;    --warn-text: #92400e;
+    /* İçeriği tam ortala */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
     
-    /* Ders Renkleri (Pastel & Modern) */
-    --b-mat: #6366f1; /* Matematik - Indigo */
-    --b-fen: #10b981; /* Fen - Emerald */
-    --b-trk: #f97316; /* Türkçe - Orange */
-    --b-sos: #06b6d4; /* Sosyal - Cyan */
-    --b-ing: #8b5cf6; /* İngilizce - Violet */
-    --b-din: #ec4899; /* Din - Pink */
+    /* Varsayılan gri/beyaz */
+    background: #fff; 
+}
 
-    /* Yapısal Ayarlar */
-    --radius: 12px;
-    --header-height: 40px;
-    --sidebar-w: 280px;
-  }
+/* === 2. RENKLER (ARKA PLAN DAHİL) === */
+/* MATEMATİK: Mavi Arka Plan */
+.kcell.assigned.mat {
+    background-color: #dbeafe !important; /* Belirgin Açık Mavi */
+    border: 1px solid #60a5fa !important;
+    color: #1e3a8a !important;
+}
 
-  /* =========================================
-     2. TEMEL SIFIRLAMA & TİPOGRAFİ
-     ========================================= */
-  *, *::before, *::after { box-sizing: border-box; }
-  
-  body {
-    margin: 0;
-    background: var(--bg-body);
-    color: var(--text-main);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
+/* FEN BİLİMLERİ: Yeşil Arka Plan */
+.kcell.assigned.fen {
+    background-color: #dcfce7 !important; /* Belirgin Açık Yeşil */
+    border: 1px solid #4ade80 !important;
+    color: #14532d !important;
+}
 
-  h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -0.025em; }
-  h1 { font-size: 24px; color: var(--text-main); }
-  h2 { font-size: 18px; margin-bottom: 0.5rem; }
-  h3 { font-size: 15px; margin-bottom: 0.5rem; }
+/* TÜRKÇE: Turuncu Arka Plan */
+.kcell.assigned.trk {
+    background-color: #ffedd5 !important; /* Belirgin Açık Turuncu */
+    border: 1px solid #fb923c !important;
+    color: #7c2d12 !important;
+}
 
-  /* =========================================
-     3. DÜZEN (LAYOUT)
-     ========================================= */
-  .app {
-    max-width: 1600px; /* Geniş ekranlar için optimize */
-    margin: 0 auto;
-    padding: 20px;
-  }
+/* SOSYAL BİLGİLER: Cam Göbeği Arka Plan */
+.kcell.assigned.sos {
+    background-color: #cffafe !important;
+    border: 1px solid #22d3ee !important;
+    color: #155e75 !important;
+}
 
-  .top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-  
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .brand .logo {
-    width: 40px; height: 40px;
-    background: linear-gradient(135deg, var(--primary), #8b5cf6);
-    border-radius: 10px;
-  }
-  .brand .title small { display: block; color: var(--text-muted); font-size: 12px; font-weight: 500; }
+/* İNGİLİZCE: Sarı Arka Plan */
+.kcell.assigned.ing {
+    background-color: #fef9c3 !important;
+    border: 1px solid #facc15 !important;
+    color: #713f12 !important;
+}
 
-  .content {
-    animation: fadeIn 0.3s ease-out;
-  }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+/* DİN KÜLTÜRÜ: Mor Arka Plan */
+.kcell.assigned.din {
+    background-color: #f3e8ff !important;
+    border: 1px solid #c084fc !important;
+    color: #581c87 !important;
+}
 
-  .grid { display: grid; gap: 16px; }
-  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
-  .wide { width: 100%; }
-  .right { margin-left: auto; }
-  .flex { display: flex; gap: 8px; align-items: center; }
+/* Atama yapılmış ama branşı belirsiz olanlar */
+.kcell.assigned {
+    font-weight: 700;
+}
 
-  /* =========================================
-     4. BİLEŞENLER (Buton, Input, Kart)
-     ========================================= */
-  /* Butonlar */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    padding: 10px 16px;
-    background: var(--primary);
-    color: white;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 13px;
-    box-shadow: var(--shadow-sm);
-  }
-  .btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
-  .btn:active { transform: translateY(0); }
-  
-  .btn.ghost { background: white; color: var(--text-main); border: 1px solid var(--border); }
-  .btn.ghost:hover { background: var(--bg-body); border-color: #cbd5e1; }
-  
-  .btn.sec { background: var(--text-main); color: white; }
-  .btn.warn { background: var(--warn-bg); color: var(--warn-text); border: 1px solid #fcd34d; }
-  .btn.danger { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
-  
-  .btn.sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
-  .btn.xs { padding: 4px 8px; font-size: 11px; border-radius: 4px; height: 24px; }
+  /*
+   * Slot boyutlarının tutarlı kalması ve içeriklerin hücre genişliğini zorlayıp
+   * ızgarayı bozmasını önlemek için aşağıdaki ayarlar eklendi. Bazı uzun branş
+   * veya öğretmen isimleri sütunları genişletip diğer slotların boyutunu
+   * farklılaştırıyordu. Min‐width'i sıfıra çekerek hücrelerin içerik
+   * taşmalarına izin veriyoruz ve overflow ile taşan metni gizliyoruz. Böylece
+   * tüm kcell'ler aynı genişlikte kalıyor, metin sığmadığında ise üç nokta
+   * ile kesiliyor.
+   */
+  .kgrid .kcell {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
 
-  /* Inputlar */
-  input[type=text], input[type=number], select, textarea {
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
-    width: 100%;
-    min-width: 180px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  input:focus, select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-light);
-  }
-  label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+/* İç kapsayıcı hem yatayda hem dikeyde ortalansın */
+.kgrid .kcell > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
 
-  /* Kartlar */
-  .card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    box-shadow: var(--shadow-sm);
-    overflow: hidden; /* Taşmaları gizle */
-  }
-  .card h3 { color: var(--text-main); font-weight: 700; font-size: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px; }
+/* Metinler çok uzunsa satır atabilsin, üç nokta ile kesilmesin */
+.kgrid .kcell > * > div {
+  white-space: normal !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  line-height: 1.1;
+  font-size: clamp(9px, 0.8vw, 12px);  /* ekrana göre otomatik küçülür/büyür */
+  text-align: center;
+}
 
-  /* Sekmeler (Tabs) */
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
-  .tab {
-    padding: 10px 16px;
-    background: transparent;
-    color: var(--text-muted);
-    font-weight: 600;
-    font-size: 13px;
-    border: none;
-    border-radius: 8px 8px 0 0;
-    cursor: pointer;
-    position: relative;
-    transition: color 0.2s;
-    white-space: nowrap;
-  }
-  .tab:hover { color: var(--primary); background: var(--primary-light); }
-  .tab[aria-selected="true"] {
-    color: var(--primary);
-    background: white;
-    border: 1px solid var(--border);
-    border-bottom-color: white;
-    margin-bottom: -1px;
-    z-index: 1;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
-  }
-
-  /* Rozetler (Chips/Pills) */
-  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: var(--bg-body);
-    border: 1px solid var(--border);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-main);
-  }
-  .pill.bad { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
-  .tag { background: var(--primary-light); color: var(--primary-ink); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-
-  /* =========================================
-     5. GRID & TABLO SİSTEMİ (Profesyonel Düzeltme)
-     ========================================= */
-  
-  /* Sorun: Slot sayısı artınca hücreler eziliyor.
-     Çözüm: Grid container'a overflow-x ekle ve min-width tanımla.
-  */
-
-  .grid-scroll-wrapper {
-    overflow-x: auto; /* Yatay scroll aç */
-    padding-bottom: 12px; /* Scrollbar için boşluk */
-    margin: -16px -16px 0 -16px; /* Kart paddingini nötrle */
-    padding: 16px; /* İçeriği tekrar it */
-  }
-
-  .kgrid {
-    display: grid;
-    /* Sol sütun (Günler) sabit 140px, diğerleri eşit ve en az 90px */
-    grid-template-columns: 140px repeat(var(--cols), minmax(90px, 1fr));
-    gap: 8px;
-    /* Eğer çok fazla slot varsa (örn. 12), tablo genişlesin ve scroll oluşsun */
-    min-width: max-content; 
-    align-items: stretch;
-    margin-bottom: 8px;
-  }
-  
-  /* Başlık satırı */
-  .kgrid.head { font-weight: 700; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-
-  .kcell {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    min-height: 70px; /* Sabit minimum yükseklik */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 4px;
-    font-size: 13px;
-    color: var(--text-muted);
-    transition: all 0.15s ease;
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Hover efekti (boş hücrelerde) */
-  .kcell:hover:not(.assigned):not(.busy) {
-    border-color: var(--primary);
-    background: var(--primary-light);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-    z-index: 2;
-  }
-
-  /* Durumlar */
-  .kcell.busy { background: var(--bg-body); color: var(--text-muted); cursor: default; }
-  .kcell.ok { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); font-weight: 600; }
-  .kcell.bad { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); opacity: 0.7; }
-
-  /* Atanmış Hücreler - Modern Stil */
-  .kcell.assigned {
-    background: white; /* Arka planı yumuşat */
-    color: var(--text-main);
-    border: 1px solid transparent; /* Border rengi sınıftan gelecek */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  }
-  
-  /* Branş Renkleri (Sol kenarlık ve hafif arka plan tonu) */
-  .kcell.assigned.b-mat { border-left: 4px solid var(--b-mat); background: linear-gradient(to bottom right, white, #e0e7ff); }
-  .kcell.assigned.b-fen { border-left: 4px solid var(--b-fen); background: linear-gradient(to bottom right, white, #d1fae5); }
-  .kcell.assigned.b-trk { border-left: 4px solid var(--b-trk); background: linear-gradient(to bottom right, white, #ffedd5); }
-  .kcell.assigned.b-sos { border-left: 4px solid var(--b-sos); background: linear-gradient(to bottom right, white, #cffafe); }
-  .kcell.assigned.b-ing { border-left: 4px solid var(--b-ing); background: linear-gradient(to bottom right, white, #ede9fe); }
-  .kcell.assigned.b-din { border-left: 4px solid var(--b-din); background: linear-gradient(to bottom right, white, #fce7f3); }
-  
-  .kcell.assigned b { display: block; font-size: 13px; margin-bottom: 2px; }
-  .kcell.assigned .mini2 { font-size: 11px; opacity: 0.8; font-weight: 500; }
-
-  /* Tablo İçi Metin Sıkıştırma */
-  .mini { font-size: 11px; color: var(--text-muted); }
-  .mini2 { font-size: 10px; color: var(--text-muted); line-height: 1.2; }
-  
-  /* Müsaitlik Paneli Özel Grid (AvGrid) */
-  .avGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(600px, 1fr)); /* Geniş ekranlarda yan yana */
-    gap: 20px;
-  }
-  
-  /* Talep Sayacı */
-  .qty { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: white; }
-  .qty button { width: 32px; height: 32px; border: none; background: var(--bg-body); cursor: pointer; font-weight: bold; }
-  .qty button:hover { background: #e2e8f0; }
-  .qty input { border: none; width: 50px; text-align: center; padding: 0; height: 32px; -moz-appearance: textfield; }
-  
-  /* Dialog (Modal) */
-  dialog {
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    padding: 0;
-    min-width: 400px;
-    max-width: 90vw;
-    animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  dialog::backdrop { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); }
-  dialog header { padding: 16px 20px; background: var(--bg-body); border-bottom: 1px solid var(--border); font-weight: 700; font-size: 16px; }
-  dialog section { padding: 20px; }
-  dialog footer { padding: 16px 20px; background: var(--bg-body); border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
-  @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  
-  /* Auto Assign Report List */
-  #autoAssignReportBody ul, #autoAssignReportBody ol { padding-left: 20px; margin: 0; }
-  #autoAssignReportBody li { margin-bottom: 6px; }
-  .conflict-row { background: var(--warn-bg); padding: 8px; border-radius: 8px; margin-bottom: 8px !important; border: 1px solid #fcd34d; }
-
-  /* =========================================
-     6. YAZDIRMA (PRINT) STİLLERİ
-     ========================================= */
-  @media print {
-    @page { size: A4 landscape; margin: 10mm; }
-    body { background: white; font-size: 11px; color: black; }
-    .no-print, .top, .tabs, .btn { display: none !important; }
-    .app { max-width: none; padding: 0; margin: 0; }
-    .card { border: none; box-shadow: none; padding: 0; overflow: visible; }
-    .grid-scroll-wrapper { overflow: visible; }
-    
-    /* Yazdırma Tabloları */
-    .print-page { page-break-after: always; margin-bottom: 20px; }
-    .avoid-break { page-break-inside: avoid; }
-    
-    table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
-    th, td { border: 1px solid #000; padding: 4px; vertical-align: top; }
-    th { background: #f3f4f6 !important; -webkit-print-color-adjust: exact; font-weight: 800; text-align: center; }
-    
-    /* Renklerin yazıcıda çıkması için */
-    .b-mat { background-color: #e0e7ff !important; -webkit-print-color-adjust: exact; }
-    .b-fen { background-color: #d1fae5 !important; -webkit-print-color-adjust: exact; }
-    .b-trk { background-color: #ffedd5 !important; -webkit-print-color-adjust: exact; }
-    .b-sos { background-color: #cffafe !important; -webkit-print-color-adjust: exact; }
-    .b-ing { background-color: #ede9fe !important; -webkit-print-color-adjust: exact; }
-    .b-din { background-color: #fce7f3 !important; -webkit-print-color-adjust: exact; }
-    
-    /* Öğrenci listeleri */
-    .students-2col { column-count: 2; column-gap: 20px; font-size: 9px; }
-    .att-table th, .att-table td { height: 20px; text-align: center; }
-  }
+/* Atama yapılmış hücrelerde ders adı biraz daha büyük gözüksün */
+.kcell.assigned > div:first-child {
+  font-weight: 800;
+  font-size: clamp(10px, 0.9vw, 13px);
+}
 </style>
 </head>
 <body>
@@ -356,13 +512,15 @@
       <div class="logo"></div>
       <div class="title">
         <h1>Fenomen Çocuk Kulübü</h1>
-        <small>Grup dersleri planlama • Tablı Sistem</small>
+        <small>Grup dersleri planlama • Tablı</small>
       </div>
     </div>
     <div class="flex">
-       </div>
+      <!-- Yerel kaydet/yükle düğmeleri kaldırıldı; Firebase işlemleri sekme bazlı eklendi -->
+    </div>
   </div>
 
+  <!-- ÜST SEKMELER -->
   <div class="tabs no-print" id="topTabs" role="tablist">
     <button class="tab" data-panel="step1" role="tab" aria-selected="true">1. Veri Kaynağı</button>
     <button class="tab" data-panel="step2" role="tab">2. Ders Programı</button>
@@ -372,48 +530,32 @@
     <button class="tab" data-panel="step6" role="tab">Yazdır</button>
   </div>
 
+  <!-- STEP 1 -->
   <section class="content grid tabpanel" id="step1" role="tabpanel">
-    <div class="card">
-      <div class="row" style="align-items: center; justify-content: space-between;">
-         <h2>1) Google Sheet Bağlantısı</h2>
-         <div class="chips">
-            <span class="pill">Öğretmenler</span>
-            <span class="pill">Öğrenciler</span>
-            <span class="pill">Gruplar</span>
-         </div>
+    <div class="section-title">
+      <h2>1) Google Sheet Bağlantısı (YALNIZCA OKUMA)</h2>
+      <div class="chips">
+        <span class="pill">Ogretmenler: OGRETMEN_ADI, BRANS</span>
+        <span class="pill">Ogrenciler: NO, ADSOYAD, SINIF, Grubu</span>
+        <span class="pill">Branşlar: FEN BİLİMLERİ, MATEMATİK, TÜRKÇE, SOSYAL BİLGİLER, İNGİLİZCE, DİN KÜLTÜRÜ</span>
       </div>
-      <div class="row">
-        <label class="wide">Spreadsheet ID
-          <input class="wide" type="text" id="sheetId" value="1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg" />
-        </label>
-        <button class="btn" id="btnFetch">Verileri Oku</button>
-        <button class="btn ghost" id="btnClear">Temizle</button>
-      </div>
-      <div id="readStatus" class="tag" style="display:inline-block; margin-bottom:10px">Durum: Bekleniyor...</div>
     </div>
-
-    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+    <div class="row">
+      <label class="wide">Spreadsheet ID
+        <input class="wide" type="text" id="sheetId" value="1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg" />
+      </label>
+      <button class="btn" id="btnFetch">Verileri Oku</button>
+      <button class="btn ghost" id="btnClear">Temizle</button>
+    </div>
+    <div id="readStatus" class="notice">Durum: Hazır.</div>
+    <div class="grid">
       <div class="card">
-        <h3>Öğretmenler</h3>
-        <div style="max-height: 300px; overflow-y: auto;">
-            <table id="tblTeachers" style="width:100%; border-collapse: collapse;">
-                <thead style="position:sticky; top:0; background:white; z-index:1;">
-                    <tr><th style="text-align:left; border-bottom:2px solid var(--border); padding:8px;">#</th><th style="text-align:left; border-bottom:2px solid var(--border);">İsim</th><th style="text-align:left; border-bottom:2px solid var(--border);">Branş</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <h3>Öğretmenler (filtreli)</h3>
+        <table id="tblTeachers"><thead><tr><th>#</th><th>Öğretmen</th><th>Branş</th></tr></thead><tbody></tbody></table>
       </div>
       <div class="card">
-        <h3>Öğrenciler</h3>
-        <div style="max-height: 300px; overflow-y: auto;">
-             <table id="tblStudents" style="width:100%; border-collapse: collapse;">
-                <thead style="position:sticky; top:0; background:white; z-index:1;">
-                    <tr><th style="text-align:left; border-bottom:2px solid var(--border); padding:8px;">No</th><th style="text-align:left; border-bottom:2px solid var(--border);">İsim</th><th style="text-align:left; border-bottom:2px solid var(--border);">Grup</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <h3>Öğrenciler (Grubu dolu olanlar)</h3>
+        <table id="tblStudents"><thead><tr><th>NO</th><th>Ad Soyad</th><th>Sınıf</th><th>Grup</th></tr></thead><tbody></tbody></table>
       </div>
       <div class="card">
         <h3>Gruplar</h3>
@@ -425,100 +567,90 @@
     </div>
   </section>
 
+  <!-- STEP 2 -->
   <section class="content grid tabpanel" id="step2" role="tabpanel" hidden>
-    <div class="card">
-        <div class="row" style="align-items: center; justify-content: space-between;">
-             <h2>2) Ders Programı İskele</h2>
-             <div class="flex">
-                <button class="btn ghost sm" id="btnProgSaveFb">Kaydet (FB)</button>
-                <button class="btn ghost sm" id="btnProgLoadFb">Yükle (FB)</button>
-             </div>
-        </div>
-        <div class="row">
-          <label>Günler (virgül ile)<br/>
-            <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
-          </label>
-          <label>Günlük Ders Sayısı<br/>
-            <input type="number" id="slotsInput" value="8" min="1" max="12" />
-          </label>
-          <label>Güncelleme Politikası<br/>
-            <select id="assignPolicy">
-              <option value="keep" selected>Mevcut atamaları koru</option>
-              <option value="reset">Atamaları sıfırla</option>
-            </select>
-          </label>
-          <button class="btn" id="btnBuildGrid">Programı Oluştur</button>
-          
-           <div class="right flex">
-                <button class="btn ghost" id="btnProgExport">JSON İndir</button>
-                <input id="fileProgImport" type="file" accept="application/json" hidden />
-                <button class="btn ghost" id="btnProgImport">JSON Yükle</button>
-           </div>
-        </div>
+    <div class="section-title">
+      <h2>2) Ders Programı İskele</h2>
+      <div class="chips"><span class="pill">JSON Kaydet/Yükle</span></div>
+    </div>
+    <div class="row">
+      <label>Günler (virgül ayır)<br/>
+        <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
+      </label>
+      <label>Saat/Slot sayısı<br/>
+        <input type="number" id="slotsInput" value="8" min="1" max="12" />
+      </label>
+      <label>Atama politikası<br/>
+        <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
+          <option value="keep" selected>Koruyabildiğini koru (taşanları at)</option>
+          <option value="reset">Tamamen sıfırla</option>
+        </select>
+      </label>
+      <button class="btn" id="btnBuildGrid">Oluştur/Güncelle</button>
+      <button class="btn ghost" id="btnProgExport">JSON Dışa Aktar</button>
+      <input id="fileProgImport" type="file" accept="application/json" hidden />
+      <button class="btn ghost" id="btnProgImport">JSON İçeri Al</button>
+      <!-- Firebase kaydet/yükle/sil düğmeleri -->
+      <button class="btn ghost" id="btnProgSaveFb">Firebase Kaydet</button>
+      <button class="btn ghost" id="btnProgLoadFb">Firebase Yükle</button>
+      <button class="btn ghost" id="btnProgDeleteFb">Firebase Sil</button>
     </div>
 
-    <div class="card">
-        <h3>Saat Etiketleri (Ör: 09:00 - 09:40)</h3>
-        <div class="grid-scroll-wrapper">
-             <div id="slotLabelsWrap"></div>
-        </div>
-    </div>
+    <!-- Saat etiketleri düzenleyici -->
+    <div id="slotLabelsWrap" class="card"></div>
 
-    <div class="card">
-        <h3>Program Notları</h3>
-        <div class="grid-scroll-wrapper">
-             <div id="progGridWrap"></div>
-        </div>
-    </div>
-    
+    <div id="progGridWrap" class="card"></div>
     <div class="row">
       <button class="btn sec right" id="goto3">Devam → Müsaitlikler</button>
     </div>
   </section>
 
+  <!-- STEP 3 -->
   <section class="content grid tabpanel" id="step3" role="tabpanel" hidden>
-    <div class="row" style="align-items: center; justify-content: space-between;">
-        <h2>3) Müsaitlik Yönetimi</h2>
-        <div class="chips">
-            <span class="pill ok">Uygun</span>
-            <span class="pill bad">Uygun Değil</span>
-        </div>
+    <div class="section-title">
+      <h2>3) Müsaitlikler</h2>
+      <div class="legend">
+        <span>● Öğretmen Müsaitliği (çift tık gün başlığı: günü kopyala)</span>
+        <span>● Grup Müsaitliği (çift tık gün başlığı: günü kopyala)</span>
+      </div>
     </div>
 
-    <div class="tabs no-print" role="tablist">
+    <div class="tabs no-print" role="tablist" aria-label="Müsaitlik Sekmeleri">
       <button class="tab" id="tabTeach" role="tab" aria-selected="true">Öğretmen Müsaitlik</button>
       <button class="tab" id="tabGroup" role="tab" aria-selected="false">Grup Müsaitlik</button>
     </div>
 
     <div id="panelTeach" role="tabpanel">
-      <div class="row no-print card" style="padding:10px; margin-bottom:16px; background:var(--primary-light); border-color:var(--primary);">
-        <div class="flex">
-             <button class="btn ghost" id="btnAvailSaveFb">Firebase Kaydet</button>
-             <button class="btn ghost" id="btnAvailLoadFb">Firebase Yükle</button>
-        </div>
-        <div class="right flex">
-             <button class="btn ghost" id="btnAvailExport">JSON İndir</button>
-             <input id="fileAvailImport" type="file" accept="application/json" hidden />
-             <button class="btn ghost" id="btnAvailImport">JSON Yükle</button>
-             <button class="btn danger" id="btnAvailClear">Temizle</button>
-        </div>
+      <div class="row no-print">
+        <button class="btn ghost" id="btnAvailExport">JSON Dışa Aktar</button>
+        <input id="fileAvailImport" type="file" accept="application/json" hidden />
+        <button class="btn ghost" id="btnAvailImport">JSON İçeri Al</button>
+        <button class="btn warn" id="btnAvailClear">Tüm Müsaitlikleri Temizle</button>
+        <!-- Firebase kaydet/yükle/sil düğmeleri: öğretmen & grup müsaitliği ortak kullanır -->
+        <button class="btn ghost" id="btnAvailSaveFb">Firebase Kaydet</button>
+        <button class="btn ghost" id="btnAvailLoadFb">Firebase Yükle</button>
+        <button class="btn ghost" id="btnAvailDeleteFb">Firebase Sil</button>
       </div>
-      <div id="teacherAvailWrap" class="avGrid"></div>
+      <div class="card">
+        <h3>Öğretmen Müsaitlikleri</h3>
+        <div id="teacherAvailWrap" class="avGrid"></div>
+      </div>
     </div>
 
     <div id="panelGroup" role="tabpanel" hidden>
-      <div class="row no-print card" style="padding:10px; margin-bottom:16px; background:var(--bg-body);">
-         <div class="flex">
-             <button class="btn ghost" id="btnAvailSaveFb2">Firebase Kaydet</button>
-             <button class="btn ghost" id="btnAvailLoadFb2">Firebase Yükle</button>
-        </div>
-        <div class="right flex">
-            <button class="btn ghost" id="btnAvailExport2">JSON İndir</button>
-            <input id="fileAvailImport2" type="file" accept="application/json" hidden />
-            <button class="btn ghost" id="btnAvailImport2">JSON Yükle</button>
-        </div>
+      <div class="row no-print">
+        <button class="btn ghost" id="btnAvailExport2">JSON Dışa Aktar</button>
+        <input id="fileAvailImport2" type="file" accept="application/json" hidden />
+        <button class="btn ghost" id="btnAvailImport2">JSON İçeri Al</button>
+        <!-- Firebase kaydet/yükle/sil düğmeleri: öğretmen & grup müsaitliği ortak kullanır (ayrı id'ler) -->
+        <button class="btn ghost" id="btnAvailSaveFb2">Firebase Kaydet</button>
+        <button class="btn ghost" id="btnAvailLoadFb2">Firebase Yükle</button>
+        <button class="btn ghost" id="btnAvailDeleteFb2">Firebase Sil</button>
       </div>
-      <div id="groupAvailWrap" class="avGrid"></div>
+      <div class="card">
+        <h3>Grup Müsaitlikleri</h3>
+        <div id="groupAvailWrap" class="avGrid"></div>
+      </div>
     </div>
 
     <div class="row">
@@ -526,95 +658,75 @@
     </div>
   </section>
 
+  <!-- STEP 4 -->
   <section class="content grid tabpanel" id="step4" role="tabpanel" hidden>
-    <div class="card">
-        <div class="row" style="align-items: center; justify-content: space-between;">
-            <h2>4) Ders Talepleri</h2>
-            <div class="chips" id="branchChips"></div>
-        </div>
-        
-        <div class="row">
-          <label>Grup Seçin<br/>
-            <select id="reqGroupSelect"></select>
-          </label>
-          <div class="flex" style="margin-left:20px;">
-              <button class="btn ghost" id="btnReqSaveFb">FB Kaydet</button>
-              <button class="btn ghost" id="btnReqLoadFb">FB Yükle</button>
-          </div>
-          <div class="right flex">
-             <button class="btn ghost" id="btnReqExport">JSON İndir</button>
-             <input id="fileReqImport" type="file" accept="application/json" hidden />
-             <button class="btn ghost" id="btnReqImport">JSON Yükle</button>
-             <button class="btn warn" id="btnReqClear">Sıfırla</button>
-          </div>
-        </div>
+    <div class="section-title">
+      <h2>4) Grupların Haftalık Ders Talepleri</h2>
+      <div class="chips" id="branchChips"></div>
     </div>
 
-    <div id="reqWrap" class="grid" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));"></div>
+    <div class="row">
+      <label>Grup Seçin<br/>
+        <select id="reqGroupSelect"></select>
+      </label>
+      <button class="btn ghost" id="btnReqExport">JSON Dışa Aktar</button>
+      <input id="fileReqImport" type="file" accept="application/json" hidden />
+      <button class="btn ghost" id="btnReqImport">JSON İçeri Al</button>
+      <button class="btn warn" id="btnReqClear">Tüm Talepleri Sıfırla</button>
+      <!-- Firebase kaydet/yükle/sil düğmeleri -->
+      <button class="btn ghost" id="btnReqSaveFb">Firebase Kaydet</button>
+      <button class="btn ghost" id="btnReqLoadFb">Firebase Yükle</button>
+      <button class="btn ghost" id="btnReqDeleteFb">Firebase Sil</button>
+    </div>
+
+    <div id="reqWrap" class="grid"></div>
 
     <div class="row">
       <button class="btn sec right" id="goto5">Devam → Atama Paneli</button>
     </div>
   </section>
 
+  <!-- STEP 5 -->
   <section class="content grid tabpanel" id="step5" role="tabpanel" hidden>
-    <div class="card" style="position: sticky; top: 10px; z-index: 10; border-color: var(--primary);">
-        <div class="row" style="align-items: center; justify-content: space-between;">
-            <h2>5) Atama Paneli</h2>
-            <div class="flex">
-                <button class="btn" id="btnAutoAssign" style="background: linear-gradient(135deg, var(--primary), #8b5cf6);">✨ Otomatik Dağıt</button>
-                <div style="width:1px; height:24px; background:#ccc; margin:0 8px;"></div>
-                <button class="btn ghost" id="btnAssgnSaveFb">Kaydet</button>
-                <button class="btn ghost" id="btnAssgnLoadFb">Yükle</button>
-            </div>
-        </div>
-        <div class="row" style="margin-bottom:0">
-            <div class="chips">
-                <span class="pill" style="border-left:4px solid var(--b-mat)">Matematik</span>
-                <span class="pill" style="border-left:4px solid var(--b-fen)">Fen</span>
-                <span class="pill" style="border-left:4px solid var(--b-trk)">Türkçe</span>
-                <span class="pill" style="border-left:4px solid var(--b-sos)">Sosyal</span>
-                <span class="pill" style="border-left:4px solid var(--b-ing)">İngilizce</span>
-                <span class="pill" style="border-left:4px solid var(--b-din)">Din K.</span>
-            </div>
-            <div class="right flex">
-                <button class="btn ghost" id="btnAssgnExport">JSON İndir</button>
-                <input id="fileAssgnImport" type="file" accept="application/json" hidden />
-                <button class="btn ghost" id="btnAssgnImport">JSON Yükle</button>
-                <button class="btn danger" id="btnAssgnClear">Temizle</button>
-            </div>
-        </div>
+    <div class="section-title">
+      <h2>5) Atama Paneli</h2>
+      <div class="chips">
+        <span class="pill">Aynı gruba ardışık aynı branş verilmez</span>
+        <span class="pill">Branşa göre öğretmen yükü dengelenir</span>
+      </div>
     </div>
-    
-    <div id="assignCards" class="grid" style="grid-template-columns: 1fr;"></div>
+    <div class="row">
+      <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
+      <button class="btn ghost" id="btnAssgnExport">JSON Dışa Aktar</button>
+      <input id="fileAssgnImport" type="file" accept="application/json" hidden />
+      <button class="btn ghost" id="btnAssgnImport">JSON İçeri Al</button>
+      <button class="btn warn" id="btnAssgnClear">Atamaları Temizle</button>
+      <!-- Firebase kaydet/yükle/sil düğmeleri -->
+      <button class="btn ghost" id="btnAssgnSaveFb">Firebase Kaydet</button>
+      <button class="btn ghost" id="btnAssgnLoadFb">Firebase Yükle</button>
+      <button class="btn ghost" id="btnAssgnDeleteFb">Firebase Sil</button>
+    </div>
+    <div id="assignCards" class="cards"></div>
 
     <dialog id="dlgAssign">
       <header>Manuel Atama</header>
       <section>
-        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:16px;">
-          <div>
-            <label>Grup</label>
-            <input type="text" id="dlgGroup" readonly style="background:#f1f5f9; font-weight:700;">
+        <div class="grid">
+          <div class="inline-grid">
+            <label>Grup<br/><input type="text" id="dlgGroup" readonly></label>
+            <label>Gün / Saat<br/><input type="text" id="dlgWhen" readonly></label>
           </div>
-          <div>
-            <label>Gün / Saat</label>
-            <input type="text" id="dlgWhen" readonly style="background:#f1f5f9; font-weight:700;">
-          </div>
-          <div>
-            <label>Branş Seçin</label>
-            <select id="dlgBranch"></select>
-          </div>
-          <div>
-            <label>Öğretmen Seçin</label>
-            <select id="dlgTeacher"></select>
+          <div class="inline-grid">
+            <label>Branş<br/><select id="dlgBranch"></select></label>
+            <label>Öğretmen<br/><select id="dlgTeacher"></select></label>
           </div>
         </div>
       </section>
-      <footer>
-        <button class="btn ghost" id="dlgCancel">Vazgeç</button>
-        <button class="btn danger" id="dlgDelete" hidden>Atamayı Sil</button>
-        <button class="btn" id="dlgOk">Kaydet</button>
-      </footer>
+     <footer>
+  <button class="btn ghost" id="dlgCancel">Vazgeç</button>
+  <button class="btn danger" id="dlgDelete" hidden>Atamayı Sil</button>
+  <button class="btn" id="dlgOk">Kaydet</button>
+</footer>
     </dialog>
 
     <div class="row">
@@ -622,26 +734,29 @@
     </div>
   </section>
 
+  <!-- STEP 6 -->
   <section class="content grid tabpanel" id="step6" role="tabpanel" hidden>
-    <div class="card no-print">
-         <div class="row">
-             <h2>Yazdır / Rapor</h2>
-         </div>
-         <div class="row">
-          <label>Görünüm Modu<br/>
-            <select id="printMode">
-              <option value="group">Gruba göre (Liste)</option>
-              <option value="teacher">Öğretmene göre (Program)</option>
-            </select>
-          </label>
-          <label>Filtre (Opsiyonel)<br/>
-            <select id="printFilter"></select>
-          </label>
-          <button class="btn" id="btnRenderPrint">Önizleme Getir</button>
-          <button class="btn sec" id="btnPrint" onclick="window.print()">🖨️ Yazdır</button>
-        </div>
+    <div class="section-title">
+      <h2>Yazdır / Rapor</h2>
+      <div class="chips no-print">
+        <span class="pill">A4 çıktı, sayfa başı öğretmen/grup</span>
+        <span class="pill">Sadece atama varsa</span>
+      </div>
     </div>
-    <div id="printPreview" class="printable"></div>
+    <div class="row no-print">
+      <label>Görünüm<br/>
+        <select id="printMode">
+          <option value="group">Gruba göre</option>
+          <option value="teacher">Öğretmene göre</option>
+        </select>
+      </label>
+      <label>Filtre<br/>
+        <select id="printFilter"></select>
+      </label>
+      <button class="btn" id="btnRenderPrint">Önizleme</button>
+      <button class="btn sec" id="btnPrint" onclick="window.print()">Yazdır</button>
+    </div>
+    <div id="printPreview" class="grid printable"></div>
   </section>
 </div>
 
@@ -894,41 +1009,34 @@ function buildProgramGrid(fromRestore=false){
   const days = state.program.days, S = state.program.slots;
   const wrap = $("#progGridWrap"); wrap.innerHTML='';
 
-  // YENİ: Scroll Wrapper
-  const scroll = document.createElement('div'); scroll.className='grid-scroll-wrapper';
-
-  const head = document.createElement('div'); head.className='kgrid head'; head.style.setProperty('--cols', S);
-  head.appendChild(Object.assign(document.createElement('div'),{textContent:'Gün / Saat', style:'display:flex;align-items:center;justify-content:center;'}));
+  const head = document.createElement('div'); head.className='kgrid'; head.style.setProperty('--cols', S); head.dataset.cols=S;
+  head.appendChild(Object.assign(document.createElement('div'),{textContent:'Gün / Saat',style:'font-weight:800'}));
   for(let s=0;s<S;s++){
     const label = state.program.slotLabels[s]||'';
     const hc = document.createElement('div'); hc.className='kcell busy';
     hc.innerHTML = `<div>${s+1}</div><div class="mini2">${label||''}</div>`;
     head.appendChild(hc);
   }
-  scroll.appendChild(head); // wrapper'a ekle
+  wrap.appendChild(head);
 
   days.forEach((d,di)=>{
     const row = document.createElement('div');
     row.className = 'kgrid'; row.style.setProperty('--cols', S);
-    const lbl = document.createElement('div'); 
-    lbl.className = 'kcell busy';
-    lbl.textContent = d; lbl.style.fontWeight='800'; 
-    row.appendChild(lbl);
-
+    const lbl = document.createElement('div'); lbl.textContent = d; lbl.style.fontWeight='800'; row.appendChild(lbl);
     for(let si=0; si<S; si++){
       const key = keyDS(di,si);
       const cell = document.createElement('div'); cell.className='kcell';
       cell.textContent = state.program.cells[key] || '';
+      cell.title = "Not girmek için tıklayın (opsiyonel)";
       cell.onclick = ()=>{
-        const val = prompt(`${d} - ${si+1}. saat notu:`, state.program.cells[key]||'');
+        const val = prompt(`${d} - ${si+1}. saat için not:`, state.program.cells[key]||'');
         if(val!==null){ state.program.cells[key]=val.trim(); cell.textContent=state.program.cells[key]||''; }
       };
       row.appendChild(cell);
     }
-    scroll.appendChild(row); // wrapper'a ekle
+    wrap.appendChild(row);
   });
-  
-  wrap.appendChild(scroll); // wrapper'ı ana kutuya ekle
+
   reconcileAllToProgram(getAssignPolicy());
 }
 
@@ -963,37 +1071,30 @@ function slotHeadCells(container,S){
 function renderAvailGrids(){
   const D=state.program.days.length, S=state.program.slots, days=state.program.days;
 
-  // Öğretmen Tablosu
   const tWrap=$("#teacherAvailWrap"); tWrap.innerHTML='';
   if(state.teachers.length===0){
-    tWrap.innerHTML = '<div class="muted">Öğretmen verisi yok.</div>';
+    tWrap.innerHTML = '<div class="muted">Öğretmen verisi yok. Lütfen "Verileri Oku" ile yükleyin.</div>';
   }else{
     state.teachers.forEach(t=>{
       const card = document.createElement('div'); card.className='card';
       const head = document.createElement('div'); head.className='flex';
-      head.style.marginBottom='10px';
       head.innerHTML = `<b>👤 ${t.name}</b><span class="tag">${t.branch}</span>`;
-      
       const right = document.createElement('div'); right.className='right flex';
-      const b1=document.createElement('button'); b1.className='btn xs ghost'; b1.textContent='Tümü Uygun';
-      const b2=document.createElement('button'); b2.className='btn xs ghost'; b2.textContent='Tümü Değil';
+      const b1=document.createElement('button'); b1.className='btn xs ghost'; b1.textContent='Tümünü Uygun';
+      const b2=document.createElement('button'); b2.className='btn xs ghost'; b2.textContent='Tümünü Değil';
+      const b3=document.createElement('button'); b3.className='btn xs ghost'; b3.textContent='Tersine';
       b1.onclick=()=>{ bulkSet(state.availability.teachers[t.id], true); renderAvailGrids(); };
       b2.onclick=()=>{ bulkSet(state.availability.teachers[t.id], false); renderAvailGrids(); };
-      right.append(b1,b2); head.appendChild(right); card.appendChild(head);
+      b3.onclick=()=>{ bulkToggle(state.availability.teachers[t.id]); renderAvailGrids(); };
+      right.append(b1,b2,b3); head.appendChild(right); card.appendChild(head);
 
-      // YENİ: Scroll Wrapper
-      const scroll = document.createElement('div'); scroll.className='grid-scroll-wrapper';
-      
-      const grid = document.createElement('div'); grid.className='kgrid head'; grid.style.setProperty('--cols', S);
-      const headRow = document.createElement('div'); headRow.style.cssText="display:flex;align-items:center;justify-content:center;font-weight:700"; headRow.textContent='Gün / Saat'; 
-      grid.appendChild(headRow);
+      const grid = document.createElement('div'); grid.className='kgrid'; grid.style.setProperty('--cols', S); grid.dataset.cols=S;
+      const headRow = document.createElement('div'); headRow.textContent='Gün / Saat'; headRow.style.fontWeight='700'; grid.appendChild(headRow);
       slotHeadCells(grid,S);
-      scroll.appendChild(grid);
-
       for(let d=0; d<D; d++){
         const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
-        const dayLbl = document.createElement('div'); dayLbl.className='kcell busy'; 
-        dayLbl.textContent=days[d]; dayLbl.style.fontWeight='700';
+        const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.style.fontWeight='700';
+        dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
         dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.teachers[t.id], d); renderAvailGrids(); } };
         row.appendChild(dayLbl);
         for(let s=0;s<S;s++){
@@ -1001,61 +1102,16 @@ function renderAvailGrids(){
           const cell = document.createElement('div'); cell.className='kcell ' + (val?'ok':'bad');
           cell.textContent = val?'Uygun':'Değil';
           cell.onclick = ()=>{
-            state.availability.teachers[t.id][d][s] = !state.availability.teachers[t.id][d][s];
-            renderAvailGrids(); // Kendini yenile
+            const cur = state.availability.teachers[t.id][d][s] = !state.availability.teachers[t.id][d][s];
+            cell.className='kcell ' + (cur?'ok':'bad'); cell.textContent = cur ? 'Uygun' : 'Değil';
           };
           row.appendChild(cell);
         }
-        scroll.appendChild(row);
+        grid.appendChild(row);
       }
-      card.appendChild(scroll); tWrap.appendChild(card);
+      card.appendChild(grid); tWrap.appendChild(card);
     });
   }
-  
-  // Grup Tablosu
-  const gWrap=$("#groupAvailWrap"); gWrap.innerHTML='';
-  Object.values(state.groups).sort(groupComparator).forEach(g=>{
-      const card = document.createElement('div'); card.className='card';
-      const head = document.createElement('div'); head.className='flex';
-      head.style.marginBottom='10px';
-      head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} Ögr.</span>`;
-      
-      const right = document.createElement('div'); right.className='right flex';
-      const b1=document.createElement('button'); b1.className='btn xs ghost'; b1.textContent='Tümü Uygun';
-      const b2=document.createElement('button'); b2.className='btn xs ghost'; b2.textContent='Tümü Değil';
-      b1.onclick=()=>{ bulkSet(state.availability.groups[g.id], true); renderAvailGrids(); };
-      b2.onclick=()=>{ bulkSet(state.availability.groups[g.id], false); renderAvailGrids(); };
-      right.append(b1,b2); head.appendChild(right); card.appendChild(head);
-
-      // YENİ: Scroll Wrapper
-      const scroll = document.createElement('div'); scroll.className='grid-scroll-wrapper';
-      const grid = document.createElement('div'); grid.className='kgrid head'; grid.style.setProperty('--cols', S);
-      const headRow = document.createElement('div'); headRow.style.cssText="display:flex;align-items:center;justify-content:center;font-weight:700"; headRow.textContent='Gün / Saat'; 
-      grid.appendChild(headRow);
-      slotHeadCells(grid,S);
-      scroll.appendChild(grid);
-
-      for(let d=0; d<D; d++){
-        const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
-        const dayLbl = document.createElement('div'); dayLbl.className='kcell busy';
-        dayLbl.textContent=days[d]; 
-        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" kopyala?`)){ copyDayPattern(state.availability.groups[g.id], d); renderAvailGrids(); } };
-        row.appendChild(dayLbl);
-        for(let s=0;s<S;s++){
-          const val = state.availability.groups[g.id][d][s];
-          const cell = document.createElement('div'); cell.className='kcell ' + (val?'ok':'bad');
-          cell.textContent = val?'Uygun':'Değil';
-          cell.onclick = ()=>{
-            state.availability.groups[g.id][d][s] = !state.availability.groups[g.id][d][s];
-            renderAvailGrids();
-          };
-          row.appendChild(cell);
-        }
-        scroll.appendChild(row);
-      }
-      card.appendChild(scroll); gWrap.appendChild(card);
-  });
-}
 
   const gWrap=$("#groupAvailWrap"); gWrap.innerHTML='';
   const groups = Object.values(state.groups);
@@ -1256,57 +1312,99 @@ function getBranchClass(branchName) {
     return ''; // Tanımsızsa varsayılan gri kalır
 }
   
- // Renk sınıfı yardımcısını da bu fonksiyonun üstüne eklediğinizden emin olun
-const BRANCH_CLASS = { 'MATEMATİK':'b-mat','FEN BİLİMLERİ':'b-fen','TÜRKÇE':'b-trk', 'SOSYAL BİLGİLER':'b-sos','İNGİLİZCE':'b-ing','DİN KÜLTÜRÜ':'b-din' };
-const bcls = b => BRANCH_CLASS[b] || 'b-sos';
-
-function renderAssignCards(){
+  function renderAssignCards(){
   const wrap = $("#assignCards"); wrap.innerHTML='';
   const days = state.program.days, S=state.program.slots;
-  const groups = Object.values(state.groups).sort((a,b)=> groupComparator(a,b));
+
+  const groups = Object.values(state.groups).slice()
+    .sort((a,b)=> (hasAssignmentsForGroup(b.id)?1:0)-(hasAssignmentsForGroup(a.id)?1:0) || groupComparator(a,b));
 
   groups.forEach(g=>{
     const card = document.createElement('div'); card.className='card';
     const head = document.createElement('div'); head.className='flex';
-    head.style.marginBottom='10px';
     const count = state.assignments.filter(a=>a.group===g.id).length;
-    head.innerHTML = `<b>${g.name}</b><span class="pill">${count} Atama</span>`;
+    head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span><span class="pill">${count} atama</span>`;
     card.appendChild(head);
 
-    // YENİ: Scroll Wrapper
-    const scroll = document.createElement('div'); scroll.className='grid-scroll-wrapper';
-    
-    const grid = document.createElement('div'); grid.className='kgrid head'; grid.style.setProperty('--cols', S);
-    const headRow = document.createElement('div'); headRow.textContent='Gün / Saat'; 
-    headRow.style.cssText="display:flex;align-items:center;justify-content:center;font-weight:700";
-    grid.appendChild(headRow);
+    const grid = document.createElement('div'); grid.className='kgrid'; grid.style.setProperty('--cols', S); grid.dataset.cols=S;
+    const headRow = document.createElement('div'); headRow.textContent='Gün / Saat'; headRow.style.fontWeight='700'; grid.appendChild(headRow);
     slotHeadCells(grid,S);
-    scroll.appendChild(grid);
 
     for(let d=0; d<days.length; d++){
       const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
-      const dayLbl = document.createElement('div'); dayLbl.className='kcell busy'; dayLbl.textContent=days[d];
-      row.appendChild(dayLbl);
+      row.appendChild(Object.assign(document.createElement('div'),{textContent:days[d],style:'font-weight:700'}));
       for(let s=0; s<S; s++){
         const cell = document.createElement('div');
         cell.className = 'kcell';
-        
+        cell.dataset.d = d;
+        cell.dataset.s = s;
+
+        // Duruma göre uygunluk rengini uygula (müsaitse yeşil, değilse kırmızı).
+        // Bu renkler yalnızca boş hücreler için kullanılır; ataması olan hücreler
+        // kendi ders renkleriyle gösterilecektir.
         const avail = state.availability?.groups?.[g.id]?.[d]?.[s] === true;
         cell.classList.add(avail ? 'ok' : 'bad');
 
+        // Mevcut bir atama var mı? Varsa hücreyi ders rengine dönüştür.
         const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s);
-        if (cur) {
-            // Modern renk sınıflarını kullan
-            cell.className = 'kcell assigned ' + bcls(cur.branch);
-            const tName = state.teachers.find(t => t.id === cur.teacherId)?.name || '';
-            cell.innerHTML = `<b>${cur.branch}</b><div class="mini2">👤 ${tName}</div>`;
-        }
-        cell.onclick = () => openAssignDialog(g.id, d, s);
+     if (cur) {
+    // 1. Sınıfları temizle ve ders rengini ekle
+    cell.classList.remove('ok', 'bad', 'busy');
+    cell.classList.add('assigned', getBranchClass(cur.branch));
+
+    // 2. Öğretmen ismini veriden bul
+    const teacherObj = state.teachers.find(t => t.id === cur.teacherId);
+    // İsim varsa al, yoksa boş string döndür (icon yanına boşluk gelmemesi için)
+    const teacherName = teacherObj ? teacherObj.name : '';
+
+    // 3. İÇERİK HTML - GÜNCELLENDİ
+    cell.innerHTML = `
+      <div style="
+          display:flex; 
+          flex-direction:column; 
+          justify-content:center; 
+          align-items:center; 
+          height:100%; 
+          width:100%; 
+          pointer-events:none; 
+          padding-bottom: 4px; /* Bu satır içeriği yukarı iter */
+      ">
+        
+        <div style="
+            font-weight:900; 
+            font-size:14px; 
+            line-height:1; 
+            margin-bottom:3px; 
+            text-align:center; 
+            letter-spacing: -0.3px; /* Harfleri hafif sıkıştırarak sığdırır */
+        ">
+            ${cur.branch}
+        </div>
+        
+        <div class="mini2" style="
+            font-size:11px; 
+            font-weight:700; 
+            opacity:0.9; 
+            line-height:1; 
+            white-space:nowrap; 
+            overflow:hidden; 
+            text-overflow:ellipsis; 
+            max-width:98%;
+        ">
+            👤 ${teacherName}
+        </div>
+
+      </div>`;
+}
+        cell.onclick = () => {
+          openAssignDialog(g.id, d, s);
+        };
         row.appendChild(cell);
       }
-      scroll.appendChild(row);
+      grid.appendChild(row);
     }
-    card.appendChild(scroll);
+
+    card.appendChild(grid);
     wrap.appendChild(card);
   });
 }
@@ -2310,7 +2408,128 @@ buildProgramGrid(true);
 renderSlotLabels();
 showTopTab('step1');
 </script>
+<style>
+:root{ /* ders paleti */ --b-mat:#6366f1; /* Matematik */ --b-fen:#10b981; /* Fen Bilimleri */ --b-trk:#f97316; /* Türkçe */ --b-sos:#06b6d4; /* Sosyal Bilgiler */ --b-ing:#22c55e; /* İngilizce */ --b-din:#a78bfa; /* Din Kültürü */ /* tonlar */ --t-50: 14%; --t-150: 26%; --ring:#94a3b8; } /* üst sekmeler – daha modern görünüm */ .tabs{gap:8px;border:0;margin-bottom:10px;position:relative} .tabs:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#e5e7eb} .tab{padding:12px 16px;border-radius:12px;background:#f1f5f9;font-weight:800;color:#0f172a;box-shadow:0 1px 0 #e5e7eb inset} .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;box-shadow:0 6px 18px rgba(2,8,23,.06);} /* kartlar */ .card{border-radius:16px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.06)} .card header{font-weight:800;margin-bottom:8px} /* grid hücreleri – daha “takvim” hissi */ .kgrid[data-cols]{grid-template-columns:160px repeat(var(--cols), minmax(72px,1fr));} .kcell{position:relative;border:1px solid #e5e7eb;background:#fff;min-height:58px;border-radius:12px} .kcell:hover{outline:3px solid rgba(99,102,241,.08);outline-offset:0} .kcell .mini2{opacity:.9} /* atama yapılmış hücre */ .kcell.assigned{color:#0f172a;font-weight:700} .kcell.assigned .mini2{color:#111827;font-weight:600} /* ders renkleri (UI) */ .kcell.assigned.b-mat{ background:color-mix(in srgb, var(--b-mat) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-mat) var(--t-150), #fff); } .kcell.assigned.b-fen{ background:color-mix(in srgb, var(--b-fen) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-fen) var(--t-150), #fff); } .kcell.assigned.b-trk{ background:color-mix(in srgb, var(--b-trk) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-trk) var(--t-150), #fff); } .kcell.assigned.b-sos{ background:color-mix(in srgb, var(--b-sos) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-sos) var(--t-150), #fff); } .kcell.assigned.b-ing{ background:color-mix(in srgb, var(--b-ing) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-ing) var(--t-150), #fff); } .kcell.assigned.b-din{ background:color-mix(in srgb, var(--b-din) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-din) var(--t-150), #fff); } /* mini yoğunluk modu – istersen .app'a .dense ekle */ .app.dense .kcell{min-height:44px;padding:4px 6px;border-radius:10px} /* Yazdır: ders renklerinin hafif tonu ve okunabilirlik */ @media print{ .print-table td.b-mat { background:#e6e8ff; } .print-table td.b-fen { background:#d6f7e9; } .print-table td.b-trk { background:#ffe8d6; } .print-table td.b-sos { background:#d8f6fb; } .print-table td.b-ing { background:#e3f9e9; } .print-table td.b-din { background:#ece7ff; } .print-table td[class^="b-"], .print-table td[class*=" b-"]{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .print-header{margin-bottom:10px} .print-sub{margin:8px 0 10px} } ``` > Not: mevcut print bloğun temelini koruyoruz, sadece tablo hücrelerine ders rengine göre arka plan veriyoruz. --- # 2) JS – Ders rengi sınıfı ekle & Yazdır hücrelerine sınıf bas Aşağıdaki yardımcıları `<script>` içinde bir yere (ör. global yardımcıların altı) ekle: ```js /* === Ders -> sınıf kısaltması (güvenli) === */ const BRANCH_CLASS = { 'MATEMATİK':'mat','FEN BİLİMLERİ':'fen','TÜRKÇE':'trk', 'SOSYAL BİLGİLER':'sos','İNGİLİZCE':'ing','DİN KÜLTÜRÜ':'din' }; const bcls = b => 'b-' + (BRANCH_CLASS[b] || toId(b)); ``` ## 2.a Atama panelinde renkli hücre `renderAssignCards()` içinde, atanmış hücre oluşturduğun bölümde şu değişikliği yap: **ÖNCE:** ```js if(cur){ cell.classList.add('busy'); cell.innerHTML = `<div style="text-align:center"><div><b>${cur.branch}</b></div><div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div></div>`; } ``` **SONRA:** ```js if(cur){ cell.classList.add('assigned', bcls(cur.branch)); cell.innerHTML = `<div style="text-align:center"> <div><b>${cur.branch}</b></div> <div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div> </div>`; } ``` > Bu düzenleme, eski “busy” görselini ders rengine göre modern panele çevirir. ## 2.b Yazdır tablosunda renk sınıfı ver `renderPrintPreview()` içinde hücre HTML’lerini üretirken, `<td>`’lere ders sınıfını ekleyelim. **Grup görünümü** satır oluşturma kısmında (td içeriği üretilirken) bu satırı değiştir: ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += `<td>${txt}</td>`; ``` **şu hale getir:** ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += a ? `<td class="${bcls(a.branch)}">${txt}</td>` : `<td></td>`; ``` **Öğretmen görünümü** için de benzer şekilde: ```js row += a ? `<td style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` **yerine:** ```js row += a ? `<td class="${bcls(a.branch)}" style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` >
 
+</style>
+<style>
+  :root {
+    --bg: #f0f4f8 !important;
+    --panel: #ffffff !important;
+    --ink: #0a0a0a !important;
+    --muted: #6b7280 !important;
+    --pri: #1e88e5 !important;
+    --pri-ink: #0d47a1 !important;
+    --acc: #00bcd4 !important;
+    --warn: #fbc02d !important;
+    --danger: #e53935 !important;
+    --chip: #e3f2fd !important;
+    --grid: #e0e0e0 !important;
+    --radius: 20px !important;
+  }
+
+  body {
+    background: var(--bg) !important;
+    color: var(--ink) !important;
+    font-family: "Google Sans", Roboto, system-ui, sans-serif !important;
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+  }
+
+  .btn {
+    background: var(--pri) !important;
+    color: #fff !important;
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    padding: 12px 20px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+  }
+
+  .btn.ghost {
+    background: #e0e7ff !important;
+    color: var(--pri-ink) !important;
+  }
+
+  .card {
+    background: var(--panel) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.04) !important;
+    border: 1px solid var(--grid) !important;
+  }
+
+  .kcell {
+  border-radius: 16px !important;
+  background: #f3f4f6 !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.kcell:hover {
+  transform: scale(1.06) !important;
+  background: #e0f2fe !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+}
+
+.kcell.ok {
+  background: #e6f4ea !important;
+  border-color: #34d399 !important;
+  color: #065f46 !important;
+  font-weight: 600 !important;
+}
+
+.kcell.bad {
+  background: #fee2e2 !important;
+  border-color: #f87171 !important;
+  color: #991b1b !important;
+  font-weight: 600 !important;
+}
+  input, select, textarea {
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 12px 14px !important;
+    background: #fff !important;
+  }
+
+  .tab {
+    background: #e3f2fd !important;
+    color: #0d47a1 !important;
+    border-radius: 999px 999px 0 0 !important;
+    font-weight: 700 !important;
+    padding: 10px 16px !important;
+  }
+
+  .tab[aria-selected="true"] {
+    background: #fff !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06) !important;
+  }
+
+  table th, table td {
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 10px 12px !important;
+  }
+
+  .pill {
+    background: var(--chip) !important;
+    border-radius: 999px !important;
+    padding: 6px 12px !important;
+    font-weight: 600 !important;
+    color: var(--pri-ink) !important;
+  }
+
+  .pill.bad {
+    background: #fce4ec !important;
+    color: #b71c1c !important;
+  }
+  @media print {
+  .section-title,
+  .no-print,
+  #btnRenderPrint,
+  #btnPrint {
+    display: none !important;
+  }
+}
+</style>
 <script>
   function computeBranchTeacherCapacity(){
   const D = state.program.days.length;
@@ -2481,6 +2700,121 @@ function printAll_7_8() {
   setTimeout(() => { try { w.print(); } catch(_){} }, 50);
 }
 </script>
+<!-- ==== TEACHER PRINT V2 – KOMPAKT, TEK A4 ==== -->
+<style>
+/* ===========================
+   PRINT: Öğretmen V2 (Lüks)
+   =========================== */
+
+/* Genel değişkenler; fit fonksiyonu bunları ayarlar */
+:root{
+  --tpv2-font: 11px;
+  --tpv2-pad: 4px;
+  --tpv2-gap: 8px;
+  --tpv2-ink: #0f172a;
+  --tpv2-muted: #6b7280;
+  --tpv2-gold: #b45309;      /* lüks vurgu */
+  --tpv2-gold-ink: #78350f;
+  --tpv2-grid: #0f172a;
+}
+
+.print-teacher-v2{
+  color: var(--tpv2-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.print-teacher-v2 .page{
+  font-size: var(--tpv2-font);
+  line-height: 1.35;
+  position: relative;
+}
+
+.print-teacher-v2 .brandbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom: calc(var(--tpv2-gap) - 2px);
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--tpv2-gold);
+}
+.print-teacher-v2 .brandbar .org{
+  font-weight:900; letter-spacing:.2px; font-size:1.25em;
+}
+.print-teacher-v2 .brandbar .chip{
+  font-weight:800; font-size:.85em; color:var(--tpv2-gold-ink);
+  border:1px solid var(--tpv2-gold); padding:2px 8px; border-radius:999px;
+}
+
+.print-teacher-v2 .title{
+  font-weight:900; font-size: 1.4em; text-align:center; margin:0 0 calc(var(--tpv2-gap) - 2px) 0;
+}
+.print-teacher-v2 .t-meta{
+  display:flex; justify-content:center; gap:10px; font-weight:700;
+  margin-bottom: calc(var(--tpv2-gap) - 2px);
+}
+.print-teacher-v2 .muted{ color: var(--tpv2-muted) }
+
+/* Tablo temeli */
+.print-teacher-v2 table{
+  width:100%; border-collapse:collapse; table-layout:fixed;
+}
+.print-teacher-v2 th, .print-teacher-v2 td{
+  border: 1px solid var(--tpv2-grid);
+  padding: var(--tpv2-pad); vertical-align:top;
+}
+.print-teacher-v2 thead th{
+  background: #f7f7fb;
+}
+
+/* Haftalık plan */
+.print-teacher-v2 .sched th:first-child,
+.print-teacher-v2 .sched td:first-child{
+  width:92px; white-space:nowrap; font-weight:800; background:#fbfbfe;
+}
+.print-teacher-v2 .sched small{
+  display:block; font-size:.9em; color:#334155;
+}
+.print-teacher-v2 .slot-head{
+  font-weight:800; text-align:center;
+}
+
+/* Yoklama */
+.print-teacher-v2 .att-head{
+  margin: var(--tpv2-gap) 0 4px; font-weight:900; text-align:center;
+  border-top: 2px solid #e5e7eb; padding-top: 6px;
+}
+.print-teacher-v2 .att-grid{
+  display:grid; grid-template-columns: 1fr 1fr; gap: var(--tpv2-gap);
+}
+.print-teacher-v2 .att-card{
+  border:1.2px solid var(--tpv2-grid); border-radius:8px;
+  padding: calc(var(--tpv2-pad) - 1px);
+  break-inside: avoid; page-break-inside: avoid;
+  background: #fff;
+}
+.print-teacher-v2 .att-card .g-title{
+  font-weight:800; margin-bottom:2px;
+}
+.print-teacher-v2 .att{
+  width:100%; border-collapse:collapse;
+}
+.print-teacher-v2 .att th, .print-teacher-v2 .att td{
+  border:1.2px solid #0f172a; padding: calc(var(--tpv2-pad) - 2px);
+}
+.print-teacher-v2 .att th{ background:#f9fafb; text-align:center; }
+.print-teacher-v2 .att th:first-child, .print-teacher-v2 .att td:first-child{ text-align:left; }
+
+/* Dip bilgi */
+.print-teacher-v2 .foot{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top: 6px; color:#475569; font-size:.9em;
+}
+
+/* Baskı */
+@media print{
+  @page{ size: A4; margin: 12mm; }
+  .print-teacher-v2 .page{ break-after: page; page-break-after: always; }
+  th,td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
+</style>
 
 <script>
 /* =========================================================
@@ -2932,5 +3266,3 @@ if (btnAssgnDeleteFb) {
 
 </body>
 </html>
-
-
