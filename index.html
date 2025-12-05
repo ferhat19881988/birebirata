@@ -1599,7 +1599,7 @@ $("#dlgOk").onclick = () => {
     renderPrintPreview();
   }
 };
-// index.html — Auto Assign (V4.1): Maks Yerleşim Odaklı, Yük Dengesi YOK
+// index.html — Auto Assign (V5.0): Maks Yerleşim + Yük Dengesi
 
 /**
  * Amaç: Öğretmen yük dengesini tamamen devre dışı bırakarak,
@@ -1614,6 +1614,12 @@ function autoAssign() {
   const AVOID_SAME_BRANCH_SOFT = true;
   const MAX_FREE_TEACHER_SUGGESTIONS = 5;
   const MAX_CONFLICT_ROWS_IN_UI = 20;
+  // Atama algoritması için öğretmen yük dengesini etkinleştir. true olduğunda,
+  // aday öğretmen listeleri, mevcut ders yükü (atanmış ders sayısı) en az
+  // olandan en çoğa doğru sıralanır. Bu sayede otomatik atama yalnızca
+  // mümkün olan en çok dersi yerleştirmekle kalmaz, aynı zamanda
+  // öğretmenler arasında iş yükünü adil bir şekilde paylaştırmaya çalışır.
+  const BALANCE_LOAD = true;
   // ---------------------------
 
   // --- Yardımcılar ---
@@ -1647,6 +1653,29 @@ function autoAssign() {
       if (pt?.name) return pt.name;
     }
     return String(tid);
+  };
+
+  // Öğretmenin mevcut ders yükünü hesapla. Bu fonksiyon hem sabit atamalar
+  // (state.assignments) hem de o anki deneme sırasında kullanılan geçici
+  // atamalar (tGrid) üzerinden öğretmenin toplam ders sayısını toplar.
+  // Daha düşük değer, öğretmenin daha az derse sahip olduğunu gösterir.
+  const currentTeacherLoad = (tid) => {
+    let count = 0;
+    // Sabit ve mevcut atamalar
+    for (const a of state.assignments) {
+      if (a.teacherId === tid) count++;
+    }
+    // Geçici atamalar tGrid içerisinde tutulur. tGrid[tid] bir [D][S] matrisi.
+    const tMat = tGrid[tid];
+    if (tMat) {
+      for (let dd = 0; dd < D; dd++) {
+        const row = tMat[dd] || [];
+        for (let ss = 0; ss < S; ss++) {
+          if (row[ss]) count++;
+        }
+      }
+    }
+    return count;
   };
 
   // Öğretmenin branş(lar)ını bul (cache'li)
@@ -1786,11 +1815,13 @@ function autoAssign() {
   let bestSolution = null;
   let restartsDone = 0;
 
+  // tGrid değişkenini dışarıda tanımlayarak currentTeacherLoad fonksiyonundan erişilebilir kılalım.
+  let tGrid;
   while (restartsDone < TARGET_RESTARTS && (performance.now() - startTime) < TIME_LIMIT_MS) {
     restartsDone++;
 
     const gGrid = {};
-    const tGrid = {};
+    tGrid = {};
     for (const gid of Object.keys(gGridBase)) gGrid[gid] = gGridBase[gid].map(row => row.slice());
     for (const tid of Object.keys(tGridBase)) tGrid[tid] = tGridBase[tid].map(row => row.slice());
     const needs = JSON.parse(JSON.stringify(needsByGroup));
@@ -1844,9 +1875,17 @@ function autoAssign() {
 
           // Öncelikli olarak henüz kullanılmamış öğretmenleri listele
           const preferred = allCandidates.filter(t => !usedTeachers.has(t.id));
-          const candidateList = preferred.length > 0 ? preferred : allCandidates;
+          let candidateList = preferred.length > 0 ? preferred : allCandidates;
 
-          shuffle(candidateList);
+          // Eğer BALANCE_LOAD etkinse, aday öğretmenleri mevcut ders yüklerine göre sırala.
+          if (BALANCE_LOAD) {
+            candidateList = candidateList.slice().sort((t1, t2) => {
+              return currentTeacherLoad(t1.id) - currentTeacherLoad(t2.id);
+            });
+          } else {
+            candidateList = candidateList.slice();
+            shuffle(candidateList);
+          }
 
           for (const t of candidateList) {
             if (!canUse(gGrid, tGrid, gid, t.id, d, s)) continue;
