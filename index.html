@@ -1610,7 +1610,9 @@ function autoAssign() {
   const S = state.program.slots;
 
   // --------- Ayarlar ---------
-  const TIME_LIMIT_MS = 2500;
+  // Geliştirilmiş ayarlar: daha uzun zaman limiti ve daha fazla deneme,
+  // böylece algoritma ilk çalıştırmada daha iyi sonuçlar bulabilir.
+  const TIME_LIMIT_MS = 10000; // önceki 2500
   const AVOID_SAME_BRANCH_SOFT = true;
   const MAX_FREE_TEACHER_SUGGESTIONS = 5;
   const MAX_CONFLICT_ROWS_IN_UI = 20;
@@ -1753,9 +1755,11 @@ function autoAssign() {
   }
 
   // Deneme sayısı (ihtiyaca göre dinamik)
-  const BASE_RESTARTS = 80;
-  const RESTARTS_PER_NEED = 6;
-  const MAX_RESTARTS = 1000;
+  // Geliştirilmiş değerler: daha yüksek başlangıç ve ihtiyaç başına deneme sayısı,
+  // ayrıca maksimum deneme sayısı artırıldı.
+  const BASE_RESTARTS = 200;
+  const RESTARTS_PER_NEED = 10;
+  const MAX_RESTARTS = 5000;
   const TARGET_RESTARTS = Math.min(MAX_RESTARTS, BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED);
 
   // Hücre sıra paternleri
@@ -2329,6 +2333,37 @@ const importAssgn = obj=>{
   renderAssignCards();
 };
 
+/*
+ * Birden çok otomatik atama çalıştırarak mümkün olan en iyi yerleşimi elde etmek için
+ * sarmalayıcı fonksiyon. Kullanıcı düğmesine bağlanır ve `autoAssign()` fonksiyonunu
+ * art arda çağırır. Her çağrıdan sonra kalan ihtiyaçları hesaplar ve hedef tüm
+ * talepler karşılanıncaya kadar veya `maxAttempts` kadar denemeye devam eder.
+ * Böylece kullanıcı manuel olarak aynı düğmeye birkaç kez tıklamak zorunda kalmaz.
+ */
+function doAutoAssign(maxAttempts = 3) {
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    autoAssign();
+    // Kalan ihtiyaçları hesapla: her grup için talep edilen derslerden atananlar çıkartılır
+    let remaining = 0;
+    for (const g of Object.values(state.groups)) {
+      const req = state.requests[g.id] || {};
+      // Mevcut atamalar içinde bu gruba ait ders sayısı
+      const have = {};
+      state.assignments.filter(a => a.group === g.id).forEach(a => {
+        have[a.branch] = (have[a.branch] || 0) + 1;
+      });
+      for (const [b, cnt] of Object.entries(req)) {
+        const need = Math.max(0, (cnt | 0) - (have[b] || 0));
+        remaining += need;
+      }
+    }
+    // Tüm ihtiyaçlar karşılandıysa döngüden çık
+    if (remaining === 0) break;
+    attempts++;
+  }
+}
+
 /* ===== 6) Yazdır ===== */
 function hasAnyAssignments(){ return state.assignments && state.assignments.length>0; }
 function refreshPrintFilters(){
@@ -2503,7 +2538,8 @@ $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
 
-$("#btnAutoAssign").onclick = autoAssign;
+// Otomatik Atama düğmesi birden fazla deneme yapacak şekilde sarmalayıcıyı çağırır.
+$("#btnAutoAssign").onclick = () => doAutoAssign();
 $("#btnAssgnExport").onclick = exportAssgn;
 $("#btnAssgnImport").onclick = ()=>openFile($("#fileAssgnImport"), importAssgn);
 $("#btnAssgnClear").onclick = ()=>{ state.assignments=[]; renderAssignCards(); };
