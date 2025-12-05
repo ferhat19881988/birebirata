@@ -1889,22 +1889,144 @@ function autoAssign() {
   }
 
   // En iyi sonucu uygula
-  if (bestSolution) {
-    const seen = new Set();
-    const merged = [];
-    for (const a of bestSolution) {
-      const k = keyCell(a.group, a.day, a.slot);
-      if (seen.has(k)) continue;
-      seen.add(k);
-      merged.push({group:a.group, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId});
+    if (bestSolution) {
+      const seen = new Set();
+      const merged = [];
+      for (const a of bestSolution) {
+        const k = keyCell(a.group, a.day, a.slot);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        merged.push({group:a.group, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId});
+      }
+      state.assignments = merged;
     }
-    state.assignments = merged;
-  }
 
-  renderAssignCards();
+    /**
+     * Fill any remaining unassigned course requests using a backtracking search.
+     *
+     * After the greedy/random phase above, there may still be unmet requests
+     * for some group/branch combinations. This helper builds the current
+     * assignment grids and then attempts to place the remaining requests
+     * deterministically. It explores available time slots and candidate
+     * teachers for each outstanding (group, branch) pair in a depth‑first
+     * manner. If a complete placement is found, the new assignments are
+     * appended to state.assignments. Otherwise, the existing assignments are
+     * left untouched.
+     */
+    function fillRemainingAssignments() {
+      // Build grids based off the current assignments
+      const gGrid = {};
+      const tGrid = {};
+      const ensureGrid = (mat, id) => (mat[id] ||= Array.from({ length: D }, () => Array(S).fill(null)));
+      for (const a of state.assignments) {
+        ensureGrid(gGrid, a.group)[a.day][a.slot] = a;
+        ensureGrid(tGrid, a.teacherId)[a.day][a.slot] = a;
+      }
 
-  // --- Raporu hesapla ve göster ---
-  showAutoAssignReport(buildAutoAssignReport(fixed.length));
+      // Build a list of outstanding tasks: one entry for each unmet request
+      const tasks = [];
+      for (const g of Object.values(state.groups)) {
+        const req = state.requests[g.id] || {};
+        // Count existing assignments per branch for this group
+        const have = {};
+        for (const a of state.assignments) {
+          if (a.group === g.id) have[a.branch] = (have[a.branch] || 0) + 1;
+        }
+        for (const [b, cnt] of Object.entries(req)) {
+          const needed = Math.max(0, (cnt | 0) - (have[b] || 0));
+          for (let i = 0; i < needed; i++) tasks.push({ group: g.id, branch: b });
+        }
+      }
+      if (tasks.length === 0) return; // nothing to place
+
+      // Helper to compute candidate placements for a task
+      function getCandidates(task) {
+        const { group: gid, branch } = task;
+        const candidates = [];
+        for (let d = 0; d < D; d++) {
+          for (let s = 0; s < S; s++) {
+            // group availability and no assignment in this slot
+            if (state.availability.groups[gid]?.[d]?.[s] !== true) continue;
+            if (gGrid[gid]?.[d]?.[s]) continue;
+            // avoid consecutive same branch for the group
+            if (AVOID_SAME_BRANCH_SOFT) {
+              const lastB = prevBranchOf(gGrid, gid, d, s);
+              if (lastB && lastB === branch) continue;
+            }
+            // list candidate teachers for this branch at (d,s)
+            const teachers = findTeacherOptions(branch)
+              .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true)
+              .filter(t => !tGrid[t.id]?.[d]?.[s]);
+            if (teachers.length === 0) continue;
+            // prefer teachers not already teaching this branch to this group
+            const used = new Set();
+            const gRows = gGrid[gid] || [];
+            for (let dd = 0; dd < D; dd++) {
+              const row = gRows[dd] || [];
+              for (let ss = 0; ss < S; ss++) {
+                const a2 = row[ss];
+                if (a2 && a2.branch === branch) used.add(a2.teacherId);
+              }
+            }
+            const pref = teachers.filter(t => !used.has(t.id));
+            const finalList = pref.length ? pref : teachers;
+            for (const t of finalList) {
+              candidates.push({ day: d, slot: s, teacherId: t.id });
+            }
+          }
+        }
+        return candidates;
+      }
+
+      // Sort tasks by the number of candidate placements (most constrained first)
+      tasks.sort((a, b) => getCandidates(a).length - getCandidates(b).length);
+
+      const newAssignments = [];
+
+      function backtrack(index) {
+        if (index === tasks.length) return true;
+        const task = tasks[index];
+        const cand = getCandidates(task);
+        // If no placements possible, fail
+        if (cand.length === 0) return false;
+        // Heuristic: sort candidate placements to use least busy teachers first
+        cand.sort((c1, c2) => {
+          // count existing classes for teacher in final assignments
+          const t1Count = state.assignments.concat(newAssignments).filter(a => a.teacherId === c1.teacherId).length;
+          const t2Count = state.assignments.concat(newAssignments).filter(a => a.teacherId === c2.teacherId).length;
+          return t1Count - t2Count;
+        });
+        for (const { day: d, slot: s, teacherId: tid } of cand) {
+          // tentative assign
+          const assignment = { group: task.group, day: d, slot: s, branch: task.branch, teacherId: tid };
+          // mark in grids
+          ensureGrid(gGrid, task.group)[d][s] = assignment;
+          ensureGrid(tGrid, tid)[d][s] = assignment;
+          newAssignments.push(assignment);
+          // recurse
+          if (backtrack(index + 1)) return true;
+          // backtrack: remove
+          newAssignments.pop();
+          gGrid[task.group][d][s] = null;
+          tGrid[tid][d][s] = null;
+        }
+        return false;
+      }
+
+      backtrack(0);
+      // append found assignments
+      if (newAssignments.length > 0) {
+        state.assignments = state.assignments.concat(newAssignments);
+      }
+    }
+
+    // Attempt to fill any remaining unassigned needs deterministically
+    fillRemainingAssignments();
+
+    renderAssignCards();
+
+    // --- Raporu hesapla ve göster ---
+    showAutoAssignReport(buildAutoAssignReport(fixed.length));
 
   // ---------- Rapor yardımcıları ----------
   function buildAutoAssignReport(prevCount) {
