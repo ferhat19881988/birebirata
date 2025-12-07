@@ -7,9 +7,19 @@
 <title>Fenomen Çocuk Kulübü • Grup Ders Planlama (tablı)</title>
 <style>
   :root{
-    --bg:#f6f9fb; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
-    --pri:#14b8a6; --pri-ink:#083c3a; --acc:#6366f1; --warn:#f59e0b; --danger:#ef4444;
-    --chip:#e2f5f2; --grid:#e5e7eb; --radius:16px;
+    /* base variables for print and fallback design */
+    --bg:#f6f9fb; 
+    --panel:#ffffff; 
+    --ink:#0f172a; 
+    --muted:#64748b;
+    --pri:#14b8a6; 
+    --pri-ink:#083c3a; 
+    --acc:#6366f1; 
+    --warn:#f59e0b; 
+    --danger:#ef4444;
+    --chip:#e2f5f2; 
+    --grid:#e5e7eb; 
+    --radius:16px;
   }
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial;}
@@ -37,6 +47,468 @@
   input[type=text], input[type=number], select, textarea{
     padding:10px 12px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;min-width:220px
   }
+  /* -----------------------------------------------------------
+     Cosmic visual overhaul (applies only to on-screen display)
+     These overrides leave the print view untouched by wrapping
+     everything in @media screen.  The cosmic palette is dark,
+     vibrant and modern with glowing cards and colourful accents.
+  ----------------------------------------------------------- */
+  @media screen {
+    /* Override color variables for the cosmic theme */
+    .cosmic {
+      /* Deep space gradient background and luminous surfaces */
+      --bg: linear-gradient(120deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+      --panel: rgba(17, 24, 39, 0.9);
+      --ink: #e5eaf1;
+      --muted: #94a3b8;
+      /* Primary and accent colours for vivid highlights */
+      --pri: #6366f1;
+      --pri-ink: #eef2ff;
+      --acc: #a855f7;
+      --warn: #fbbf24;
+      --danger: #ef4444;
+      --chip: rgba(255,255,255,0.1);
+      --grid: rgba(107,114,128,0.35);
+      --radius: 16px;
+    }
+
+    /* Base page styles */
+    .cosmic {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* Application wrapper – slightly narrower with padding */
+    .cosmic .app {
+      max-width: 1680px;
+      margin: auto;
+      padding: 24px;
+    }
+
+    /* Top bar and branding */
+    .cosmic .top {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .cosmic .brand .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      /* Shimmering brand logo gradient */
+      background: linear-gradient(135deg, var(--pri), var(--acc));
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    .cosmic .brand .title small {
+      color: var(--muted);
+    }
+
+    /* Card containers – translucent glass with soft glow */
+    .cosmic .content,
+    .cosmic .card {
+      background: var(--panel);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+      padding: 18px;
+      overflow: hidden;
+      backdrop-filter: blur(14px);
+    }
+
+    /* General grid layouts */
+    .cosmic .grid {
+      display: grid;
+      gap: 14px;
+    }
+    .cosmic .row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    /* Buttons – pill shaped with colourful gradients */
+    .cosmic .btn {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--pri-ink);
+      background: linear-gradient(135deg, var(--pri), var(--acc));
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .cosmic .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    .cosmic .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .cosmic .btn.ghost {
+      background: rgba(255,255,255,0.08);
+      color: var(--pri-ink);
+      border: 1px solid var(--pri);
+      box-shadow: none;
+    }
+    .cosmic .btn.sec {
+      background: linear-gradient(135deg, var(--acc), var(--pri));
+      color: var(--pri-ink);
+    }
+    .cosmic .btn.warn {
+      background: var(--warn);
+      color: #1f2937;
+    }
+    .cosmic .btn.danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* Inputs and selects – soft rounded fields on dark panels */
+    .cosmic input[type=text],
+    .cosmic input[type=number],
+    .cosmic select,
+    .cosmic textarea {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+      color: var(--ink);
+      min-width: 220px;
+    }
+
+    /* Tables – dark glass effect with subtle borders */
+    .cosmic table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px;
+    }
+    .cosmic th, .cosmic td {
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.05);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      color: var(--ink);
+    }
+    .cosmic th {
+      position: sticky;
+      top: 0;
+      background: rgba(255,255,255,0.08);
+      z-index: 1;
+      font-weight: 700;
+    }
+
+    /* Pills/Tags – small chips with subtle backgrounds */
+    .cosmic .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      font-weight: 600;
+      color: var(--pri-ink);
+    }
+    .cosmic .pill.bad {
+      background: rgba(239,68,68,0.25);
+      color: #fecaca;
+    }
+
+    /* Tabs – stylish dark pills that highlight when selected */
+    .cosmic .tabs {
+      display: flex;
+      gap: 10px;
+      border: none;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .cosmic .tabs:after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 1px;
+      background: var(--grid);
+    }
+    .cosmic .tab {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      font-weight: 700;
+      color: var(--pri-ink);
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .cosmic .tab[aria-selected="true"] {
+      background: linear-gradient(135deg, var(--pri), var(--acc));
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    }
+
+    /* Chip container */
+    .cosmic .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Grid for programme & availability */
+    .cosmic .kgrid {
+      display: grid;
+      gap: 8px;
+    }
+    .cosmic .kgrid[data-cols] {
+      grid-template-columns: 160px repeat(var(--cols), minmax(80px, 1fr));
+    }
+    .cosmic .kcell {
+      border: 1px solid var(--grid);
+      background: rgba(255,255,255,0.05);
+      min-height: 60px;
+      padding: 8px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      white-space: pre-line;
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+    .cosmic .kcell:hover {
+      background: rgba(255,255,255,0.1);
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    .cosmic .kcell.ok {
+      background: rgba(34,197,94,0.2);
+      border-color: rgba(34,197,94,0.4);
+      color: #bbf7d0;
+      font-weight: 600;
+    }
+    .cosmic .kcell.bad {
+      background: rgba(239,68,68,0.2);
+      border-color: rgba(239,68,68,0.4);
+      color: #fecaca;
+      font-weight: 600;
+    }
+    /* Assigned cells will receive branch-specific colours via classes (added by JS) */
+    .cosmic .kcell.assigned {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    /* Branch colour definitions tuned to the cosmic palette.  These
+       override the old pastel colours and harmonise with the dark
+       background.  Each branch (Matematik, Fen, Türkçe, Sosyal, İngilizce,
+       Din) gets its own subtle glowing hue. */
+    .cosmic .kcell.assigned.mat {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #c7d2fe;
+    }
+    .cosmic .kcell.assigned.fen {
+      background: rgba(34, 197, 94, 0.25);
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #bbf7d0;
+    }
+    .cosmic .kcell.assigned.trk {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fed7aa;
+    }
+    .cosmic .kcell.assigned.sos {
+      background: rgba(6, 182, 212, 0.25);
+      border-color: rgba(6, 182, 212, 0.5);
+      color: #a5f3fc;
+    }
+    .cosmic .kcell.assigned.ing {
+      background: rgba(234, 179, 8, 0.25);
+      border-color: rgba(234, 179, 8, 0.5);
+      color: #fde68a;
+    }
+    .cosmic .kcell.assigned.din {
+      background: rgba(139, 92, 246, 0.25);
+      border-color: rgba(139, 92, 246, 0.5);
+      color: #ddd6fe;
+    }
+
+    /* Legend styling */
+    .cosmic .legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0;
+      color: var(--muted);
+    }
+    .cosmic .legend span {
+      padding: 6px 10px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* Cards grid for assignment panel (step5) – responsive cosmic layout */
+    .cosmic .cards {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    }
+
+    /* Tag styling used in tables */
+    .cosmic .tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.08);
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 6px;
+      color: var(--pri-ink);
+      font-size: 12px;
+    }
+
+    /* Small text helpers */
+    .cosmic .mini {
+      font-size: 12px;
+    }
+    .cosmic .mini2 {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    /* Availability (step3) custom properties tuned to the cosmic palette */
+    .cosmic #step3 {
+      --avail-bg: rgba(255,255,255,0.05);
+      --avail-ink: var(--ink);
+      --avail-muted: var(--muted);
+      --avail-panel: rgba(17, 24, 39, 0.9);
+      --avail-border: rgba(255,255,255,0.15);
+      --avail-grid-gap: 8px;
+
+      --day-col-w: 160px;
+      --slot-min-w: 88px;
+      --cell-min-h: 58px;
+      --cell-radius: 12px;
+
+      --head-bg: rgba(255,255,255,0.08);
+      --head-ink: var(--ink);
+      --head-border: rgba(255,255,255,0.15);
+
+      --ok-bg: rgba(34,197,94,0.2);
+      --ok-ink: #bbf7d0;
+      --ok-bd: rgba(34,197,94,0.4);
+
+      --bad-bg: rgba(239,68,68,0.2);
+      --bad-ink: #fecaca;
+      --bad-bd: rgba(239,68,68,0.4);
+
+      --neutral-bg: rgba(255,255,255,0.05);
+      --neutral-ink: var(--ink);
+      --neutral-bd: rgba(255,255,255,0.2);
+
+      --ring: #475569;
+      --ring-strong: var(--pri);
+      color: var(--ink);
+    }
+    /* Step3 grid and cards adopt the global card styling */
+    .cosmic #step3 .avGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .cosmic #step3 .avGrid .card {
+      display: flex;
+      flex-direction: column;
+      background: var(--avail-panel);
+      border: 1px solid var(--avail-border);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      overflow: hidden;
+      min-width: 0;
+    }
+    .cosmic #step3 .avGrid .card .flex {
+      padding: 12px 16px;
+      gap: 12px;
+      border-bottom: 1px solid var(--avail-border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+    }
+    .cosmic #step3 .avGrid .card .tag {
+      background: rgba(99,102,241,0.15);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 12px;
+    }
+    .cosmic #step3 .kgrid {
+      display: grid;
+      gap: var(--avail-grid-gap);
+      padding: 12px;
+      background: var(--avail-bg);
+    }
+    .cosmic #step3 .kgrid[data-cols] {
+      grid-template-columns: var(--day-col-w) repeat(var(--cols), minmax(var(--slot-min-w), 1fr));
+    }
+    .cosmic #step3 .kgrid > :first-child {
+      background: var(--head-bg);
+      color: var(--head-ink);
+      border: 1px solid var(--head-border);
+      border-radius: var(--cell-radius);
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      min-height: var(--cell-min-h);
+      text-align: center;
+      padding: 6px 8px;
+    }
+    .cosmic #step3 .kcell.busy {
+      background: var(--head-bg);
+      color: var(--avail-muted);
+      border: 1px solid var(--head-border);
+      cursor: default;
+    }
+    .cosmic #step3 .kcell {
+      border: 1px solid var(--neutral-bd);
+      background: var(--neutral-bg);
+      color: var(--neutral-ink);
+      min-height: var(--cell-min-h);
+      border-radius: var(--cell-radius);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 6px;
+      user-select: none;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+      outline: none;
+      position: relative;
+    }
+    .cosmic #step3 .kcell:hover:not(.busy) {
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+    .cosmic #step3 .kcell.ok {
+      background: var(--ok-bg);
+      color: var(--ok-ink);
+      border-color: var(--ok-bd);
+    }
+    .cosmic #step3 .kcell.bad {
+      background: var(--bad-bg);
+      color: var(--bad-ink);
+      border-color: var(--bad-bd);
+    }
+    .cosmic #step3 .kcell.assigned {
+      font-weight: 700;
+      color: var(--ink);
+    }
+  } /* end @media screen */
   table{width:100%;border-collapse:separate;border-spacing:0 8px}
   th,td{padding:10px 12px;background:#fff;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}
   th{position:sticky;top:0;background:#f8fafc;z-index:1}
@@ -396,72 +868,34 @@
 #dlgAssign select {
   min-width: 280px;
 }
-/* === 1. KUTU BOYUTUNU ORİJİNAL HALİNE ZORLA === */
-.kcell {
-    /* Orijinal yükseklik ayarı */
-    min-height: 60px !important;
-    height: 60px !important; 
-    
-    /* İç boşluğu azaltarak şişmeyi önle */
-    padding: 2px 4px !important;
-    
-    /* İçeriği tam ortala */
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-    
-    /* Varsayılan gri/beyaz */
-    background: #fff; 
-}
-
-/* === 2. RENKLER (ARKA PLAN DAHİL) === */
-/* MATEMATİK: Mavi Arka Plan */
-.kcell.assigned.mat {
-    background-color: #dbeafe !important; /* Belirgin Açık Mavi */
-    border: 1px solid #60a5fa !important;
-    color: #1e3a8a !important;
-}
-
-/* FEN BİLİMLERİ: Yeşil Arka Plan */
-.kcell.assigned.fen {
-    background-color: #dcfce7 !important; /* Belirgin Açık Yeşil */
-    border: 1px solid #4ade80 !important;
-    color: #14532d !important;
-}
-
-/* TÜRKÇE: Turuncu Arka Plan */
-.kcell.assigned.trk {
-    background-color: #ffedd5 !important; /* Belirgin Açık Turuncu */
-    border: 1px solid #fb923c !important;
-    color: #7c2d12 !important;
-}
-
-/* SOSYAL BİLGİLER: Cam Göbeği Arka Plan */
-.kcell.assigned.sos {
-    background-color: #cffafe !important;
-    border: 1px solid #22d3ee !important;
-    color: #155e75 !important;
-}
-
-/* İNGİLİZCE: Sarı Arka Plan */
-.kcell.assigned.ing {
-    background-color: #fef9c3 !important;
-    border: 1px solid #facc15 !important;
-    color: #713f12 !important;
-}
-
-/* DİN KÜLTÜRÜ: Mor Arka Plan */
-.kcell.assigned.din {
-    background-color: #f3e8ff !important;
-    border: 1px solid #c084fc !important;
-    color: #581c87 !important;
-}
-
-/* Atama yapılmış ama branşı belirsiz olanlar */
-.kcell.assigned {
-    font-weight: 700;
-}
+  /* === 1. KUTU BOYUTUNU ORİJİNAL HALİNE ZORLA === */
+  /*
+   * Bu bölümde eski uygulamanın hücre ve ders renkleri için tanımladığı
+   * stiller bulunuyordu. Kozmik temaya geçiş yaparken bu ayarların
+   * tamamı .cosmic sınıfı altında yeniden tanımlanıyor. Önceki kurallar
+   * yüksek öncelikli !important bildirimi içerdiğinden kozmik tasarımı
+   * etkisiz kılıyordu. Aşağıdaki blok artık kullanılmıyor; referans
+   * amaçlı saklanmıştır.
+   *
+   * .kcell {
+   *     min-height: 60px !important;
+   *     height: 60px !important;
+   *     padding: 2px 4px !important;
+   *     display: flex !important;
+   *     flex-direction: column !important;
+   *     justify-content: center !important;
+   *     align-items: center !important;
+   *     background: #fff;
+   * }
+   *
+   * .kcell.assigned.mat { background-color: #dbeafe !important; border: 1px solid #60a5fa !important; color: #1e3a8a !important; }
+   * .kcell.assigned.fen { background-color: #dcfce7 !important; border: 1px solid #4ade80 !important; color: #14532d !important; }
+   * .kcell.assigned.trk { background-color: #ffedd5 !important; border: 1px solid #fb923c !important; color: #7c2d12 !important; }
+   * .kcell.assigned.sos { background-color: #cffafe !important; border: 1px solid #22d3ee !important; color: #155e75 !important; }
+   * .kcell.assigned.ing { background-color: #fef9c3 !important; border: 1px solid #facc15 !important; color: #713f12 !important; }
+   * .kcell.assigned.din { background-color: #f3e8ff !important; border: 1px solid #c084fc !important; color: #581c87 !important; }
+   * .kcell.assigned { font-weight: 700; }
+   */
 
   /*
    * Slot boyutlarının tutarlı kalması ve içeriklerin hücre genişliğini zorlayıp
@@ -505,7 +939,7 @@
 }
 </style>
 </head>
-<body>
+<body class="cosmic">
 <div class="app">
   <div class="top no-print">
     <div class="brand">
@@ -2566,11 +3000,11 @@ buildProgramGrid(true);
 renderSlotLabels();
 showTopTab('step1');
 </script>
-<style>
+<!-- <style>
 :root{ /* ders paleti */ --b-mat:#6366f1; /* Matematik */ --b-fen:#10b981; /* Fen Bilimleri */ --b-trk:#f97316; /* Türkçe */ --b-sos:#06b6d4; /* Sosyal Bilgiler */ --b-ing:#22c55e; /* İngilizce */ --b-din:#a78bfa; /* Din Kültürü */ /* tonlar */ --t-50: 14%; --t-150: 26%; --ring:#94a3b8; } /* üst sekmeler – daha modern görünüm */ .tabs{gap:8px;border:0;margin-bottom:10px;position:relative} .tabs:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#e5e7eb} .tab{padding:12px 16px;border-radius:12px;background:#f1f5f9;font-weight:800;color:#0f172a;box-shadow:0 1px 0 #e5e7eb inset} .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;box-shadow:0 6px 18px rgba(2,8,23,.06);} /* kartlar */ .card{border-radius:16px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.06)} .card header{font-weight:800;margin-bottom:8px} /* grid hücreleri – daha “takvim” hissi */ .kgrid[data-cols]{grid-template-columns:160px repeat(var(--cols), minmax(72px,1fr));} .kcell{position:relative;border:1px solid #e5e7eb;background:#fff;min-height:58px;border-radius:12px} .kcell:hover{outline:3px solid rgba(99,102,241,.08);outline-offset:0} .kcell .mini2{opacity:.9} /* atama yapılmış hücre */ .kcell.assigned{color:#0f172a;font-weight:700} .kcell.assigned .mini2{color:#111827;font-weight:600} /* ders renkleri (UI) */ .kcell.assigned.b-mat{ background:color-mix(in srgb, var(--b-mat) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-mat) var(--t-150), #fff); } .kcell.assigned.b-fen{ background:color-mix(in srgb, var(--b-fen) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-fen) var(--t-150), #fff); } .kcell.assigned.b-trk{ background:color-mix(in srgb, var(--b-trk) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-trk) var(--t-150), #fff); } .kcell.assigned.b-sos{ background:color-mix(in srgb, var(--b-sos) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-sos) var(--t-150), #fff); } .kcell.assigned.b-ing{ background:color-mix(in srgb, var(--b-ing) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-ing) var(--t-150), #fff); } .kcell.assigned.b-din{ background:color-mix(in srgb, var(--b-din) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-din) var(--t-150), #fff); } /* mini yoğunluk modu – istersen .app'a .dense ekle */ .app.dense .kcell{min-height:44px;padding:4px 6px;border-radius:10px} /* Yazdır: ders renklerinin hafif tonu ve okunabilirlik */ @media print{ .print-table td.b-mat { background:#e6e8ff; } .print-table td.b-fen { background:#d6f7e9; } .print-table td.b-trk { background:#ffe8d6; } .print-table td.b-sos { background:#d8f6fb; } .print-table td.b-ing { background:#e3f9e9; } .print-table td.b-din { background:#ece7ff; } .print-table td[class^="b-"], .print-table td[class*=" b-"]{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .print-header{margin-bottom:10px} .print-sub{margin:8px 0 10px} } ``` > Not: mevcut print bloğun temelini koruyoruz, sadece tablo hücrelerine ders rengine göre arka plan veriyoruz. --- # 2) JS – Ders rengi sınıfı ekle & Yazdır hücrelerine sınıf bas Aşağıdaki yardımcıları `<script>` içinde bir yere (ör. global yardımcıların altı) ekle: ```js /* === Ders -> sınıf kısaltması (güvenli) === */ const BRANCH_CLASS = { 'MATEMATİK':'mat','FEN BİLİMLERİ':'fen','TÜRKÇE':'trk', 'SOSYAL BİLGİLER':'sos','İNGİLİZCE':'ing','DİN KÜLTÜRÜ':'din' }; const bcls = b => 'b-' + (BRANCH_CLASS[b] || toId(b)); ``` ## 2.a Atama panelinde renkli hücre `renderAssignCards()` içinde, atanmış hücre oluşturduğun bölümde şu değişikliği yap: **ÖNCE:** ```js if(cur){ cell.classList.add('busy'); cell.innerHTML = `<div style="text-align:center"><div><b>${cur.branch}</b></div><div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div></div>`; } ``` **SONRA:** ```js if(cur){ cell.classList.add('assigned', bcls(cur.branch)); cell.innerHTML = `<div style="text-align:center"> <div><b>${cur.branch}</b></div> <div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div> </div>`; } ``` > Bu düzenleme, eski “busy” görselini ders rengine göre modern panele çevirir. ## 2.b Yazdır tablosunda renk sınıfı ver `renderPrintPreview()` içinde hücre HTML’lerini üretirken, `<td>`’lere ders sınıfını ekleyelim. **Grup görünümü** satır oluşturma kısmında (td içeriği üretilirken) bu satırı değiştir: ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += `<td>${txt}</td>`; ``` **şu hale getir:** ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += a ? `<td class="${bcls(a.branch)}">${txt}</td>` : `<td></td>`; ``` **Öğretmen görünümü** için de benzer şekilde: ```js row += a ? `<td style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` **yerine:** ```js row += a ? `<td class="${bcls(a.branch)}" style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` >
 
-</style>
-<style>
+</style> -->
+<!-- <style>
   :root {
     --bg: #f0f4f8 !important;
     --panel: #ffffff !important;
@@ -2687,7 +3121,7 @@ showTopTab('step1');
     display: none !important;
   }
 }
-</style>
+</style> -->
 <script>
   function computeBranchTeacherCapacity(){
   const D = state.program.days.length;
