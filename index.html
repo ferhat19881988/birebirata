@@ -44,12 +44,44 @@
   .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--chip);font-weight:600;color:var(--pri-ink)}
   .pill.bad{background:#fee2e2;color:#991b1b}
   .card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(15,23,42,.06);border:1px solid #e5e7eb;overflow:hidden}
-  .kgrid{display:grid;gap:6px}
-  .kgrid[data-cols]{grid-template-columns:140px repeat(var(--cols), minmax(72px,1fr));}
-  .kcell{border:1px dashed var(--grid);min-height:60px;padding:6px;border-radius:10px;background:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;white-space:pre-line}
-  .kcell.busy{background:#eef2ff;border-color:#c7d2fe}
-  .kcell.bad{background:#fee2e2;border-color:#fecaca}
-  .kcell.ok{background:#dcfce7;border-color:#bbf7d0}
+  .kgrid{display:grid;gap:8px}
+  /* unified grid: first column for day names, rest for time slots */
+  .kgrid[data-cols]{grid-template-columns:140px repeat(var(--cols), minmax(80px,1fr));}
+  .kcell{
+    border:1px solid var(--grid);
+    background:#fff;
+    color:var(--ink);
+    min-height:60px;
+    padding:6px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    cursor:pointer;
+    user-select:none;
+    transition:transform .12s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease;
+  }
+  /* header cells (busy) */
+  .kcell.busy{
+    background:#f8fafc;
+    color:var(--muted);
+    border-color:#e2e8f0;
+    cursor:default;
+  }
+  /* unavailable cell */
+  .kcell.bad{
+    background:#fee2e2;
+    border-color:#fecaca;
+    color:#991b1b;
+    font-weight:700;
+  }
+  /* available cell */
+  .kcell.ok{
+    background:#dcfce7;
+    border-color:#bbf7d0;
+    color:#065f46;
+    font-weight:700;
+  }
   /* Atanmış (dersli) hücreler – arka planı JS'de ders rengine boyanır */
   .kcell.assigned{
     color:var(--ink);
@@ -69,285 +101,7 @@
   .tag{display:inline-block;background:#f1f5f9;padding:2px 8px;border-radius:999px;margin-left:6px;color:#334155}
   .nowrap{white-space:nowrap}
 
-  /* 1. resim – Öğretmen/Grup müsaitlik kartları genişletildi */
-  /* Müsaitlik kartları – gelişmiş hizalama ve stil */
-/* ===========================
-   MÜSAİTLİKLER – SIFIRDAN TASARIM (Drop-in)
-   Uyum: #step3 (Öğretmen/Grup Müsaitlik)
-   =========================== */
-
-#step3 {
-  /* Tema değişkenleri (açık tema) */
-  --avail-bg: #ffffff;
-  --avail-ink: #0f172a;
-  --avail-muted: #64748b;
-  --avail-panel: #ffffff;
-  --avail-border: #e5e7eb;
-  --avail-grid-gap: 8px;
-
-  --day-col-w: 160px;
-  --slot-min-w: 88px;
-  --cell-min-h: 58px;
-  --cell-radius: 12px;
-
-  --head-bg: #f8fafc;
-  --head-ink: #0f172a;
-  --head-border: #e2e8f0;
-
-  --ok-bg: #dcfce7;
-  --ok-ink: #065f46;
-  --ok-bd: #bbf7d0;
-
-  --bad-bg: #fee2e2;
-  --bad-ink: #991b1b;
-  --bad-bd: #fecaca;
-
-  --neutral-bg: #f8fafc;
-  --neutral-ink: #334155;
-  --neutral-bd: #e2e8f0;
-
-  --ring: #94a3b8;
-  --ring-strong: #6366f1;
-
-  color: var(--avail-ink);
-}
-
-/* Kart ızgarası – öğretmen/grup kartları */
-#step3 .avGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
-  gap: 16px;
-  align-items: stretch;
-}
-
-/* Kart iskeleti */
-#step3 .avGrid .card {
-  display: flex;
-  flex-direction: column;
-  background: var(--avail-panel);
-  border: 1px solid var(--avail-border);
-  border-radius: 16px;
-  box-shadow: 0 10px 24px rgba(2, 8, 23, 0.06);
-  overflow: clip;
-  min-width: 0; /* grid overflow fix */
-}
-
-/* Kart başlığı (sol: isim/etiket, sağ: aksiyon butonları) */
-#step3 .avGrid .card .flex {
-  padding: 12px 14px;
-  gap: 10px;
-  border-bottom: 1px solid var(--avail-border);
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-}
-#step3 .avGrid .card .flex b { font-weight: 800; }
-#step3 .avGrid .card .tag {
-  background: #eef2ff;
-  color: #1f2937;
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 12px;
-}
-
-/* Grid: “Gün / Saat” matrisi
-   Not: JS tarafı grid[data-cols] ile --cols atıyor. */
-#step3 .kgrid {
-  display: grid;
-  gap: var(--avail-grid-gap);
-  padding: 12px;
-  background: var(--avail-bg);
-}
-#step3 .kgrid[data-cols] {
-  grid-template-columns: var(--day-col-w) repeat(var(--cols), minmax(var(--slot-min-w), 1fr));
-}
-
-/* Sol başlık hücresi (Gün adları / 'Gün / Saat') */
-#step3 .kgrid > :first-child {
-  background: var(--head-bg);
-  color: var(--head-ink);
-  border: 1px solid var(--head-border);
-  border-radius: var(--cell-radius);
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  min-height: var(--cell-min-h);
-  text-align: center;
-  padding: 6px 8px;
-}
-
-/* Slot başlık hücreleri */
-#step3 .kcell.busy {
-  background: var(--head-bg);
-  color: var(--avail-muted);
-  border: 1px solid var(--head-border);
-  cursor: default;
-}
-
-/* Genel hücre stili */
-#step3 .kcell {
-  border: 1px solid var(--neutral-bd);
-  background: #ffffff;
-  color: var(--neutral-ink);
-  min-height: var(--cell-min-h);
-  border-radius: var(--cell-radius);
-  display: grid;
-  place-items: center;
-  text-align: center;
-  padding: 6px;
-  user-select: none;
-  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease, color .12s ease;
-  outline: none;
-  position: relative;
-}
-
-/* Durumlar */
-#step3 .kcell.ok {
-  background: var(--ok-bg);
-  color: var(--ok-ink);
-  border-color: var(--ok-bd);
-  font-weight: 700;
-}
-#step3 .kcell.bad {
-  background: var(--bad-bg);
-  color: var(--bad-ink);
-  border-color: var(--bad-bd);
-  font-weight: 700;
-}
-
-/* Hover/active geri bildirimi (sadece tıklanabilir hücrelerde) */
-#step3 .kgrid .kgrid .kcell:hover { /* nested satır içindeki tıklanabilirler */
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(2, 8, 23, 0.06);
-}
-#step3 .kgrid .kgrid .kcell:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(2, 8, 23, 0.08) inset;
-}
-
-/* Klavye odağı (tabindex verilirse otomatik işler) */
-#step3 .kgrid .kgrid .kcell:focus-visible {
-  box-shadow: 0 0 0 3px var(--ring);
-}
-
-/* Küçük metinler */
-#step3 .mini2 { color: var(--avail-muted); font-size: 11px; }
-
-/* Eylem butonları – kart içi küçük butonlar */
-#step3 .avGrid .card .btn.xs.ghost {
-  background: #f1f5f9;
-  color: #111827;
-  border-radius: 10px;
-  padding: 6px 10px;
-  border: 1px solid var(--avail-border);
-}
-#step3 .avGrid .card .btn.xs.ghost:hover {
-  background: #e2e8f0;
-}
-
-/* Efsane/Legend alanı */
-#step3 .legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 6px 0 12px;
-}
-#step3 .legend span {
-  background: #f1f5f9;
-  color: #334155;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-weight: 600;
-  border: 1px solid var(--avail-border);
-}
-
-/* Sekmeler (Step 3 içi) – var olan .tab ile uyumlu */
-#step3 .tabs {
-  gap: 8px;
-  border: 0;
-  margin-bottom: 12px;
-  position: relative;
-}
-#step3 .tabs::after {
-  content: "";
-  position: absolute; inset-inline: 0; bottom: -1px; height: 1px; background: var(--avail-border);
-}
-#step3 .tab {
-  padding: 10px 14px;
-  border-radius: 12px 12px 0 0;
-  background: #f1f5f9;
-  color: #0f172a;
-  font-weight: 800;
-  box-shadow: 0 1px 0 var(--avail-border) inset;
-  border: 1px solid transparent;
-}
-#step3 .tab[aria-selected="true"] {
-  background: #fff;
-  border-color: var(--avail-border);
-  border-bottom-color: #fff;
-  box-shadow: 0 6px 18px rgba(2, 8, 23, .06);
-}
-
-/* Dar ekranlar için optimizasyon */
-@media (max-width: 920px) {
-  #step3 { --day-col-w: 132px; --slot-min-w: 72px; }
-  #step3 .avGrid { grid-template-columns: 1fr; }
-  #step3 .kgrid { padding: 10px; }
-  #step3 .kgrid > :first-child { padding: 6px; }
-  #step3 .kcell { min-height: 52px; }
-}
-
-/* Büyük ekranlar için hafif yoğunluk artışı */
-@media (min-width: 1600px) {
-  #step3 { --slot-min-w: 100px; --cell-min-h: 64px; }
-}
-
-/* Az animasyon tercih eden kullanıcılar */
-@media (prefers-reduced-motion: reduce) {
-  #step3 .kcell { transition: none; }
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  #step3 {
-    --avail-bg: #0b1220;
-    --avail-ink: #e5e7eb;
-    --avail-muted: #94a3b8;
-    --avail-panel: #0f172a;
-    --avail-border: #1f2a44;
-
-    --head-bg: #0d1a2d;
-    --head-ink: #e5e7eb;
-    --head-border: #1f2a44;
-
-    --neutral-bg: #0f172a;
-    --neutral-ink: #cbd5e1;
-    --neutral-bd: #1f2a44;
-
-    --ok-bg: #073a28;
-    --ok-ink: #a7f3d0;
-    --ok-bd: #115e43;
-
-    --bad-bg: #3a0c0c;
-    --bad-ink: #fecaca;
-    --bad-bd: #7f1d1d;
-
-    --ring: #334155;
-    --ring-strong: #818cf8;
-  }
-
-  #step3 .avGrid .card {
-    box-shadow: 0 12px 28px rgba(0,0,0,.36);
-  }
-  #step3 .avGrid .card .btn.xs.ghost {
-    background: #0d1a2d; color: #e2e8f0; border-color: #1f2a44;
-  }
-  #step3 .avGrid .card .btn.xs.ghost:hover {
-    background: #12233c;
-  }
-}
-
-/* ---- İsteğe bağlı: İnteraktif “toggle” imleci sadece tıklanabilir hücrelerde ---- */
-#step3 .kgrid .kgrid .kcell { cursor: pointer; }
-#step3 .kcell.busy { cursor: default; }
+  /* unified style removed obsolete step3-specific styles */
 
   /* Üst sekmeler */
   .tabs{display:flex;gap:6px;border-bottom:1px solid #e5e7eb;margin-bottom:8px}
@@ -575,10 +329,12 @@
     </div>
     <div class="row">
       <label>Günler (virgül ayır)<br/>
-        <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
+        <!-- Varsayılan günler: haftanın 7 günü -->
+        <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma,Cumartesi,Pazar" />
       </label>
       <label>Saat/Slot sayısı<br/>
-        <input type="number" id="slotsInput" value="8" min="1" max="12" />
+        <!-- Varsayılan slot sayısı: 12 saatlik gün -->
+        <input type="number" id="slotsInput" value="12" min="1" max="12" />
       </label>
       <label>Atama politikası<br/>
         <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
@@ -767,7 +523,8 @@ const ALLOWED_BRANCHES = [
 ];
 window.state = {
   teachers: [], students: [], groups: {}, branches: [],
-  program: { days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"], slots:8, slotLabels:[], cells:{} },
+  // Varsayılan program: 7 günlük hafta ve 12 saatlik gün
+  program: { days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"], slots:12, slotLabels:[], cells:{} },
   availability: { teachers:{}, groups:{} },
   requests: {}, assignments: []
 };
@@ -1003,7 +760,8 @@ function renderSlotLabels(){
 function buildProgramGrid(fromRestore=false){
   if(!fromRestore){
     state.program.days = $("#daysInput").value.split(',').map(s=>s.trim()).filter(Boolean);
-    state.program.slots = clamp(parseInt($("#slotsInput").value||"8"), 1, 12);
+    // Varsayılan değer boş ise 12 saatlik gün kullan
+    state.program.slots = clamp(parseInt($("#slotsInput").value||"12"), 1, 12);
   }
   ensureSlotLabels();
   const days = state.program.days, S = state.program.slots;
@@ -3447,5 +3205,75 @@ if (btnAssgnDeleteFb) {
 }
 </script>
 
+  <!-- Akıllı stil sistemi: kgrid/kcell yapılarını tek çatı altında toplayan ve
+       slot sayısına göre otomatik uyarlanan tasarım -->
+  <style>
+    /*
+      Akıllı ızgara sistemi: ders programı, müsaitlik ve atama panellerinde
+      aynı CSS yapısını kullanır. Bu sistem CSS değişkenleri üzerinden
+      özelleştirilebilir; ilk kolon genişliği, slot minimum genişliği,
+      hücre yüksekliği ve boşluk ayarları değiştirilebilir. JavaScript
+      tarafı, her ızgara için `--cols` değişkenini ayarlayarak slot
+      sayısını bildirir. Böylece yeni gün/saat sayıları otomatik olarak
+      ızgaraya yansır.
+    */
+    :root {
+      /* İlk sütun (gün ismi) genişliği */
+      --first-col-width: 140px;
+      /* Slot (saat) minimum genişliği */
+      --slot-min-width: 80px;
+      /* Hücre minimum yüksekliği */
+      --cell-min-height: 60px;
+      /* Hücreler arası boşluk */
+      --grid-gap: 8px;
+    }
+
+    /* ızgara tanımı – grid-template-columns değişkenlerle hesaplanır */
+    .kgrid {
+      display: grid !important;
+      gap: var(--grid-gap) !important;
+      grid-template-columns: var(--first-col-width) repeat(var(--cols), minmax(var(--slot-min-width), 1fr)) !important;
+    }
+
+    /* hücre stil tanımı */
+    .kcell {
+      border: 1px solid var(--grid) !important;
+      background: #fff !important;
+      color: var(--ink) !important;
+      min-height: var(--cell-min-height) !important;
+      padding: 6px !important;
+      border-radius: 12px !important;
+      display: grid !important;
+      place-items: center !important;
+      text-align: center !important;
+      cursor: pointer !important;
+      user-select: none !important;
+      transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease !important;
+    }
+
+    /* başlık hücreleri (busy) – düzenlenebilir ancak tıklanamaz */
+    .kcell.busy {
+      background: #f8fafc !important;
+      color: var(--muted) !important;
+      border-color: #e2e8f0 !important;
+      cursor: default !important;
+    }
+
+    /* uygun (ok) hücreler */
+    .kcell.ok {
+      background: #dcfce7 !important;
+      border-color: #bbf7d0 !important;
+      color: #065f46 !important;
+      font-weight: 700 !important;
+    }
+
+    /* uygun olmayan (bad) hücreler */
+    .kcell.bad {
+      background: #fee2e2 !important;
+      border-color: #fecaca !important;
+      color: #991b1b !important;
+      font-weight: 700 !important;
+    }
+  </style>
 </body>
 </html>
