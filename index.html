@@ -398,21 +398,21 @@
 }
 /* === 1. KUTU BOYUTUNU ORİJİNAL HALİNE ZORLA === */
 .kcell {
-    /* Orijinal yükseklik ayarı */
+    /* Minimum yükseklik korunur; yükseklik artık sabit değil */
     min-height: 60px !important;
-    height: 60px !important; 
-    
+    height: auto !important;
+
     /* İç boşluğu azaltarak şişmeyi önle */
     padding: 2px 4px !important;
-    
+
     /* İçeriği tam ortala */
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    
+
     /* Varsayılan gri/beyaz */
-    background: #fff; 
+    background: #fff;
 }
 
 /* === 2. RENKLER (ARKA PLAN DAHİL) === */
@@ -491,7 +491,8 @@
 /* Metinler çok uzunsa satır atabilsin, üç nokta ile kesilmesin */
 .kgrid .kcell > * > div {
   white-space: normal !important;
-  overflow: hidden !important;
+  /* Metni sığdırmak için taşıyor fakat gizlemek yerine görünür bırakıyoruz */
+  overflow: visible !important;
   text-overflow: clip !important;
   line-height: 1.1;
   font-size: clamp(9px, 0.8vw, 12px);  /* ekrana göre otomatik küçülür/büyür */
@@ -3761,6 +3762,16 @@ function renderAssignCards(){
     wrap.appendChild(card);
   });
 }
+
+//
+// Modern slot kartı işlevleri (buildProgramGrid, renderAvailGrids, renderAssignCards)
+// sadece Firebase'den yükleme sonrası değil her zaman kullanılabilmesi için
+// bu fonksiyonları global (window) nesnesine atıyoruz. Böylece daha önce
+// tanımlanmış eski sürümlerin üzerinden yazılır ve uygulamanın tüm
+// bölümlerinde modern tasarım geçerli olur.
+window.buildProgramGrid = buildProgramGrid;
+window.renderAvailGrids = renderAvailGrids;
+window.renderAssignCards = renderAssignCards;
 
 </script>
 
