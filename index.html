@@ -1,3 +1,4 @@
+<!-- /index.html -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -59,7 +60,12 @@
   .chips{display:flex;gap:8px;flex-wrap:wrap}
   .wide{width:100%}
   /* Geniş kart dizilimi */
-  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:14px}
+.cards{
+  /* Modern geniş kart dizilimi: minimum genişlik artırıldı ve aralıklar genişletildi */
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(640px,1fr));
+  gap:20px;
+}
   .flex{display:flex;gap:10px;align-items:center}
   .right{margin-left:auto}
   .muted{color:var(--muted)}
@@ -84,9 +90,10 @@
   --avail-border: #e5e7eb;
   --avail-grid-gap: 8px;
 
-  --day-col-w: 160px;
-  --slot-min-w: 88px;
-  --cell-min-h: 58px;
+  /* Geniş slot yapısı için boyutlar güncellendi */
+  --day-col-w: 200px;
+  --slot-min-w: 110px;
+  --cell-min-h: 70px;
   --cell-radius: 12px;
 
   --head-bg: #f8fafc;
@@ -113,9 +120,10 @@
 
 /* Kart ızgarası – öğretmen/grup kartları */
 #step3 .avGrid {
+  /* Kart ızgarası – öğretmen/grup kartları için daha geniş kartlar ve boşluklar */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(640px, 1fr));
+  gap: 20px;
   align-items: stretch;
 }
 
@@ -395,22 +403,29 @@
 #dlgAssign select {
   min-width: 280px;
 }
-/* === 1. KUTU BOYUTUNU ORİJİNAL HALİNE ZORLA === */
+/* === 1. KUTU BOYUTU GÜNCELLENDİ === */
+/*
+ * Daha modern ve geniş bir slot yapısı oluşturmak için hücre yüksekliği ve
+ * iç boşluk ayarları yükseltildi. Bu stil genel .kcell sınıfını hedefler
+ * ve !important öncelikleri sayesinde daha önce tanımlanmış kuralı
+ * geçersiz kılar. 80px yüksekliğe ve geniş pedlere sahip hücreler,
+ * karmaşık atama bilgilerini bile rahatça sergileyebilir.
+ */
 .kcell {
-    /* Orijinal yükseklik ayarı */
-    min-height: 60px !important;
-    height: 60px !important; 
+    /* Artırılmış yükseklik: daha okunabilir ve ferah bir tasarım için */
+    min-height: 80px !important;
+    height: 80px !important;
     
-    /* İç boşluğu azaltarak şişmeyi önle */
-    padding: 2px 4px !important;
+    /* Daha büyük boşluklar, içeriğin rahatça yerleşmesi için */
+    padding: 6px 8px !important;
     
-    /* İçeriği tam ortala */
+    /* İçeriği tam ortala (esnek hizalama korunuyor) */
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
     
-    /* Varsayılan gri/beyaz */
+    /* Varsayılan arka plan */
     background: #fff; 
 }
 
@@ -502,253 +517,6 @@
   font-weight: 800;
   font-size: clamp(10px, 0.9vw, 13px);
 }
-</style>
-<style>
-
-  /* --- MODERN CSS RESET & VARIABLES --- */
-  :root {
-    --bg: #f8fafc;
-    --surface: #ffffff;
-    --border: #e2e8f0;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    
-    --primary: #4f46e5;      /* İndigo */
-    --primary-light: #e0e7ff;
-    --success: #10b981;      /* Emerald */
-    --success-light: #d1fae5;
-    --danger: #ef4444;       /* Red */
-    --danger-light: #fee2e2;
-    --warn: #f59e0b;         /* Amber */
-    
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05);
-    
-    --slot-min-width: 90px;  /* Slotların minimum genişliği - Sıkışmayı önler */
-    --row-header-width: 140px;
-    --cell-height: 64px;
-  }
-
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text-main);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    padding-bottom: 40px;
-  }
-
-  /* --- LAYOUT & TYPOGRAPHY --- */
-  .app { max-width: 1800px; margin: 0 auto; padding: 20px; }
-  
-  h1, h2, h3 { margin: 0; color: var(--text-main); }
-  h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
-  h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-  h3 { font-size: 15px; font-weight: 600; }
-
-  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .logo { 
-    width: 48px; height: 48px; 
-    background: linear-gradient(135deg, var(--primary), #8b5cf6); 
-    border-radius: 12px; box-shadow: var(--shadow-md);
-  }
-
-  /* --- BUTTONS & INPUTS --- */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    padding: 8px 16px; border-radius: 8px; border: 1px solid transparent;
-    font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;
-    background: var(--primary); color: white; box-shadow: var(--shadow-sm);
-  }
-  .btn:hover { filter: brightness(110%); transform: translateY(-1px); }
-  .btn:active { transform: translateY(0); }
-  
-  .btn.ghost { background: white; border-color: var(--border); color: var(--text-main); }
-  .btn.ghost:hover { background: var(--bg); }
-  
-  .btn.sec { background: var(--text-main); color: white; }
-  .btn.warn { background: var(--warn); color: #fff; }
-  .btn.danger { background: var(--danger); color: white; }
-  .btn.xs { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
-
-  input, select {
-    padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
-    background: white; font-size: 13px; color: var(--text-main); outline: none;
-    transition: border-color 0.2s; min-width: 100px;
-  }
-  input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
-  .wide { width: 100%; }
-
-  /* --- TABS --- */
-  .tabs {
-    display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border);
-    padding-bottom: 0; overflow-x: auto;
-  }
-  .tab {
-    padding: 10px 20px; background: transparent; border: none;
-    border-bottom: 2px solid transparent; color: var(--text-muted);
-    font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;
-  }
-  .tab:hover { color: var(--primary); background: rgba(79, 70, 229, 0.04); border-radius: 8px 8px 0 0; }
-  .tab[aria-selected="true"] {
-    color: var(--primary); border-bottom-color: var(--primary);
-  }
-
-  /* --- CARDS & GRID SYSTEM --- */
-  .content { display: grid; gap: 20px; animation: fadeIn 0.3s ease; }
-  .grid { display: grid; gap: 20px; }
-  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 10px; }
-  
-  .cards { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(600px, 1fr)); 
-    gap: 24px; 
-    align-items: start; /* Kart boylarını içerik kadar yap */
-  }
-
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
-    overflow: hidden; display: flex; flex-direction: column;
-  }
-  
-  .card header, .card .flex {
-    padding: 16px; background: #fff; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  
-  .card .body { padding: 0; } /* Padding kaldırıldı, tablo kenara yapışsın */
-
-  /* --- THE SCHEDULE GRID (MODERNIZED) --- */
-  /* Bu yapı sayesinde tablo asla patlamaz, gerekirse scroll çıkar */
-  .grid-scroll-wrapper {
-    overflow-x: auto;
-    width: 100%;
-    /* Custom Scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
-  }
-  .grid-scroll-wrapper::-webkit-scrollbar { height: 8px; }
-  .grid-scroll-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-
-  .kgrid {
-    display: grid;
-    /* CSS Grid Magic: Header sabit, diğerleri dinamik ama min-width korumalı */
-    grid-template-columns: var(--row-header-width) repeat(var(--cols), minmax(var(--slot-min-width), 1fr));
-    gap: 1px; /* Border yerine gap kullanımı */
-    background: var(--border); /* Gap rengi border gibi görünür */
-    border-bottom: 1px solid var(--border);
-    min-width: max-content; /* İçerik kadar genişlemesini zorlar */
-  }
-
-  /* Grid Hücreleri */
-  .kcell {
-    background: #fff;
-    min-height: var(--cell-height);
-    padding: 4px 6px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; font-size: 12px; position: relative;
-    transition: background 0.1s;
-    overflow: hidden; /* Taşmayı gizle */
-  }
-
-  /* Başlık Hücreleri (Günler / Saatler) */
-  .kgrid > div:first-child, .kcell.head {
-    background: #f1f5f9; color: var(--text-muted);
-    font-weight: 700; font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  /* Satır Başlığı (Pazartesi vb) */
-  .row-head {
-    background: #fff; color: var(--text-main);
-    font-weight: 700; display: flex; align-items: center; justify-content: center;
-    padding: 0 10px; border-right: 1px solid transparent;
-  }
-
-  /* --- ETKİLEŞİM & DURUMLAR --- */
-  .kcell:not(.head):hover { z-index: 2; box-shadow: inset 0 0 0 2px var(--primary); }
-  
-  .kcell.ok { background: var(--success-light); color: #065f46; cursor: pointer; }
-  .kcell.bad { background: var(--danger-light); color: #991b1b; cursor: pointer; }
-  .kcell.busy { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
-
-  /* Atanmış Ders Stili */
-  .kcell.assigned {
-    border: 1px solid transparent;
-    font-weight: 600;
-  }
-  .kcell.assigned .branch-name {
-    font-size: 11px; font-weight: 800; text-transform: uppercase;
-    margin-bottom: 2px; line-height: 1.1;
-    white-space: normal; /* Alt satıra geçebilsin */
-  }
-  .kcell.assigned .teacher-name {
-    font-size: 10px; color: rgba(0,0,0,0.7);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
-  /* --- DERS RENKLERİ (Pastel & Modern) --- */
-  .assigned.mat { background: #e0e7ff; color: #3730a3; border-left: 4px solid #4f46e5; }
-  .assigned.fen { background: #dcfce7; color: #065f46; border-left: 4px solid #10b981; }
-  .assigned.trk { background: #ffedd5; color: #9a3412; border-left: 4px solid #f97316; }
-  .assigned.sos { background: #cffafe; color: #155e75; border-left: 4px solid #06b6d4; }
-  .assigned.ing { background: #fef9c3; color: #854d0e; border-left: 4px solid #eab308; }
-  .assigned.din { background: #f3e8ff; color: #6b21a8; border-left: 4px solid #a855f7; }
-
-  /* --- DİĞER BİLEŞENLER --- */
-  .pill {
-    display: inline-flex; align-items: center; padding: 4px 10px;
-    border-radius: 99px; background: #f1f5f9; color: var(--text-muted);
-    font-size: 11px; font-weight: 600;
-  }
-  .tag { background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
-  
-  .qty { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .qty button { width: 32px; border: none; background: #f8fafc; cursor: pointer; font-weight: bold; }
-  .qty button:hover { background: #e2e8f0; }
-  .qty input { border: none; text-align: center; width: 50px; padding: 8px 0; margin: 0; border-left: 1px solid var(--border); border-right: 1px solid var(--border); border-radius: 0; }
-
-  /* --- MODAL (Dialog) --- */
-  dialog {
-    border: none; border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg); padding: 0;
-    max-width: 500px; width: 90%;
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  dialog::backdrop { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); }
-  dialog header {
-    padding: 16px 20px; background: #fff; border-bottom: 1px solid var(--border);
-    font-weight: 700; font-size: 16px;
-  }
-  dialog section { padding: 20px; }
-  dialog footer {
-    padding: 16px 20px; background: #f8fafc; border-top: 1px solid var(--border);
-    display: flex; justify-content: flex-end; gap: 10px;
-  }
-
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-  .no-print, .tabs, .top, .btn { display: none !important; }
-    .content { box-shadow: none; border: none; display: block; }
-    .card { break-inside: avoid; border: 1px solid #000; box-shadow: none; margin-bottom: 20px; }
-    .kgrid { background: #000; border: 1px solid #000; } /* Borders for print */
-    .kgrid > div { background: #fff !important; } /* Reset backgrounds */
-    .kcell.assigned { border: 1px solid #000 !important; -webkit-print-color-adjust: exact; }
-    /* Renkleri korumak için */
-    .assigned.mat { background: #e0e7ff !important; }
-  }
-
-  [hidden] { display: none !important; }
-
 </style>
 </head>
 <body>
