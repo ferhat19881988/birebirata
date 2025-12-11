@@ -1009,33 +1009,58 @@ function buildProgramGrid(fromRestore=false){
   const days = state.program.days, S = state.program.slots;
   const wrap = $("#progGridWrap"); wrap.innerHTML='';
 
-  const head = document.createElement('div'); head.className='kgrid'; head.style.setProperty('--cols', S); head.dataset.cols=S;
-  head.appendChild(Object.assign(document.createElement('div'),{textContent:'Gün / Saat',style:'font-weight:800'}));
-  for(let s=0;s<S;s++){
-    const label = state.program.slotLabels[s]||'';
-    const hc = document.createElement('div'); hc.className='kcell busy';
-    hc.innerHTML = `<div>${s+1}</div><div class="mini2">${label||''}</div>`;
+  // Create a horizontal scroll container to hold the entire grid. This ensures
+  // that when the number of slots increases beyond the available width,
+  // users can still access all columns via horizontal scrolling.
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'grid-scroll-wrapper';
+
+  // Header row: displays the slot indices and optional labels.
+  const head = document.createElement('div');
+  head.className = 'kgrid';
+  head.style.setProperty('--cols', S);
+  head.dataset.cols = S;
+  head.appendChild(Object.assign(document.createElement('div'), {
+    textContent: 'Gün / Saat',
+    style: 'font-weight:800'
+  }));
+  for (let s = 0; s < S; s++) {
+    const label = state.program.slotLabels[s] || '';
+    const hc = document.createElement('div');
+    hc.className = 'kcell busy';
+    hc.innerHTML = `<div>${s + 1}</div><div class="mini2">${label || ''}</div>`;
     head.appendChild(hc);
   }
-  wrap.appendChild(head);
+  scrollWrap.appendChild(head);
 
-  days.forEach((d,di)=>{
+  // Rows for each day: allow entering optional notes per slot.
+  days.forEach((d, di) => {
     const row = document.createElement('div');
-    row.className = 'kgrid'; row.style.setProperty('--cols', S);
-    const lbl = document.createElement('div'); lbl.textContent = d; lbl.style.fontWeight='800'; row.appendChild(lbl);
-    for(let si=0; si<S; si++){
-      const key = keyDS(di,si);
-      const cell = document.createElement('div'); cell.className='kcell';
+    row.className = 'kgrid';
+    row.style.setProperty('--cols', S);
+    const lbl = document.createElement('div');
+    lbl.textContent = d;
+    lbl.style.fontWeight = '800';
+    row.appendChild(lbl);
+    for (let si = 0; si < S; si++) {
+      const key = keyDS(di, si);
+      const cell = document.createElement('div');
+      cell.className = 'kcell';
       cell.textContent = state.program.cells[key] || '';
-      cell.title = "Not girmek için tıklayın (opsiyonel)";
-      cell.onclick = ()=>{
-        const val = prompt(`${d} - ${si+1}. saat için not:`, state.program.cells[key]||'');
-        if(val!==null){ state.program.cells[key]=val.trim(); cell.textContent=state.program.cells[key]||''; }
+      cell.title = 'Not girmek için tıklayın (opsiyonel)';
+      cell.onclick = () => {
+        const val = prompt(`${d} - ${si + 1}. saat için not:`, state.program.cells[key] || '');
+        if (val !== null) {
+          state.program.cells[key] = val.trim();
+          cell.textContent = state.program.cells[key] || '';
+        }
       };
       row.appendChild(cell);
     }
-    wrap.appendChild(row);
+    scrollWrap.appendChild(row);
   });
+
+  wrap.appendChild(scrollWrap);
 
   reconcileAllToProgram(getAssignPolicy());
 }
@@ -1109,7 +1134,13 @@ function renderAvailGrids(){
         }
         grid.appendChild(row);
       }
-      card.appendChild(grid); tWrap.appendChild(card);
+      // Wrap the availability grid in a scroll container so that many slots
+      // don't break the layout. The wrapper allows horizontal scrolling.
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'grid-scroll-wrapper';
+      scrollWrap.appendChild(grid);
+      card.appendChild(scrollWrap);
+      tWrap.appendChild(card);
     });
   }
 
@@ -1152,7 +1183,13 @@ function renderAvailGrids(){
         }
         grid.appendChild(row);
       }
-      card.appendChild(grid); gWrap.appendChild(card);
+      // Wrap the group availability grid in a scroll container. This keeps
+      // the UI compact even when there are many slots to display.
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'grid-scroll-wrapper';
+      scrollWrap.appendChild(grid);
+      card.appendChild(scrollWrap);
+      gWrap.appendChild(card);
     });
   }
 }
@@ -1404,7 +1441,12 @@ function getBranchClass(branchName) {
       grid.appendChild(row);
     }
 
-    card.appendChild(grid);
+    // Wrap the assignment grid in a scroll container. When there are many
+    // slots, horizontal scrolling prevents the card from overflowing.
+    const scrollWrap = document.createElement('div');
+    scrollWrap.className = 'grid-scroll-wrapper';
+    scrollWrap.appendChild(grid);
+    card.appendChild(scrollWrap);
     wrap.appendChild(card);
   });
 }
@@ -2566,6 +2608,87 @@ buildProgramGrid(true);
 renderSlotLabels();
 showTopTab('step1');
 </script>
+
+<!--
+  These additional styles modernise the grid-based slot views used throughout
+  the application (program, availability and assignment panels). By wrapping
+  grids in a `.grid-scroll-wrapper` element and adjusting the default grid
+  and cell presentation, the UI remains clean and usable even when there are
+  many slots to display. The scroll container enables horizontal scrolling
+  without forcing the entire card to expand beyond the viewport, and the
+  updated cell styles give a more polished, card-like appearance. These
+  rules intentionally avoid overriding the specialised styles used in the
+  availability section (`#step3`) and for assigned cells.
+-->
+<style>
+/* Horizontal scroll container for grids */
+.grid-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+  margin: 0 -14px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.grid-scroll-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+.grid-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.grid-scroll-wrapper::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+  border: 2px solid #fff;
+}
+
+/* Adjust the default grid columns outside of the availability page. The first
+   column remains a fixed width for day labels; subsequent columns are
+   flexible but respect a minimum width to keep the layout readable. */
+.kgrid[data-cols] {
+  grid-template-columns: 140px repeat(var(--cols), minmax(90px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+  align-items: stretch;
+}
+
+/* Style unassigned cells to look like modern cards. Assigned cells retain
+   their own colouring rules defined elsewhere. */
+/* Apply modern card styling only to truly empty cells (not assigned,
+   not denoting availability status and not header/busy cells). */
+.kcell:not(.assigned):not(.ok):not(.bad):not(.busy) {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  min-height: 70px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 13px;
+  color: #475569;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  user-select: none;
+  cursor: pointer;
+}
+.kcell:not(.assigned):not(.ok):not(.bad):not(.busy):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+  border-color: var(--pri);
+  z-index: 10;
+}
+
+/* Sticky first column for day labels and header rows. The higher z-index
+   ensures the label remains above neighbouring cells while scrolling.
+   Note: this rule intentionally omitted here to avoid interfering with
+   specialised layouts in other steps. If sticky behaviour is desired in
+   a particular context, it can be applied with a more specific selector. */
+</style>
 <style>
 :root{ /* ders paleti */ --b-mat:#6366f1; /* Matematik */ --b-fen:#10b981; /* Fen Bilimleri */ --b-trk:#f97316; /* Türkçe */ --b-sos:#06b6d4; /* Sosyal Bilgiler */ --b-ing:#22c55e; /* İngilizce */ --b-din:#a78bfa; /* Din Kültürü */ /* tonlar */ --t-50: 14%; --t-150: 26%; --ring:#94a3b8; } /* üst sekmeler – daha modern görünüm */ .tabs{gap:8px;border:0;margin-bottom:10px;position:relative} .tabs:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#e5e7eb} .tab{padding:12px 16px;border-radius:12px;background:#f1f5f9;font-weight:800;color:#0f172a;box-shadow:0 1px 0 #e5e7eb inset} .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;box-shadow:0 6px 18px rgba(2,8,23,.06);} /* kartlar */ .card{border-radius:16px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.06)} .card header{font-weight:800;margin-bottom:8px} /* grid hücreleri – daha “takvim” hissi */ .kgrid[data-cols]{grid-template-columns:160px repeat(var(--cols), minmax(72px,1fr));} .kcell{position:relative;border:1px solid #e5e7eb;background:#fff;min-height:58px;border-radius:12px} .kcell:hover{outline:3px solid rgba(99,102,241,.08);outline-offset:0} .kcell .mini2{opacity:.9} /* atama yapılmış hücre */ .kcell.assigned{color:#0f172a;font-weight:700} .kcell.assigned .mini2{color:#111827;font-weight:600} /* ders renkleri (UI) */ .kcell.assigned.b-mat{ background:color-mix(in srgb, var(--b-mat) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-mat) var(--t-150), #fff); } .kcell.assigned.b-fen{ background:color-mix(in srgb, var(--b-fen) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-fen) var(--t-150), #fff); } .kcell.assigned.b-trk{ background:color-mix(in srgb, var(--b-trk) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-trk) var(--t-150), #fff); } .kcell.assigned.b-sos{ background:color-mix(in srgb, var(--b-sos) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-sos) var(--t-150), #fff); } .kcell.assigned.b-ing{ background:color-mix(in srgb, var(--b-ing) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-ing) var(--t-150), #fff); } .kcell.assigned.b-din{ background:color-mix(in srgb, var(--b-din) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-din) var(--t-150), #fff); } /* mini yoğunluk modu – istersen .app'a .dense ekle */ .app.dense .kcell{min-height:44px;padding:4px 6px;border-radius:10px} /* Yazdır: ders renklerinin hafif tonu ve okunabilirlik */ @media print{ .print-table td.b-mat { background:#e6e8ff; } .print-table td.b-fen { background:#d6f7e9; } .print-table td.b-trk { background:#ffe8d6; } .print-table td.b-sos { background:#d8f6fb; } .print-table td.b-ing { background:#e3f9e9; } .print-table td.b-din { background:#ece7ff; } .print-table td[class^="b-"], .print-table td[class*=" b-"]{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .print-header{margin-bottom:10px} .print-sub{margin:8px 0 10px} } ``` > Not: mevcut print bloğun temelini koruyoruz, sadece tablo hücrelerine ders rengine göre arka plan veriyoruz. --- # 2) JS – Ders rengi sınıfı ekle & Yazdır hücrelerine sınıf bas Aşağıdaki yardımcıları `<script>` içinde bir yere (ör. global yardımcıların altı) ekle: ```js /* === Ders -> sınıf kısaltması (güvenli) === */ const BRANCH_CLASS = { 'MATEMATİK':'mat','FEN BİLİMLERİ':'fen','TÜRKÇE':'trk', 'SOSYAL BİLGİLER':'sos','İNGİLİZCE':'ing','DİN KÜLTÜRÜ':'din' }; const bcls = b => 'b-' + (BRANCH_CLASS[b] || toId(b)); ``` ## 2.a Atama panelinde renkli hücre `renderAssignCards()` içinde, atanmış hücre oluşturduğun bölümde şu değişikliği yap: **ÖNCE:** ```js if(cur){ cell.classList.add('busy'); cell.innerHTML = `<div style="text-align:center"><div><b>${cur.branch}</b></div><div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div></div>`; } ``` **SONRA:** ```js if(cur){ cell.classList.add('assigned', bcls(cur.branch)); cell.innerHTML = `<div style="text-align:center"> <div><b>${cur.branch}</b></div> <div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div> </div>`; } ``` > Bu düzenleme, eski “busy” görselini ders rengine göre modern panele çevirir. ## 2.b Yazdır tablosunda renk sınıfı ver `renderPrintPreview()` içinde hücre HTML’lerini üretirken, `<td>`’lere ders sınıfını ekleyelim. **Grup görünümü** satır oluşturma kısmında (td içeriği üretilirken) bu satırı değiştir: ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += `<td>${txt}</td>`; ``` **şu hale getir:** ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += a ? `<td class="${bcls(a.branch)}">${txt}</td>` : `<td></td>`; ``` **Öğretmen görünümü** için de benzer şekilde: ```js row += a ? `<td style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` **yerine:** ```js row += a ? `<td class="${bcls(a.branch)}" style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` >
 
