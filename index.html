@@ -503,6 +503,74 @@
   font-weight: 800;
   font-size: clamp(10px, 0.9vw, 13px);
 }
+  /* === MODERN KART & SCROLL YAPISI (YALNIZCA SLOT KARTLARI) === */
+  .grid-scroll-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    margin: 0 -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .grid-scroll-wrapper::-webkit-scrollbar {
+    height: 8px;
+  }
+  .grid-scroll-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .grid-scroll-wrapper::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+    border: 2px solid #fff;
+  }
+
+  /* Başlık hücreleri ve yapışkan gün sütunu */
+  .kgrid .head-cell {
+    font-weight: 800;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+  }
+
+  /* Sadece satır başı gün/sütun başlığı yapışkan olsun */
+  .kgrid > div:first-child.head-cell {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.03);
+  }
+
+  /* Saat başlık satırı */
+  .header-row .head-cell,
+  .header-row .kcell {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    font-weight: 700;
+    color: #1e293b;
+    min-height: 45px;
+    cursor: default;
+    box-shadow: none;
+  }
+
+  /* Kart hücre hover efekti (atanmamış/başlık olmayanlar) */
+  .kcell:not(.busy):not(.head-cell):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px -4px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05);
+    border-color: var(--pri);
+    z-index: 10;
+  }
+
+  .kcell.assigned .mini2 {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
 </style>
 </head>
 <body>
@@ -1009,58 +1077,33 @@ function buildProgramGrid(fromRestore=false){
   const days = state.program.days, S = state.program.slots;
   const wrap = $("#progGridWrap"); wrap.innerHTML='';
 
-  // Create a horizontal scroll container to hold the entire grid. This ensures
-  // that when the number of slots increases beyond the available width,
-  // users can still access all columns via horizontal scrolling.
-  const scrollWrap = document.createElement('div');
-  scrollWrap.className = 'grid-scroll-wrapper';
-
-  // Header row: displays the slot indices and optional labels.
-  const head = document.createElement('div');
-  head.className = 'kgrid';
-  head.style.setProperty('--cols', S);
-  head.dataset.cols = S;
-  head.appendChild(Object.assign(document.createElement('div'), {
-    textContent: 'Gün / Saat',
-    style: 'font-weight:800'
-  }));
-  for (let s = 0; s < S; s++) {
-    const label = state.program.slotLabels[s] || '';
-    const hc = document.createElement('div');
-    hc.className = 'kcell busy';
-    hc.innerHTML = `<div>${s + 1}</div><div class="mini2">${label || ''}</div>`;
+  const head = document.createElement('div'); head.className='kgrid'; head.style.setProperty('--cols', S); head.dataset.cols=S;
+  head.appendChild(Object.assign(document.createElement('div'),{textContent:'Gün / Saat',style:'font-weight:800'}));
+  for(let s=0;s<S;s++){
+    const label = state.program.slotLabels[s]||'';
+    const hc = document.createElement('div'); hc.className='kcell busy';
+    hc.innerHTML = `<div>${s+1}</div><div class="mini2">${label||''}</div>`;
     head.appendChild(hc);
   }
-  scrollWrap.appendChild(head);
+  wrap.appendChild(head);
 
-  // Rows for each day: allow entering optional notes per slot.
-  days.forEach((d, di) => {
+  days.forEach((d,di)=>{
     const row = document.createElement('div');
-    row.className = 'kgrid';
-    row.style.setProperty('--cols', S);
-    const lbl = document.createElement('div');
-    lbl.textContent = d;
-    lbl.style.fontWeight = '800';
-    row.appendChild(lbl);
-    for (let si = 0; si < S; si++) {
-      const key = keyDS(di, si);
-      const cell = document.createElement('div');
-      cell.className = 'kcell';
+    row.className = 'kgrid'; row.style.setProperty('--cols', S);
+    const lbl = document.createElement('div'); lbl.textContent = d; lbl.style.fontWeight='800'; row.appendChild(lbl);
+    for(let si=0; si<S; si++){
+      const key = keyDS(di,si);
+      const cell = document.createElement('div'); cell.className='kcell';
       cell.textContent = state.program.cells[key] || '';
-      cell.title = 'Not girmek için tıklayın (opsiyonel)';
-      cell.onclick = () => {
-        const val = prompt(`${d} - ${si + 1}. saat için not:`, state.program.cells[key] || '');
-        if (val !== null) {
-          state.program.cells[key] = val.trim();
-          cell.textContent = state.program.cells[key] || '';
-        }
+      cell.title = "Not girmek için tıklayın (opsiyonel)";
+      cell.onclick = ()=>{
+        const val = prompt(`${d} - ${si+1}. saat için not:`, state.program.cells[key]||'');
+        if(val!==null){ state.program.cells[key]=val.trim(); cell.textContent=state.program.cells[key]||''; }
       };
       row.appendChild(cell);
     }
-    scrollWrap.appendChild(row);
+    wrap.appendChild(row);
   });
-
-  wrap.appendChild(scrollWrap);
 
   reconcileAllToProgram(getAssignPolicy());
 }
@@ -1134,13 +1177,7 @@ function renderAvailGrids(){
         }
         grid.appendChild(row);
       }
-      // Wrap the availability grid in a scroll container so that many slots
-      // don't break the layout. The wrapper allows horizontal scrolling.
-      const scrollWrap = document.createElement('div');
-      scrollWrap.className = 'grid-scroll-wrapper';
-      scrollWrap.appendChild(grid);
-      card.appendChild(scrollWrap);
-      tWrap.appendChild(card);
+      card.appendChild(grid); tWrap.appendChild(card);
     });
   }
 
@@ -1183,13 +1220,7 @@ function renderAvailGrids(){
         }
         grid.appendChild(row);
       }
-      // Wrap the group availability grid in a scroll container. This keeps
-      // the UI compact even when there are many slots to display.
-      const scrollWrap = document.createElement('div');
-      scrollWrap.className = 'grid-scroll-wrapper';
-      scrollWrap.appendChild(grid);
-      card.appendChild(scrollWrap);
-      gWrap.appendChild(card);
+      card.appendChild(grid); gWrap.appendChild(card);
     });
   }
 }
@@ -1441,12 +1472,7 @@ function getBranchClass(branchName) {
       grid.appendChild(row);
     }
 
-    // Wrap the assignment grid in a scroll container. When there are many
-    // slots, horizontal scrolling prevents the card from overflowing.
-    const scrollWrap = document.createElement('div');
-    scrollWrap.className = 'grid-scroll-wrapper';
-    scrollWrap.appendChild(grid);
-    card.appendChild(scrollWrap);
+    card.appendChild(grid);
     wrap.appendChild(card);
   });
 }
@@ -2608,87 +2634,6 @@ buildProgramGrid(true);
 renderSlotLabels();
 showTopTab('step1');
 </script>
-
-<!--
-  These additional styles modernise the grid-based slot views used throughout
-  the application (program, availability and assignment panels). By wrapping
-  grids in a `.grid-scroll-wrapper` element and adjusting the default grid
-  and cell presentation, the UI remains clean and usable even when there are
-  many slots to display. The scroll container enables horizontal scrolling
-  without forcing the entire card to expand beyond the viewport, and the
-  updated cell styles give a more polished, card-like appearance. These
-  rules intentionally avoid overriding the specialised styles used in the
-  availability section (`#step3`) and for assigned cells.
--->
-<style>
-/* Horizontal scroll container for grids */
-.grid-scroll-wrapper {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px;
-  margin: 0 -14px;
-  padding-left: 14px;
-  padding-right: 14px;
-}
-.grid-scroll-wrapper::-webkit-scrollbar {
-  height: 8px;
-}
-.grid-scroll-wrapper::-webkit-scrollbar-track {
-  background: transparent;
-}
-.grid-scroll-wrapper::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 4px;
-  border: 2px solid #fff;
-}
-
-/* Adjust the default grid columns outside of the availability page. The first
-   column remains a fixed width for day labels; subsequent columns are
-   flexible but respect a minimum width to keep the layout readable. */
-.kgrid[data-cols] {
-  grid-template-columns: 140px repeat(var(--cols), minmax(90px, 1fr));
-  gap: 10px;
-  margin-bottom: 8px;
-  align-items: stretch;
-}
-
-/* Style unassigned cells to look like modern cards. Assigned cells retain
-   their own colouring rules defined elsewhere. */
-/* Apply modern card styling only to truly empty cells (not assigned,
-   not denoting availability status and not header/busy cells). */
-.kcell:not(.assigned):not(.ok):not(.bad):not(.busy) {
-  position: relative;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  min-height: 70px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-size: 13px;
-  color: #475569;
-  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  user-select: none;
-  cursor: pointer;
-}
-.kcell:not(.assigned):not(.ok):not(.bad):not(.busy):hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
-  border-color: var(--pri);
-  z-index: 10;
-}
-
-/* Sticky first column for day labels and header rows. The higher z-index
-   ensures the label remains above neighbouring cells while scrolling.
-   Note: this rule intentionally omitted here to avoid interfering with
-   specialised layouts in other steps. If sticky behaviour is desired in
-   a particular context, it can be applied with a more specific selector. */
-</style>
 <style>
 :root{ /* ders paleti */ --b-mat:#6366f1; /* Matematik */ --b-fen:#10b981; /* Fen Bilimleri */ --b-trk:#f97316; /* Türkçe */ --b-sos:#06b6d4; /* Sosyal Bilgiler */ --b-ing:#22c55e; /* İngilizce */ --b-din:#a78bfa; /* Din Kültürü */ /* tonlar */ --t-50: 14%; --t-150: 26%; --ring:#94a3b8; } /* üst sekmeler – daha modern görünüm */ .tabs{gap:8px;border:0;margin-bottom:10px;position:relative} .tabs:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#e5e7eb} .tab{padding:12px 16px;border-radius:12px;background:#f1f5f9;font-weight:800;color:#0f172a;box-shadow:0 1px 0 #e5e7eb inset} .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;box-shadow:0 6px 18px rgba(2,8,23,.06);} /* kartlar */ .card{border-radius:16px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.06)} .card header{font-weight:800;margin-bottom:8px} /* grid hücreleri – daha “takvim” hissi */ .kgrid[data-cols]{grid-template-columns:160px repeat(var(--cols), minmax(72px,1fr));} .kcell{position:relative;border:1px solid #e5e7eb;background:#fff;min-height:58px;border-radius:12px} .kcell:hover{outline:3px solid rgba(99,102,241,.08);outline-offset:0} .kcell .mini2{opacity:.9} /* atama yapılmış hücre */ .kcell.assigned{color:#0f172a;font-weight:700} .kcell.assigned .mini2{color:#111827;font-weight:600} /* ders renkleri (UI) */ .kcell.assigned.b-mat{ background:color-mix(in srgb, var(--b-mat) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-mat) var(--t-150), #fff); } .kcell.assigned.b-fen{ background:color-mix(in srgb, var(--b-fen) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-fen) var(--t-150), #fff); } .kcell.assigned.b-trk{ background:color-mix(in srgb, var(--b-trk) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-trk) var(--t-150), #fff); } .kcell.assigned.b-sos{ background:color-mix(in srgb, var(--b-sos) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-sos) var(--t-150), #fff); } .kcell.assigned.b-ing{ background:color-mix(in srgb, var(--b-ing) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-ing) var(--t-150), #fff); } .kcell.assigned.b-din{ background:color-mix(in srgb, var(--b-din) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-din) var(--t-150), #fff); } /* mini yoğunluk modu – istersen .app'a .dense ekle */ .app.dense .kcell{min-height:44px;padding:4px 6px;border-radius:10px} /* Yazdır: ders renklerinin hafif tonu ve okunabilirlik */ @media print{ .print-table td.b-mat { background:#e6e8ff; } .print-table td.b-fen { background:#d6f7e9; } .print-table td.b-trk { background:#ffe8d6; } .print-table td.b-sos { background:#d8f6fb; } .print-table td.b-ing { background:#e3f9e9; } .print-table td.b-din { background:#ece7ff; } .print-table td[class^="b-"], .print-table td[class*=" b-"]{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .print-header{margin-bottom:10px} .print-sub{margin:8px 0 10px} } ``` > Not: mevcut print bloğun temelini koruyoruz, sadece tablo hücrelerine ders rengine göre arka plan veriyoruz. --- # 2) JS – Ders rengi sınıfı ekle & Yazdır hücrelerine sınıf bas Aşağıdaki yardımcıları `<script>` içinde bir yere (ör. global yardımcıların altı) ekle: ```js /* === Ders -> sınıf kısaltması (güvenli) === */ const BRANCH_CLASS = { 'MATEMATİK':'mat','FEN BİLİMLERİ':'fen','TÜRKÇE':'trk', 'SOSYAL BİLGİLER':'sos','İNGİLİZCE':'ing','DİN KÜLTÜRÜ':'din' }; const bcls = b => 'b-' + (BRANCH_CLASS[b] || toId(b)); ``` ## 2.a Atama panelinde renkli hücre `renderAssignCards()` içinde, atanmış hücre oluşturduğun bölümde şu değişikliği yap: **ÖNCE:** ```js if(cur){ cell.classList.add('busy'); cell.innerHTML = `<div style="text-align:center"><div><b>${cur.branch}</b></div><div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div></div>`; } ``` **SONRA:** ```js if(cur){ cell.classList.add('assigned', bcls(cur.branch)); cell.innerHTML = `<div style="text-align:center"> <div><b>${cur.branch}</b></div> <div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div> </div>`; } ``` > Bu düzenleme, eski “busy” görselini ders rengine göre modern panele çevirir. ## 2.b Yazdır tablosunda renk sınıfı ver `renderPrintPreview()` içinde hücre HTML’lerini üretirken, `<td>`’lere ders sınıfını ekleyelim. **Grup görünümü** satır oluşturma kısmında (td içeriği üretilirken) bu satırı değiştir: ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += `<td>${txt}</td>`; ``` **şu hale getir:** ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += a ? `<td class="${bcls(a.branch)}">${txt}</td>` : `<td></td>`; ``` **Öğretmen görünümü** için de benzer şekilde: ```js row += a ? `<td style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` **yerine:** ```js row += a ? `<td class="${bcls(a.branch)}" style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` >
 
@@ -3568,6 +3513,255 @@ if (btnAssgnDeleteFb) {
     deleteDataFromFirebase('assignments');
   });
 }
+
+// === MODERN KARTLI SLOT IZGARALARI (scroll + yapışkan gün sütunu) ===
+function buildProgramGrid(fromRestore=false){
+  if(!fromRestore){
+    state.program.days = $("#daysInput").value.split(',').map(s=>s.trim()).filter(Boolean);
+    state.program.slots = clamp(parseInt($("#slotsInput").value||"8"), 1, 12);
+  }
+  ensureSlotLabels();
+  const days = state.program.days, S = state.program.slots;
+  const wrap = $("#progGridWrap"); wrap.innerHTML='';
+
+  // Scroll Container
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'grid-scroll-wrapper';
+
+  // Başlık Satırı (Saatler)
+  const head = document.createElement('div');
+  head.className = 'kgrid header-row';
+  head.style.setProperty('--cols', S);
+  head.dataset.cols = S;
+
+  const corner = document.createElement('div');
+  corner.textContent = 'Gün / Saat';
+  corner.className = 'head-cell';
+  head.appendChild(corner);
+  slotHeadCells(head, S);
+  scrollWrap.appendChild(head);
+
+  // Gün Satırları
+  days.forEach((d,di)=>{
+    const row = document.createElement('div');
+    row.className = 'kgrid';
+    row.style.setProperty('--cols', S);
+    row.dataset.cols = S;
+
+    const lbl = document.createElement('div');
+    lbl.textContent = d;
+    lbl.className = 'head-cell';
+    row.appendChild(lbl);
+
+    for(let si=0; si<S; si++){
+      const key = keyDS(di,si);
+      const cell = document.createElement('div'); cell.className='kcell';
+      cell.textContent = state.program.cells[key] || '';
+      cell.title = "Not girmek için tıklayın";
+      cell.onclick = ()=>{
+        const val = prompt(`${d} - ${si+1}. saat için not:`, state.program.cells[key]||'');
+        if(val!==null){
+          state.program.cells[key]=val.trim();
+          cell.textContent=state.program.cells[key]||'';
+        }
+      };
+      row.appendChild(cell);
+    }
+    scrollWrap.appendChild(row);
+  });
+
+  wrap.appendChild(scrollWrap);
+  reconcileAllToProgram(getAssignPolicy());
+}
+
+function renderAvailGrids(){
+  const D = state.program.days.length, S = state.program.slots, days = state.program.days;
+
+  // --- A) ÖĞRETMEN MÜSAİTLİKLERİ ---
+  const tWrap=$("#teacherAvailWrap"); tWrap.innerHTML='';
+  if(state.teachers.length===0){
+    tWrap.innerHTML = '<div class="muted">Öğretmen verisi yok.</div>';
+  }else{
+    state.teachers.forEach(t=>{
+      const card = document.createElement('div'); card.className='card';
+
+      const head = document.createElement('div'); head.className='flex';
+      head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
+      head.innerHTML = `<b>👤 ${t.name}</b><span class="tag">${t.branch}</span>`;
+
+      const right = document.createElement('div'); right.className='right flex';
+      const b1=document.createElement('button'); b1.className='btn xs ghost'; b1.textContent='Tümünü Uygun';
+      const b2=document.createElement('button'); b2.className='btn xs ghost'; b2.textContent='Tümünü Değil';
+      const b3=document.createElement('button'); b3.className='btn xs ghost'; b3.textContent='Tersine';
+      b1.onclick=()=>{ bulkSet(state.availability.teachers[t.id], true); renderAvailGrids(); };
+      b2.onclick=()=>{ bulkSet(state.availability.teachers[t.id], false); renderAvailGrids(); };
+      b3.onclick=()=>{ bulkToggle(state.availability.teachers[t.id]); renderAvailGrids(); };
+      right.append(b1,b2,b3); head.appendChild(right); card.appendChild(head);
+
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'grid-scroll-wrapper';
+
+      const gridHead = document.createElement('div'); gridHead.className='kgrid header-row';
+      gridHead.style.setProperty('--cols', S); gridHead.dataset.cols = S;
+      const hCorner = document.createElement('div');
+      hCorner.textContent='Gün / Saat';
+      hCorner.className='head-cell';
+      gridHead.appendChild(hCorner);
+      slotHeadCells(gridHead,S);
+      scrollWrap.appendChild(gridHead);
+
+      for(let d=0; d<D; d++){
+        const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
+        const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.className='head-cell';
+        dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
+        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.teachers[t.id], d); renderAvailGrids(); } };
+        row.appendChild(dayLbl);
+        for(let s=0;s<S;s++){
+          const val = state.availability.teachers[t.id][d][s];
+          const cell = document.createElement('div'); cell.className='kcell ' + (val?'ok':'bad');
+          cell.innerHTML = val ? '✓<br/><span class="mini2">Uygun</span>' : '✕';
+          cell.onclick = ()=>{
+            state.availability.teachers[t.id][d][s] = !state.availability.teachers[t.id][d][s];
+            renderAvailGrids();
+          };
+          row.appendChild(cell);
+        }
+        scrollWrap.appendChild(row);
+      }
+      card.appendChild(scrollWrap); tWrap.appendChild(card);
+    });
+  }
+
+  // --- B) GRUP MÜSAİTLİKLERİ ---
+  const gWrap=$("#groupAvailWrap"); gWrap.innerHTML='';
+  const groups = Object.values(state.groups);
+  if(groups.length===0){
+    gWrap.innerHTML = '<div class="muted">Grup verisi yok.</div>';
+  }else{
+    groups.sort(groupComparator).forEach(g=>{
+      const card = document.createElement('div'); card.className='card';
+      const head = document.createElement('div'); head.className='flex';
+      head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
+      head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span>`;
+
+      const right = document.createElement('div'); right.className='right flex';
+      const b1=document.createElement('button'); b1.className='btn xs ghost'; b1.textContent='Tümünü Uygun';
+      const b2=document.createElement('button'); b2.className='btn xs ghost'; b2.textContent='Tümünü Değil';
+      const b3=document.createElement('button'); b3.className='btn xs ghost'; b3.textContent='Tersine';
+      b1.onclick=()=>{ bulkSet(state.availability.groups[g.id], true); renderAvailGrids(); };
+      b2.onclick=()=>{ bulkSet(state.availability.groups[g.id], false); renderAvailGrids(); };
+      b3.onclick=()=>{ bulkToggle(state.availability.groups[g.id]); renderAvailGrids(); };
+      right.append(b1,b2,b3); head.appendChild(right); card.appendChild(head);
+
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'grid-scroll-wrapper';
+
+      const gridHead = document.createElement('div'); gridHead.className='kgrid header-row';
+      gridHead.style.setProperty('--cols', S); gridHead.dataset.cols = S;
+      const hCorner2 = document.createElement('div');
+      hCorner2.textContent='Gün / Saat';
+      hCorner2.className='head-cell';
+      gridHead.appendChild(hCorner2);
+      slotHeadCells(gridHead,S);
+      scrollWrap.appendChild(gridHead);
+
+      for(let d=0; d<D; d++){
+        const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
+        const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.className='head-cell';
+        dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
+        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.groups[g.id], d); renderAvailGrids(); } };
+        row.appendChild(dayLbl);
+        for(let s=0;s<S;s++){
+          const val = state.availability.groups[g.id][d][s];
+          const cell = document.createElement('div'); cell.className='kcell ' + (val?'ok':'bad');
+          cell.innerHTML = val ? '✓' : '✕';
+          cell.onclick = ()=>{
+             state.availability.groups[g.id][d][s] = !state.availability.groups[g.id][d][s];
+             renderAvailGrids();
+          };
+          row.appendChild(cell);
+        }
+        scrollWrap.appendChild(row);
+      }
+      card.appendChild(scrollWrap); gWrap.appendChild(card);
+    });
+  }
+}
+
+function renderAssignCards(){
+  const wrap = $("#assignCards"); wrap.innerHTML='';
+  const days = state.program.days, S=state.program.slots;
+
+  const groups = Object.values(state.groups).slice()
+    .sort((a,b)=> (hasAssignmentsForGroup(b.id)?1:0)-(hasAssignmentsForGroup(a.id)?1:0) || groupComparator(a,b));
+
+  groups.forEach(g=>{
+    const card = document.createElement('div'); card.className='card';
+    const head = document.createElement('div'); head.className='flex';
+    head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
+    const count = state.assignments.filter(a=>a.group===g.id).length;
+    head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span><span class="pill">${count} atama</span>`;
+    card.appendChild(head);
+
+    const scrollWrap = document.createElement('div');
+    scrollWrap.className = 'grid-scroll-wrapper';
+
+    const gridHead = document.createElement('div');
+    gridHead.className='kgrid header-row';
+    gridHead.style.setProperty('--cols', S);
+    gridHead.dataset.cols = S;
+    const hCorner = document.createElement('div');
+    hCorner.textContent='Gün / Saat';
+    hCorner.className='head-cell';
+    gridHead.appendChild(hCorner);
+    slotHeadCells(gridHead,S);
+    scrollWrap.appendChild(gridHead);
+
+    for(let d=0; d<days.length; d++){
+      const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
+      const dayCell = document.createElement('div'); dayCell.textContent=days[d]; dayCell.className='head-cell';
+      row.appendChild(dayCell);
+      
+      for(let s=0; s<S; s++){
+        const cell = document.createElement('div');
+        cell.className = 'kcell';
+
+        // Müsaitlik
+        const avail = state.availability?.groups?.[g.id]?.[d]?.[s] === true;
+        cell.classList.add(avail ? 'ok' : 'bad');
+        if(!avail) cell.style.opacity = '0.5';
+
+        // Atama var mı?
+        const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s);
+        if (cur) {
+          const brClass = getBranchClass(cur.branch);
+          cell.className = 'kcell assigned' + (brClass ? ' ' + brClass : '');
+          cell.style.opacity = '1';
+
+          const teacherObj = state.teachers.find(t => t.id === cur.teacherId);
+          const teacherName = teacherObj ? teacherObj.name : '';
+
+          cell.innerHTML = `
+            <div style="font-size:14px; font-weight:800; line-height:1.2; text-shadow:0 1px 2px rgba(0,0,0,0.1)">
+                ${cur.branch}
+            </div>
+            <div class="mini2" style="font-size:11px; margin-top:4px; opacity:0.95">
+                👤 ${teacherName}
+            </div>`;
+        } else {
+          cell.innerHTML = avail ? '<span style="color:#cbd5e1;font-size:20px">+</span>' : '';
+        }
+
+        cell.onclick = () => { openAssignDialog(g.id, d, s); };
+        row.appendChild(cell);
+      }
+      scrollWrap.appendChild(row);
+    }
+    card.appendChild(scrollWrap);
+    wrap.appendChild(card);
+  });
+}
+
 </script>
 
 </body>
