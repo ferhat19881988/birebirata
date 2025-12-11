@@ -60,12 +60,7 @@
   .chips{display:flex;gap:8px;flex-wrap:wrap}
   .wide{width:100%}
   /* Geniş kart dizilimi */
-.cards{
-  /* Modern geniş kart dizilimi: minimum genişlik artırıldı ve aralıklar genişletildi */
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(640px,1fr));
-  gap:20px;
-}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:14px}
   .flex{display:flex;gap:10px;align-items:center}
   .right{margin-left:auto}
   .muted{color:var(--muted)}
@@ -90,10 +85,9 @@
   --avail-border: #e5e7eb;
   --avail-grid-gap: 8px;
 
-  /* Geniş slot yapısı için boyutlar güncellendi */
-  --day-col-w: 200px;
-  --slot-min-w: 110px;
-  --cell-min-h: 70px;
+  --day-col-w: 160px;
+  --slot-min-w: 88px;
+  --cell-min-h: 58px;
   --cell-radius: 12px;
 
   --head-bg: #f8fafc;
@@ -120,10 +114,9 @@
 
 /* Kart ızgarası – öğretmen/grup kartları */
 #step3 .avGrid {
-  /* Kart ızgarası – öğretmen/grup kartları için daha geniş kartlar ve boşluklar */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(640px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+  gap: 16px;
   align-items: stretch;
 }
 
@@ -403,29 +396,22 @@
 #dlgAssign select {
   min-width: 280px;
 }
-/* === 1. KUTU BOYUTU GÜNCELLENDİ === */
-/*
- * Daha modern ve geniş bir slot yapısı oluşturmak için hücre yüksekliği ve
- * iç boşluk ayarları yükseltildi. Bu stil genel .kcell sınıfını hedefler
- * ve !important öncelikleri sayesinde daha önce tanımlanmış kuralı
- * geçersiz kılar. 80px yüksekliğe ve geniş pedlere sahip hücreler,
- * karmaşık atama bilgilerini bile rahatça sergileyebilir.
- */
+/* === 1. KUTU BOYUTUNU ORİJİNAL HALİNE ZORLA === */
 .kcell {
-    /* Artırılmış yükseklik: daha okunabilir ve ferah bir tasarım için */
-    min-height: 80px !important;
-    height: 80px !important;
+    /* Orijinal yükseklik ayarı */
+    min-height: 60px !important;
+    height: 60px !important; 
     
-    /* Daha büyük boşluklar, içeriğin rahatça yerleşmesi için */
-    padding: 6px 8px !important;
+    /* İç boşluğu azaltarak şişmeyi önle */
+    padding: 2px 4px !important;
     
-    /* İçeriği tam ortala (esnek hizalama korunuyor) */
+    /* İçeriği tam ortala */
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
     
-    /* Varsayılan arka plan */
+    /* Varsayılan gri/beyaz */
     background: #fff; 
 }
 
