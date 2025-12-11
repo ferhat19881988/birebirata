@@ -60,7 +60,21 @@
   .chips{display:flex;gap:8px;flex-wrap:wrap}
   .wide{width:100%}
   /* Geniş kart dizilimi */
-  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:14px}
+   /* Geniş kart dizilimi – modern, esnek grid */
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(420px,1fr));
+    gap:16px;
+    align-items:flex-start;
+  }
+
+  @media (max-width: 1024px){
+    .cards{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+  }
+
   .flex{display:flex;gap:10px;align-items:center}
   .right{margin-left:auto}
   .muted{color:var(--muted)}
@@ -396,113 +410,148 @@
 #dlgAssign select {
   min-width: 280px;
 }
-/* === 1. KUTU BOYUTUNU ORİJİNAL HALİNE ZORLA === */
-.kcell {
-    /* Orijinal yükseklik ayarı */
-    min-height: 60px !important;
-    height: 60px !important; 
-    
-    /* İç boşluğu azaltarak şişmeyi önle */
-    padding: 2px 4px !important;
-    
-    /* İçeriği tam ortala */
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-    
-    /* Varsayılan gri/beyaz */
-    background: #fff; 
-}
+  /* === ATAMA PANELİ KART SLOTLARI – MODERN SÜRÜM ===
+     Not: Sadece #step5 içindeki slot hücrelerini etkiler.
+     #step3 (Müsaitlik) ve diğer ekranların tasarımına dokunmaz. */
 
-/* === 2. RENKLER (ARKA PLAN DAHİL) === */
-/* MATEMATİK: Mavi Arka Plan */
-.kcell.assigned.mat {
-    background-color: #dbeafe !important; /* Belirgin Açık Mavi */
-    border: 1px solid #60a5fa !important;
-    color: #1e3a8a !important;
-}
+  /* Atama Paneli (#step5) grid temel ayarları */
+  #step5 .kgrid{
+    display:grid;
+    gap:6px;
+  }
+  #step5 .kgrid[data-cols]{
+    grid-template-columns:140px repeat(var(--cols), minmax(72px,1fr));
+  }
 
-/* FEN BİLİMLERİ: Yeşil Arka Plan */
-.kcell.assigned.fen {
-    background-color: #dcfce7 !important; /* Belirgin Açık Yeşil */
-    border: 1px solid #4ade80 !important;
-    color: #14532d !important;
-}
+  /* Atama Paneli: tek tek slot hücreleri */
+  #step5 .kcell{
+    border:1px solid var(--grid);
+    border-radius:10px;
+    background:#ffffff;
+    min-height:56px;
+    padding:4px 6px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    cursor:pointer;
+    box-sizing:border-box;
+    overflow:hidden;
+  }
 
-/* TÜRKÇE: Turuncu Arka Plan */
-.kcell.assigned.trk {
-    background-color: #ffedd5 !important; /* Belirgin Açık Turuncu */
-    border: 1px solid #fb923c !important;
-    color: #7c2d12 !important;
-}
+  /* Uygun/uygun değil durum renkleri (sadece boş hücreler için) */
+  #step5 .kcell.ok{
+    background:#dcfce7;
+    border-color:#bbf7d0;
+  }
+  #step5 .kcell.bad{
+    background:#fee2e2;
+    border-color:#fecaca;
+  }
+  #step5 .kcell.busy{
+    background:#eef2ff;
+    border-color:#c7d2fe;
+    cursor:default;
+  }
 
-/* SOSYAL BİLGİLER: Cam Göbeği Arka Plan */
-.kcell.assigned.sos {
-    background-color: #cffafe !important;
-    border: 1px solid #22d3ee !important;
-    color: #155e75 !important;
-}
+  /* Atama yapılmış slotlar için branş renkleri
+     (Tüm adımlarda kullanılabilir; #step3’ü bozmaz, çünkü orada .assigned yok) */
 
-/* İNGİLİZCE: Sarı Arka Plan */
-.kcell.assigned.ing {
-    background-color: #fef9c3 !important;
-    border: 1px solid #facc15 !important;
-    color: #713f12 !important;
-}
+  /* MATEMATİK: Mavi Arka Plan */
+  .kcell.assigned.mat{
+    background-color:#dbeafe;
+    border:1px solid #60a5fa;
+    color:#1e3a8a;
+    font-weight:700;
+  }
 
-/* DİN KÜLTÜRÜ: Mor Arka Plan */
-.kcell.assigned.din {
-    background-color: #f3e8ff !important;
-    border: 1px solid #c084fc !important;
-    color: #581c87 !important;
-}
+  /* FEN BİLİMLERİ: Yeşil Arka Plan */
+  .kcell.assigned.fen{
+    background-color:#dcfce7;
+    border:1px solid #4ade80;
+    color:#14532d;
+    font-weight:700;
+  }
 
-/* Atama yapılmış ama branşı belirsiz olanlar */
-.kcell.assigned {
-    font-weight: 700;
-}
+  /* TÜRKÇE: Turuncu Arka Plan */
+  .kcell.assigned.trk{
+    background-color:#ffedd5;
+    border:1px solid #fb923c;
+    color:#7c2d12;
+    font-weight:700;
+  }
 
-  /*
-   * Slot boyutlarının tutarlı kalması ve içeriklerin hücre genişliğini zorlayıp
-   * ızgarayı bozmasını önlemek için aşağıdaki ayarlar eklendi. Bazı uzun branş
-   * veya öğretmen isimleri sütunları genişletip diğer slotların boyutunu
-   * farklılaştırıyordu. Min‐width'i sıfıra çekerek hücrelerin içerik
-   * taşmalarına izin veriyoruz ve overflow ile taşan metni gizliyoruz. Böylece
-   * tüm kcell'ler aynı genişlikte kalıyor, metin sığmadığında ise üç nokta
-   * ile kesiliyor.
-   */
-  .kgrid .kcell {
-  min-width: 0 !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
+  /* SOSYAL BİLGİLER: Cam Göbeği Arka Plan */
+  .kcell.assigned.sos{
+    background-color:#cffafe;
+    border:1px solid #22d3ee;
+    color:#155e75;
+    font-weight:700;
+  }
 
-/* İç kapsayıcı hem yatayda hem dikeyde ortalansın */
-.kgrid .kcell > * {
-  width: 100% !important;
-  max-width: 100% !important;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+  /* İNGİLİZCE: Sarı Arka Plan */
+  .kcell.assigned.ing{
+    background-color:#fef9c3;
+    border:1px solid #facc15;
+    color:#713f12;
+    font-weight:700;
+  }
 
-/* Metinler çok uzunsa satır atabilsin, üç nokta ile kesilmesin */
-.kgrid .kcell > * > div {
-  white-space: normal !important;
-  overflow: hidden !important;
-  text-overflow: clip !important;
-  line-height: 1.1;
-  font-size: clamp(9px, 0.8vw, 12px);  /* ekrana göre otomatik küçülür/büyür */
-  text-align: center;
-}
+  /* DİN KÜLTÜRÜ: Mor Arka Plan */
+  .kcell.assigned.din{
+    background-color:#f3e8ff;
+    border:1px solid #c084fc;
+    color:#581c87;
+    font-weight:700;
+  }
 
-/* Atama yapılmış hücrelerde ders adı biraz daha büyük gözüksün */
-.kcell.assigned > div:first-child {
-  font-weight: 800;
-  font-size: clamp(10px, 0.9vw, 13px);
-}
+  /* Branşı bilinmeyen/diğer atamalarda da biraz vurgulu olsun */
+  .kcell.assigned{
+    font-weight:700;
+  }
+
+  /* Çok kart + çok slot olduğunda bozulmayı önleyen metin yerleşimi
+     – sadece Atama Paneli için (#step5 scope) */
+
+  #step5 .kgrid .kcell{
+    min-width:0;              /* Sütun genişliğini zorlayıp grid’i bozmaması için */
+  }
+
+  #step5 .kgrid .kcell > *{
+    width:100%;
+    max-width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+
+  #step5 .kgrid .kcell > * > div{
+    white-space:normal;       /* Gerekirse satır at */
+    overflow:hidden;
+    text-overflow:clip;
+    line-height:1.15;
+    font-size:11px;           /* Çok küçük ekranlarda okunabilir, çok büyükte şişmez */
+    text-align:center;
+  }
+
+  /* Atama yapılmış hücrede ilk satırı (ders adını) biraz daha belirgin yap */
+  #step5 .kcell.assigned > div:first-child{
+    font-weight:800;
+    font-size:12px;
+  }
+
+  @media (max-width: 1024px){
+    #step5 .kcell{
+      min-height:52px;
+      padding:3px 4px;
+    }
+    #step5 .kgrid .kcell > * > div{
+      font-size:10px;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -3449,3 +3498,4 @@ if (btnAssgnDeleteFb) {
 
 </body>
 </html>
+
