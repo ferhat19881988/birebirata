@@ -68,6 +68,15 @@
   .mini2{font-size:11px;color:#475569}
   .tag{display:inline-block;background:#f1f5f9;padding:2px 8px;border-radius:999px;margin-left:6px;color:#334155}
   .nowrap{white-space:nowrap}
+  /* Yazdır (Gelişmiş) */
+  .checklist{max-height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:12px;padding:8px;background:#fff;margin-top:8px}
+  .chkline{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border-radius:10px}
+  .chkline:hover{background:#f8fafc}
+  .chkline input{margin-top:2px}
+  .optgrid{display:grid;grid-template-columns:1fr;gap:6px}
+  .opt{display:flex;gap:8px;align-items:center;font-weight:600}
+  .opt input{width:16px;height:16px}
+
 
   /* 1. resim – Öğretmen/Grup müsaitlik kartları genişletildi */
   /* Müsaitlik kartları – gelişmiş hizalama ve stil */
@@ -808,25 +817,77 @@
     <div class="section-title">
       <h2>Yazdır / Rapor</h2>
       <div class="chips no-print">
-        <span class="pill">A4 çıktı, sayfa başı öğretmen/grup</span>
-        <span class="pill">Sadece atama varsa</span>
+        <span class="pill">A4 çıktı • seçimli gruplar/öğretmenler</span>
+        <span class="pill">Sayfa özellikleri aç/kapat</span>
       </div>
     </div>
+
     <div class="row no-print">
-      <label>Görünüm<br/>
-        <select id="printMode">
-          <option value="group">Gruba göre</option>
-          <option value="teacher">Öğretmene göre</option>
-        </select>
-      </label>
-      <label>Filtre<br/>
-        <select id="printFilter"></select>
-      </label>
-      <button class="btn" id="btnRenderPrint">Önizleme</button>
-      <button class="btn sec" id="btnPrint" onclick="window.print()">Yazdır</button>
+      <button class="btn" id="btnPresetAllList" title="Tüm liste raporu">Tüm listeyi yazdır</button>
+      <button class="btn sec" id="btnPresetTeacherNew" title="Öğretmene göre yeni tasarım">Öğretmene göre (Yeni Tasarım)</button>
+      <button class="btn ghost" id="btnRenderPrint">Önizleme</button>
+      <button class="btn warn" id="btnPrint" onclick="window.print()">Yazdır</button>
     </div>
+
+    <div class="card no-print" id="printAdvancedWrap">
+      <div class="row">
+        <label>Rapor türü<br/>
+          <select id="printPreset">
+            <option value="all_list">Tüm liste (gruplar)</option>
+            <option value="group_schedule">Gruba göre (program)</option>
+            <option value="teacher_schedule">Öğretmene göre (program)</option>
+            <option value="teacher_new">Öğretmene göre (Yeni Tasarım)</option>
+          </select>
+        </label>
+
+        <label>Sayfa kırılımı<br/>
+          <select id="printBreakMode" title="Sayfa sonu davranışı">
+            <option value="per_entity">Her grup/öğretmen ayrı sayfa</option>
+            <option value="compact">Aralıksız (sayfa kırma yok)</option>
+          </select>
+        </label>
+
+        <label>Filtre (tek seçim)<br/>
+          <select id="printSingleFilter" title="İstersen tek bir grup/öğretmen seçebilirsin">
+            <option value="">(Seçilmedi)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1.2fr .8fr; gap:12px;">
+        <div class="card" style="box-shadow:none;border:1px solid #e5e7eb;">
+          <div class="flex">
+            <b id="printEntityTitle">Listede yer alacaklar</b>
+            <span class="right mini2" id="printEntityCount"></span>
+          </div>
+          <div class="row" style="margin-top:6px;">
+            <button class="btn xs ghost" id="btnPrintSelAll" type="button">Tümünü seç</button>
+            <button class="btn xs ghost" id="btnPrintSelNone" type="button">Seçimi temizle</button>
+          </div>
+          <div id="printEntityList" class="checklist" aria-label="Yazdırma kapsamı"></div>
+        </div>
+
+        <div class="card" style="box-shadow:none;border:1px solid #e5e7eb;">
+          <b>Sayfa özellikleri</b>
+          <div class="optgrid" style="margin-top:8px;">
+            <label class="opt"><input type="checkbox" id="optShowHeader" checked> Üst başlık</label>
+            <label class="opt"><input type="checkbox" id="optShowSlotLabels" checked> Ders/saat başlıkları</label>
+            <label class="opt"><input type="checkbox" id="optTight"> Sıkı tablo (daha küçük yazı)</label>
+            <label class="opt"><input type="checkbox" id="optOnlyAssigned" checked> Sadece atama olan günler</label>
+            <label class="opt"><input type="checkbox" id="optIncludeStudents" checked> Öğrenci listesi</label>
+            <label class="opt"><input type="checkbox" id="optStudents2Col" checked> Öğrenci listesi 2 sütun</label>
+            <label class="opt"><input type="checkbox" id="optAttendanceTable"> Yoklama tablosu</label>
+          </div>
+          <div class="mini2" style="margin-top:8px;">
+            Not: Seçim boş bırakılırsa “tümü” yazdırılır.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="printPreview" class="grid printable"></div>
   </section>
+
 </div>
 
 <script>
@@ -2433,28 +2494,225 @@ function doAutoAssign(maxAttempts = 3) {
   }
 }
 
-/* ===== 6) Yazdır ===== */
-function hasAnyAssignments(){ return state.assignments && state.assignments.length>0; }
+
+/* ===== 6) Yazdır (Gelişmiş) ===== */
+function hasAnyAssignments(){ return Array.isArray(state.assignments) && state.assignments.length>0; }
+
+const PRINT_LS_KEY = 'fck_print_settings_v1';
+function getDefaultPrintSettings(){
+  return {
+    preset: 'all_list',               // all_list | group_schedule | teacher_schedule | teacher_new
+    breakMode: 'per_entity',          // per_entity | compact
+    selectedGroups: [],               // if empty => all
+    selectedTeachers: [],             // if empty => all
+    singleFilter: '',                 // optional single entity filter (groupId or teacherId depending on preset)
+    opts: {
+      showHeader: true,
+      showSlotLabels: true,
+      tight: false,
+      onlyAssignedDays: true,
+      includeStudents: true,
+      students2Col: true,
+      attendanceTable: false
+    }
+  };
+}
+function loadPrintSettings(){
+  let s = getDefaultPrintSettings();
+  try{
+    const raw = localStorage.getItem(PRINT_LS_KEY);
+    if(raw){
+      const obj = JSON.parse(raw);
+      s = {
+        ...s,
+        ...obj,
+        opts: {...s.opts, ...(obj.opts||{})}
+      };
+    }
+  }catch(_){}
+  return s;
+}
+function savePrintSettings(s){
+  try{ localStorage.setItem(PRINT_LS_KEY, JSON.stringify(s)); }catch(_){}
+}
+
+function escHtml(v){
+  return String(v ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
+}
+
+function getPrintSettingsFromUI(){
+  const s = loadPrintSettings();
+  const preset = $("#printPreset")?.value || s.preset;
+  const breakMode = $("#printBreakMode")?.value || s.breakMode;
+
+  const opts = {
+    showHeader: !!$("#optShowHeader")?.checked,
+    showSlotLabels: !!$("#optShowSlotLabels")?.checked,
+    tight: !!$("#optTight")?.checked,
+    onlyAssignedDays: !!$("#optOnlyAssigned")?.checked,
+    includeStudents: !!$("#optIncludeStudents")?.checked,
+    students2Col: !!$("#optStudents2Col")?.checked,
+    attendanceTable: !!$("#optAttendanceTable")?.checked
+  };
+
+  const selectedGroups = Array.from(document.querySelectorAll('#printEntityList input[data-kind="group"]:checked')).map(i=>i.value);
+  const selectedTeachers = Array.from(document.querySelectorAll('#printEntityList input[data-kind="teacher"]:checked')).map(i=>i.value);
+
+  const singleFilter = $("#printSingleFilter")?.value || '';
+
+  const merged = {...s, preset, breakMode, singleFilter, opts};
+  if(preset==='group_schedule' || preset==='all_list') merged.selectedGroups = selectedGroups;
+  if(preset==='teacher_schedule' || preset==='teacher_new') merged.selectedTeachers = selectedTeachers;
+
+  savePrintSettings(merged);
+  return merged;
+}
+
+function applyPrintSettingsToUI(){
+  const s = loadPrintSettings();
+  if($("#printPreset")) $("#printPreset").value = s.preset;
+  if($("#printBreakMode")) $("#printBreakMode").value = s.breakMode;
+  if($("#optShowHeader")) $("#optShowHeader").checked = !!s.opts.showHeader;
+  if($("#optShowSlotLabels")) $("#optShowSlotLabels").checked = !!s.opts.showSlotLabels;
+  if($("#optTight")) $("#optTight").checked = !!s.opts.tight;
+  if($("#optOnlyAssigned")) $("#optOnlyAssigned").checked = !!s.opts.onlyAssignedDays;
+  if($("#optIncludeStudents")) $("#optIncludeStudents").checked = !!s.opts.includeStudents;
+  if($("#optStudents2Col")) $("#optStudents2Col").checked = !!s.opts.students2Col;
+  if($("#optAttendanceTable")) $("#optAttendanceTable").checked = !!s.opts.attendanceTable;
+}
+
 function refreshPrintFilters(){
-  const mode = $("#printMode").value;
-  const sel = $("#printFilter"); sel.innerHTML='';
-  if(mode==='group'){
-    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='(Tüm Gruplar)'; sel.appendChild(opt0);
-    Object.values(state.groups).sort(groupComparator).forEach(g=>{
-      const opt=document.createElement('option'); opt.value=g.id; opt.textContent=g.name; sel.appendChild(opt);
+  // UI + kaynak listeleri yenile
+  applyPrintSettingsToUI();
+
+  const s = loadPrintSettings();
+  const preset = $("#printPreset")?.value || s.preset;
+
+  // Tekil filtre dropdown'u: gruplar veya öğretmenler
+  const single = $("#printSingleFilter");
+  if(single){
+    single.innerHTML = '<option value="">(Seçilmedi)</option>';
+    if(preset==='group_schedule' || preset==='all_list'){
+      Object.values(state.groups || {}).sort(groupComparator).forEach(g=>{
+        const opt=document.createElement('option'); opt.value=g.id; opt.textContent=g.name; single.appendChild(opt);
+      });
+    }else{
+      (state.teachers||[]).forEach(t=>{
+        const opt=document.createElement('option'); opt.value=t.id; opt.textContent=`${t.name} — ${t.branch}`; single.appendChild(opt);
+      });
+    }
+    single.value = s.singleFilter || '';
+  }
+
+  // Çoklu seçim listesi
+  const list = $("#printEntityList");
+  const title = $("#printEntityTitle");
+  const count = $("#printEntityCount");
+  if(!list) return;
+
+  list.innerHTML = '';
+  let items = [];
+  let kind = 'group';
+
+  if(preset==='group_schedule' || preset==='all_list'){
+    kind = 'group';
+    if(title) title.textContent = 'Listede yer alacak gruplar';
+    items = Object.values(state.groups || {}).sort(groupComparator).map(g=>({id:g.id, label:g.name}));
+    const selected = new Set((loadPrintSettings().selectedGroups||[]).map(String));
+    items.forEach(it=>{
+      const row = document.createElement('label');
+      row.className = 'chkline';
+      row.innerHTML = `<input type="checkbox" data-kind="group" value="${escHtml(it.id)}" ${selected.size===0 || selected.has(String(it.id)) ? 'checked':''}> <span>${escHtml(it.label)}</span>`;
+      list.appendChild(row);
     });
   }else{
-    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='(Tüm Öğretmenler)'; sel.appendChild(opt0);
-    state.teachers.forEach(t=>{
-      const opt=document.createElement('option'); opt.value=t.id; opt.textContent=`${t.name} — ${t.branch}`; sel.appendChild(opt);
+    kind = 'teacher';
+    if(title) title.textContent = 'Listede yer alacak öğretmenler';
+    items = (state.teachers||[]).map(t=>({id:t.id, label:`${t.name} — ${t.branch}`}));
+    const selected = new Set((loadPrintSettings().selectedTeachers||[]).map(String));
+    items.forEach(it=>{
+      const row = document.createElement('label');
+      row.className = 'chkline';
+      row.innerHTML = `<input type="checkbox" data-kind="teacher" value="${escHtml(it.id)}" ${selected.size===0 || selected.has(String(it.id)) ? 'checked':''}> <span>${escHtml(it.label)}</span>`;
+      list.appendChild(row);
     });
   }
+
+  if(count) count.textContent = `${items.length} adet`;
+
+  // Seçim butonları
+  const btnAll = $("#btnPrintSelAll");
+  const btnNone = $("#btnPrintSelNone");
+  if(btnAll && !btnAll.dataset.bound){
+    btnAll.dataset.bound = '1';
+    btnAll.onclick = () => {
+      Array.from(document.querySelectorAll(`#printEntityList input[data-kind="${kind}"]`)).forEach(i=> i.checked = true);
+    };
+  }
+  if(btnNone && !btnNone.dataset.bound){
+    btnNone.dataset.bound = '1';
+    btnNone.onclick = () => {
+      Array.from(document.querySelectorAll(`#printEntityList input[data-kind="${kind}"]`)).forEach(i=> i.checked = false);
+    };
+  }
 }
+
+function buildScheduleTableHTML(cellsByDaySlot, days, labels, S, opts){
+  const clsTight = opts.tight ? 'tight' : '';
+  let thead = '';
+  if(opts.showSlotLabels){
+    thead = `<thead><tr><th style="width:110px">Gün / Saat</th>${
+      Array.from({length:S}, (_,i)=>`<th>${escHtml(labels[i] || (String(i+1)+'. Ders'))}</th>`).join('')
+    }</tr></thead>`;
+  }else{
+    thead = `<thead><tr><th style="width:110px">Gün</th><th colspan="${S}">Dersler</th></tr></thead>`;
+  }
+
+  const dayIdxs = Array.from({length:days.length}, (_,i)=>i);
+  let dayList = dayIdxs;
+  if(opts.onlyAssignedDays){
+    dayList = dayIdxs.filter(d=>{
+      for(let s=0;s<S;s++){ if(cellsByDaySlot[`${d}_${s}`]) return true; }
+      return false;
+    });
+  }
+
+  const rows = dayList.map(d=>{
+    let tds = '';
+    for(let s=0;s<S;s++){
+      const cell = cellsByDaySlot[`${d}_${s}`] || '';
+      tds += `<td>${cell}</td>`;
+    }
+    return `<tr><td class="day"><b>${escHtml(days[d]||'')}</b></td>${tds}</tr>`;
+  }).join('');
+
+  return `<table class="print-table ${clsTight}">${thead}<tbody>${rows}</tbody></table>`;
+}
+
+function getSelectedGroupIds(s){
+  const all = Object.values(state.groups || {}).sort(groupComparator).map(g=>g.id);
+  const picked = (s.selectedGroups||[]).map(String);
+  const base = picked.length ? picked : all.map(String);
+  if(s.singleFilter) return base.filter(id=>String(id)===String(s.singleFilter));
+  return base;
+}
+function getSelectedTeacherIds(s){
+  const all = (state.teachers||[]).map(t=>t.id);
+  const picked = (s.selectedTeachers||[]).map(String);
+  const base = picked.length ? picked : all.map(String);
+  if(s.singleFilter) return base.filter(id=>String(id)===String(s.singleFilter));
+  return base;
+}
+
 function renderPrintPreview(){
-  const div = $("#printPreview"); div.innerHTML='';
-  const mode = $("#printMode").value;
-  const filter = $("#printFilter").value;
-  const S = state.program.slots, days = state.program.days, labels = state.program.slotLabels || [];
+  const div = $("#printPreview"); if(!div) return;
+  div.innerHTML='';
+  const s = getPrintSettingsFromUI();
 
   if(!hasAnyAssignments()){
     div.innerHTML = '<div class="muted">Atama yok. Önce atama yapın.</div>';
@@ -2462,159 +2720,208 @@ function renderPrintPreview(){
   }
   $("#btnPrint").disabled = false;
 
-  const hdr = document.createElement('div'); hdr.className='print-header';
-  hdr.innerHTML = `<h2>Fenomen Çocuk Kulübü — ${mode==='group'?'Grup':'Öğretmen'} Ders Planı</h2>`;
-  div.appendChild(hdr);
+  const days = state.program?.days || ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"];
+  const S = +state.program?.slots || 8;
+  const labels = Array.isArray(state.program?.slotLabels) ? state.program.slotLabels : [];
 
-  if(mode==='group'){
-    const groups = (filter ? [state.groups[filter]] : Object.values(state.groups))
-      .filter(Boolean)
-      .filter(g=>state.assignments.some(a=>a.group===g.id))
-      .sort(groupComparator);
+  const makeHeader = (title, sub) => {
+    if(!s.opts.showHeader) return '';
+    return `<div class="print-header"><h2>${escHtml(title)}</h2></div>${sub?`<div class="print-sub">${escHtml(sub)}</div>`:''}`;
+  };
 
+  const breakClass = (s.breakMode==='per_entity') ? 'print-page' : '';
+
+  // ---- 1) Tüm Liste (Gruplar) ----
+  if(s.preset==='all_list'){
+    const gIds = getSelectedGroupIds(s);
+    const groups = gIds.map(id=>state.groups[id]).filter(Boolean).sort(groupComparator);
+
+    // sınıfa göre grupla (5-8); parse yoksa "Diğer"
+    const buckets = {};
     groups.forEach(g=>{
-      const aForG = state.assignments.filter(a=>a.group===g.id);
-      const daysWith = Array.from(new Set(aForG.map(a=>a.day))).sort((a,b)=>a-b);
-      if(daysWith.length===0) return;
-
-      const page=document.createElement('div'); page.className='print-page';
-      const wr = document.createElement('div'); wr.className='print-wrapper avoid-break';
-
-      // Öğrenciler – iki sütun 👤
-      const students = state.students.filter(st=>st.group===g.id).map(s=>s.name);
-      const title = document.createElement('div'); title.className='print-sub';
-      title.innerHTML = `<b>${g.name}</b> • Öğrenciler:`;
-      wr.appendChild(title);
-
-      const stCol = document.createElement('div'); stCol.className='students-2col';
-      const ul = document.createElement('ul');
-      students.forEach(n=>{
-        const li=document.createElement('li'); li.innerHTML=`👤 ${n}`; ul.appendChild(li);
-      });
-      stCol.appendChild(ul); wr.appendChild(stCol);
-
-      // Tablo – ortalı öğretmen isimleri
-      const t = document.createElement('table'); t.className='print-table tight';
-      const thead = `<tr><th>Gün / Saat</th>${Array.from({length:S},(_,i)=>`<th>${labels[i]||''}</th>`).join('')}</tr>`;
-      let body='';
-      days.forEach((d,di)=>{
-        let row=`<tr><td><b>${days[di]}</b></td>`;
-        for(let s=0; s<S; s++){
-          const a = aForG.find(x=>x.day===di && x.slot===s);
-          const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : '';
-          row += `<td>${txt}</td>`;
-        }
-        row+='</tr>'; body+=row;
-      });
-      t.innerHTML = `<thead>${thead}</thead><tbody>${body}</tbody>`; wr.appendChild(t);
-
-      page.appendChild(wr); div.appendChild(page);
+      const p = parseGroupName(g.name||g.id||'');
+      const key = (p && p.grade) ? `${p.grade}` : 'Diğer';
+      if(!buckets[key]) buckets[key] = [];
+      buckets[key].push(g);
     });
 
-  } else {
-    const teachers = (filter ? [state.teachers.find(t=>t.id===filter)] : state.teachers)
-      .filter(Boolean)
-      .filter(t=>state.assignments.some(a=>a.teacherId===t.id));
-
-    teachers.forEach(t=>{
-      const aForT = state.assignments.filter(a=>a.teacherId===t.id);
-      const daysWith = Array.from(new Set(aForT.map(a=>a.day))).sort((a,b)=>a-b);
-      if(daysWith.length===0) return;
-
-      const page=document.createElement('div'); page.className='print-page';
-      const wr = document.createElement('div'); wr.className='print-wrapper avoid-break';
-
-      // Üst tablo — öğretmene göre, ortalı
-      const tTbl = document.createElement('table'); tTbl.className='print-table tight';
-      const thead = `<tr><th colspan="${S+1}" style="text-align:center">${t.name} — ${t.branch}</th></tr>
-                     <tr><th>Gün / Saat</th>${Array.from({length:S},(_,i)=>`<th>${labels[i]||''}</th>`).join('')}</tr>`;
-      let body='';
-      daysWith.forEach(d=>{
-        let row=`<tr><td><b>${days[d]}</b></td>`;
-        for(let s=0; s<S; s++){
-          const a = aForT.find(x=>x.day===d && x.slot===s);
-          row += a ? `<td style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`;
-        }
-        row+='</tr>'; body+=row;
-      });
-      tTbl.innerHTML = `<thead>${thead}</thead><tbody>${body}</tbody>`; wr.appendChild(tTbl);
-
-      // Yoklama blokları — her grup için küçük tablo
-      const groupsForT = Array.from(new Set(aForT.map(a=>a.group))).map(gid=>state.groups[gid]).filter(Boolean).sort(groupComparator);
-      groupsForT.forEach(g=>{
-        const blockTitle = document.createElement('div'); blockTitle.className='print-sub';
-        blockTitle.innerHTML = `<b>${g.name}</b> • Öğrenci Yoklama`;
-        wr.appendChild(blockTitle);
-
-        const att = document.createElement('table'); att.className='att-table';
-        att.innerHTML = `<thead>
-            <tr><th>👤 Öğrenci</th><th>Geldi</th><th>Gelmedi</th><th>Geç Geldi</th><th>İzinli</th></tr>
-          </thead><tbody></tbody>`;
-        const tbody = att.querySelector('tbody');
-        state.students.filter(s=>s.group===g.id).forEach(st=>{
-          const tr=document.createElement('tr');
-          tr.innerHTML = `<td>${st.name}</td><td>□</td><td>□</td><td>□</td><td>□</td>`;
-          tbody.appendChild(tr);
-        });
-        wr.appendChild(att);
-      });
-
-      page.appendChild(wr); div.appendChild(page);
+    const order = Object.keys(buckets).sort((a,b)=>{
+      const na = isFinite(+a) ? +a : 999, nb = isFinite(+b) ? +b : 999;
+      return na-nb;
     });
+
+    order.forEach((gradeKey, gi)=>{
+      const section = document.createElement('div');
+      section.className = breakClass;
+      section.innerHTML = makeHeader(`Tüm Liste — ${gradeKey==='Diğer'?'Diğer':(gradeKey+'. Sınıf')}`, `Seçili gruplar: ${buckets[gradeKey].length}`);
+      buckets[gradeKey].forEach(g=>{
+        const aForG = state.assignments.filter(a=>a.group===g.id);
+
+        // Hücreleri doldur
+        const cells = {};
+        for(const a of aForG){
+          const t = (state.teachers||[]).find(x=>x.id===a.teacherId);
+          const tName = t ? t.name : '';
+          cells[`${a.day}_${a.slot}`] = `<div style="text-align:center"><b>${escHtml(a.branch)}</b><br><span class="mini">${escHtml(tName)}</span></div>`;
+        }
+
+        const studentNames = (state.students||[])
+          .filter(st=>st.group===g.id)
+          .map(st=>st.name);
+
+        const studentsHtml = (s.opts.includeStudents)
+          ? `<div class="${s.opts.students2Col?'students-2col':''} avoid-break" style="margin:6px 0 2px">
+               <ul>${studentNames.map(n=>`<li>${escHtml(n)}</li>`).join('') || '<li class="muted">Öğrenci yok</li>'}</ul>
+             </div>`
+          : '';
+
+        const attHtml = (s.opts.attendanceTable && s.opts.includeStudents)
+          ? `<table class="att-table avoid-break">
+              <thead><tr><th>Öğrenci</th>${Array.from({length:6},(_,i)=>`<th>${i+1}</th>`).join('')}</tr></thead>
+              <tbody>${studentNames.map(n=>`<tr><td>${escHtml(n)}</td>${Array.from({length:6},()=>'<td></td>').join('')}</tr>`).join('')}</tbody>
+             </table>`
+          : '';
+
+        const block = document.createElement('div');
+        block.className = 'avoid-break';
+        block.innerHTML = `
+          <div style="margin-top:10px;font-weight:900">${escHtml(g.name||g.id||'')}</div>
+          ${studentsHtml}
+          ${buildScheduleTableHTML(cells, days, labels, S, s.opts)}
+          ${attHtml}
+        `;
+        section.appendChild(block);
+      });
+      div.appendChild(section);
+    });
+    return;
+  }
+
+  // ---- 2) Gruba göre (Program) ----
+  if(s.preset==='group_schedule'){
+    const gIds = getSelectedGroupIds(s);
+    gIds.forEach((gid)=>{
+      const g = state.groups[gid]; if(!g) return;
+      const aForG = state.assignments.filter(a=>a.group===gid);
+
+      const cells = {};
+      for(const a of aForG){
+        const t = (state.teachers||[]).find(x=>x.id===a.teacherId);
+        const tName = t ? t.name : '';
+        cells[`${a.day}_${a.slot}`] = `<div style="text-align:center"><b>${escHtml(a.branch)}</b><br><span class="mini">${escHtml(tName)}</span></div>`;
+      }
+
+      const studentNames = (state.students||[])
+        .filter(st=>st.group===gid)
+        .map(st=>st.name);
+
+      const page = document.createElement('div');
+      page.className = breakClass;
+      page.innerHTML = makeHeader(`Grup Programı — ${g.name||gid}`, `Atama: ${aForG.length}`);
+      if(s.opts.includeStudents){
+        const st = document.createElement('div');
+        st.className = `${s.opts.students2Col?'students-2col':''} avoid-break`;
+        st.innerHTML = `<ul>${studentNames.map(n=>`<li>${escHtml(n)}</li>`).join('') || '<li class="muted">Öğrenci yok</li>'}</ul>`;
+        page.appendChild(st);
+      }
+      page.insertAdjacentHTML('beforeend', buildScheduleTableHTML(cells, days, labels, S, s.opts));
+      div.appendChild(page);
+    });
+    return;
+  }
+
+  // ---- 3) Öğretmene göre (Program) ----
+  if(s.preset==='teacher_schedule'){
+    const tIds = getSelectedTeacherIds(s);
+    tIds.forEach((tid)=>{
+      const t = (state.teachers||[]).find(x=>x.id===tid); if(!t) return;
+      const aForT = state.assignments.filter(a=>a.teacherId===tid);
+
+      const cells = {};
+      for(const a of aForT){
+        const g = state.groups[a.group];
+        const gName = g ? (g.name||g.id) : a.group;
+        cells[`${a.day}_${a.slot}`] = `<div style="text-align:center"><b>${escHtml(a.branch)}</b><br><span class="mini">${escHtml(gName)}</span></div>`;
+      }
+
+      const page = document.createElement('div');
+      page.className = breakClass;
+      page.innerHTML = makeHeader(`Öğretmen Programı — ${t.name}`, `${t.branch} • Atama: ${aForT.length}`);
+      page.insertAdjacentHTML('beforeend', buildScheduleTableHTML(cells, days, labels, S, s.opts));
+      div.appendChild(page);
+    });
+    return;
+  }
+
+  // ---- 4) Öğretmene göre (Yeni Tasarım) ----
+  if(s.preset==='teacher_new'){
+    const tIds = getSelectedTeacherIds(s);
+    tIds.forEach((tid)=>{
+      const t = (state.teachers||[]).find(x=>x.id===tid); if(!t) return;
+      const aForT = state.assignments.filter(a=>a.teacherId===tid);
+
+      // Gün bazlı liste + slot tablo
+      const cells = {};
+      for(const a of aForT){
+        const g = state.groups[a.group];
+        const gName = g ? (g.name||g.id) : a.group;
+        cells[`${a.day}_${a.slot}`] = `<div style="text-align:center"><b>${escHtml(gName)}</b><br><span class="mini">${escHtml(a.branch)}</span></div>`;
+      }
+
+      const page = document.createElement('div');
+      page.className = breakClass;
+      page.innerHTML = makeHeader(`Öğretmene Göre Rapor — ${t.name}`, `${t.branch} • Atama: ${aForT.length}`);
+
+      // Ek özet: kaç farklı grup
+      const uniqGroups = Array.from(new Set(aForT.map(a=>a.group))).map(gid=> state.groups[gid]?.name || gid);
+      page.insertAdjacentHTML('beforeend', `
+        <div class="avoid-break" style="margin:6px 0 10px">
+          <div class="mini2"><b>Gruplar:</b> ${uniqGroups.map(escHtml).join(', ') || '-'}</div>
+        </div>
+      `);
+
+      page.insertAdjacentHTML('beforeend', buildScheduleTableHTML(cells, days, labels, S, s.opts));
+      div.appendChild(page);
+    });
+    return;
   }
 }
 
-/* ===== Olaylar ===== */
-$("#btnFetch").onclick = fetchAll;
-$("#btnClear").onclick = ()=>{
-  state.teachers=[]; state.students=[]; state.groups={}; state.branches=[];
-  renderTeachers(); renderStudents(); renderGroupSummary();
-  $("#readStatus").textContent='Temizlendi.';
-  reconcileAllToProgram(getAssignPolicy());
-};
+// UI Eventleri
+(function bindPrintUI(){
+  const wire = (id, fn) => { const el = $(id); if(el && !el.dataset.bound){ el.dataset.bound='1'; el.addEventListener('change', fn); el.addEventListener('input', fn);} };
+  // preset buttons
+  const b1 = $("#btnPresetAllList");
+  if(b1 && !b1.dataset.bound){
+    b1.dataset.bound='1';
+    b1.onclick = ()=> { $("#printPreset").value='all_list'; refreshPrintFilters(); renderPrintPreview(); };
+  }
+  const b2 = $("#btnPresetTeacherNew");
+  if(b2 && !b2.dataset.bound){
+    b2.dataset.bound='1';
+    b2.onclick = ()=> { $("#printPreset").value='teacher_new'; refreshPrintFilters(); renderPrintPreview(); };
+  }
 
-$("#btnBuildGrid").onclick = ()=>{ buildProgramGrid(false); renderSlotLabels(); };
-$("#btnProgExport").onclick = ()=>download('ders-programi.json', state.program);
-$("#btnProgImport").onclick = ()=>openFile($("#fileProgImport"), obj=>{
-  if(!obj || !Array.isArray(obj.days) || typeof obj.slots!=='number') return alert('Geçersiz program JSON.');
-  state.program = obj; if(!Array.isArray(state.program.slotLabels)) state.program.slotLabels=[];
-  $("#daysInput").value = obj.days.join(','); $("#slotsInput").value = obj.slots;
-  buildProgramGrid(true); renderSlotLabels();
-  reconcileAllToProgram(getAssignPolicy());
-  renderAvailGrids(); renderAssignCards(); refreshPrintFilters();
-});
+  const btnPrev = $("#btnRenderPrint");
+  if(btnPrev && !btnPrev.dataset.bound){
+    btnPrev.dataset.bound='1';
+    btnPrev.onclick = renderPrintPreview;
+  }
 
-$("#btnAvailExport").onclick = ()=>download('musaitlikler.json', state.availability);
-$("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
-  if(!obj || !obj.teachers || !obj.groups) return alert('Geçersiz müsaitlik JSON.');
-  state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
-});
-$("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
-$("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
-$("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
-  if(!obj || !obj.teachers || !obj.groups) return alert('Geçersiz müsaitlik JSON.');
-  state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
-});
+  wire("#printPreset", ()=>{ refreshPrintFilters(); renderPrintPreview(); });
+  wire("#printBreakMode", ()=>{ renderPrintPreview(); });
+  wire("#printSingleFilter", ()=>{ renderPrintPreview(); });
+  // options
+  ["#optShowHeader","#optShowSlotLabels","#optTight","#optOnlyAssigned","#optIncludeStudents","#optStudents2Col","#optAttendanceTable"]
+    .forEach(sel=> wire(sel, ()=>{ renderPrintPreview(); }));
+  // selection list click
+  const list = $("#printEntityList");
+  if(list && !list.dataset.bound){
+    list.dataset.bound='1';
+    list.addEventListener('change', ()=> renderPrintPreview());
+  }
+})();
 
-$("#goto2").onclick = ()=> showTopTab('step2');
-$("#goto3").onclick = ()=> showTopTab('step3');
-$("#goto4").onclick = ()=> showTopTab('step4');
-$("#goto5").onclick = ()=> showTopTab('step5');
-$("#goto6").onclick = ()=> showTopTab('step6');
-
-$("#btnReqExport").onclick = exportReq;
-$("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
-$("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
-$("#reqGroupSelect").onchange = renderRequests;
-
-// Otomatik Atama düğmesi birden fazla deneme yapacak şekilde sarmalayıcıyı çağırır.
-$("#btnAutoAssign").onclick = () => doAutoAssign();
-$("#btnAssgnExport").onclick = exportAssgn;
-$("#btnAssgnImport").onclick = ()=>openFile($("#fileAssgnImport"), importAssgn);
-$("#btnAssgnClear").onclick = ()=>{ state.assignments=[]; renderAssignCards(); };
-
-$("#printMode").onchange = ()=> { refreshPrintFilters(); renderPrintPreview(); };
-$("#btnRenderPrint").onclick = renderPrintPreview;
 
 // Yerel kaydet/yükle fonksiyonları kaldırıldı; Firebase tabanlı işlemler eklenecek
 
@@ -2751,7 +3058,9 @@ showTopTab('step1');
   @media print {
   .section-title,
   .no-print,
-  #btnRenderPrint,
+  #/* (yanlışlıkla eklenen kopya STEP 6 bloğu kaldırıldı) */
+
+,
   #btnPrint {
     display: none !important;
   }
@@ -2816,143 +3125,8 @@ function renderBranchChipsSummary(){
 // Bu fonksiyon, atanmış grupların sınıf düzeylerine göre (5, 6, 7, 8) kompakt bir
 // tablo halinde yazdırılmasını sağlar. Eğer ilgili sınıf düzeyi için grup ve
 // atama yoksa o sayfa oluşturulmaz. Her sınıf bölümü yeni bir sayfada başlar.
-(function injectPrintAllButton(){
-  const host = document.querySelector('#step6 .row.no-print');
-  if (!host || document.getElementById('btnPrintAll')) return;
-  const btn = document.createElement('button');
-  btn.id = 'btnPrintAll';
-  btn.className = 'btn warn';
-  btn.textContent = 'Tüm listeyi yazdır';
-  // Değiştirilen fonksiyon çağrısı: tüm sınıflar için liste yazdırılır
-  btn.addEventListener('click', printAllGrades);
-  host.appendChild(btn);
-})();
 
-/**
- * Atanmış grupları 5, 6, 7 ve 8. sınıf düzeylerine göre yazdırır. Her bir sınıf
- * bölümü yeni bir sayfada başlar. Eğer bir sınıfa ait grup yoksa veya o sınıf
- * için atama bulunmuyorsa, o bölüm atlanır.
- */
-function printAllGrades() {
-  const hasAny = Array.isArray(state.assignments) && state.assignments.length > 0;
-  if (!hasAny) { alert('Atama yok. Önce atama yapın.'); return; }
-
-  const days   = state.program?.days || ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"];
-  const S      = +state.program?.slots || 8;
-  const labels = Array.isArray(state.program?.slotLabels) ? state.program.slotLabels : [];
-
-  const esc = s => String(s ?? '')
-    .replaceAll('&','&amp;').replaceAll('<','&lt;')
-    .replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
-
-  // Belirli bir sınıf düzeyine ait, ataması yapılmış grupları getirir
-  const byGrade = (grade) => Object.values(state.groups || {})
-    .filter(g => (parseGroupName(g.name || g.id || '')?.grade === grade))
-    .filter(g => state.assignments.some(a => a.group === g.id))
-    .sort(groupComparator);
-
-  // Yazdırma penceresini oluştur
-  const w = window.open('', '_blank');
-  const css = `
-    @page { size: A4; margin: 8mm; }
-    * { box-sizing: border-box; }
-    body { font: 11px/1.25 system-ui, -apple-system, Segoe UI, Roboto, Arial, Helvetica, sans-serif; color:#0a0a0a; }
-    h1 { font-size: 16px; margin: 0 0 6px; text-align:center; font-weight:800; }
-    h2 { font-size: 13px; margin: 8px 0 6px; font-weight:800; border-bottom:1px solid #ddd; padding-bottom:3px; }
-    .grade-section + .grade-section { break-before: page; page-break-before: always; }
-    .group-block { margin: 6px 0 10px; page-break-inside: avoid; }
-    .g-head { font-weight:700; margin-bottom:4px; }
-    .students { font-weight: 500; color:#374151; }
-    table { width:100%; border-collapse: collapse; table-layout: fixed; }
-    th, td { border:1px solid #dcdcdc; padding: 2px 4px; vertical-align: top; }
-    th { background:#f3f4f6; font-weight:700; text-align:center; }
-    td.day { white-space:nowrap; font-weight:700; }
-    .mini { font-size: 10px; color:#374151; }
-    .tight th, .tight td { padding: 2px 4px; }
-    .grade-badge { display:inline-block; padding:2px 8px; border-radius:8px; background:#eef2ff; color:#1e3a8a; font-weight:800; }
-    .muted { color:#6b7280; }
-    th,td { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  `;
-
-  w.document.write(`<!DOCTYPE html><html lang="tr"><head>
-    <meta charset="utf-8">
-    <title>Fenomen Çocuk Kulübü birebir ve Grup Listesi</title>
-    <style>${css}</style>
-  </head><body>`);
-
-  w.document.write(`<h1>Fenomen Çocuk Kulübü birebir ve Grup Listesi</h1>`);
-
-  // Baskıya dahil edilecek sınıf düzeyleri; 5-8 arasındaki tüm sınıflar
-  [5,6,7,8].forEach(grade => {
-    const groups = byGrade(grade);
-    if (groups.length === 0) return; // Bu sınıf için grup veya atama yoksa atla
-
-    w.document.write(`<section class="grade-section">`);
-    w.document.write(`<h2><span class="grade-badge">${grade}. Sınıflar</span></h2>`);
-
-    groups.forEach(g => {
-      const aForG = state.assignments.filter(a => a.group === g.id);
-      const daysWith = Array.from(new Set(aForG.map(a => a.day))).sort((a,b)=>a-b);
-      if (daysWith.length === 0) return;
-
-      const studentNames = (state.students || [])
-        .filter(s => s.group === g.id)
-        .map(s => esc(s.name));
-
-      w.document.write(`<div class="group-block">`);
-      w.document.write(`<div class="g-head">${esc(g.name)} — <span class="students">${studentNames.join(', ') || '<span class="muted">öğrenci yok</span>'}</span></div>`);
-
-      let thead = `<tr><th style="width:90px">Gün / Saat</th>${
-        Array.from({length:S}, (_,i)=>`<th>${esc(labels[i] || (String(i+1)+'. Ders'))}</th>`).join('')
-      }</tr>`;
-
-      let body = '';
-      daysWith.forEach(d => {
-        let row = `<tr><td class="day">${esc(days[d] || '')}</td>`;
-        for (let s=0; s<S; s++) {
-          const a = aForG.find(x => x.day === d && x.slot === s);
-          if (a) {
-            const tname = state.teachers.find(t => t.id === a.teacherId)?.name || '';
-            row += `<td><div style="text-align:center"><b>${esc(a.branch)}</b><br><span class="mini">${esc(tname)}</span></div></td>`;
-          } else {
-            row += `<td></td>`;
-          }
-        }
-        row += `</tr>`;
-        body += row;
-      });
-
-      w.document.write(`<table class="tight"><thead>${thead}</thead><tbody>${body}</tbody></table>`);
-      w.document.write(`</div>`);
-    });
-
-    w.document.write(`</section>`);
-  });
-
-  w.document.write(`</body></html>`);
-  w.document.close();
-  w.focus();
-  setTimeout(() => { try { w.print(); } catch(_){} }, 50);
-}
-</script>
-<!-- ==== TEACHER PRINT V2 – KOMPAKT, TEK A4 ==== -->
-<style>
-/* ===========================
-   PRINT: Öğretmen V2 (Lüks)
-   =========================== */
-
-/* Genel değişkenler; fit fonksiyonu bunları ayarlar */
-:root{
-  --tpv2-font: 11px;
-  --tpv2-pad: 4px;
-  --tpv2-gap: 8px;
-  --tpv2-ink: #0f172a;
-  --tpv2-muted: #6b7280;
-  --tpv2-gold: #b45309;      /* lüks vurgu */
-  --tpv2-gold-ink: #78350f;
-  --tpv2-grid: #0f172a;
-}
-
+/* (eski yazdırma butonu enjeksiyonu kaldırıldı: gelişmiş yazdırma kullanılıyor) */
 .print-teacher-v2{
   color: var(--tpv2-ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
