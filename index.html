@@ -3498,12 +3498,12 @@ const btnAssgnLoadFb = document.getElementById('btnAssgnLoadFb');
 const btnAssgnDeleteFb = document.getElementById('btnAssgnDeleteFb');
 if (btnAssgnSaveFb) {
   btnAssgnSaveFb.addEventListener('click', () => {
-    saveDataToFirebase('assignments', state.assignments);
+    saveDataToFirebase('atamapath', state.assignments);
   });
 }
 if (btnAssgnLoadFb) {
   btnAssgnLoadFb.addEventListener('click', () => {
-    loadDataFromFirebase('assignments', obj => {
+    loadDataFromFirebase('atamapath', obj => {
       state.assignments = Array.isArray(obj) ? obj : [];
       renderAssignCards();
     });
@@ -3511,7 +3511,7 @@ if (btnAssgnLoadFb) {
 }
 if (btnAssgnDeleteFb) {
   btnAssgnDeleteFb.addEventListener('click', () => {
-    deleteDataFromFirebase('assignments');
+    deleteDataFromFirebase('atamapath');
   });
 }
 
