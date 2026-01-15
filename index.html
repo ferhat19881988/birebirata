@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fenomen Çocuk Kulübü • Grup Ders Planlama (tablı)</title>
+<title>Fenomen Eğitim Kurumları • Grup Ders Planlama (tablı)</title>
 <style>
   :root{
     --bg:#f6f9fb; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
@@ -580,7 +580,7 @@
     <div class="brand">
       <div class="logo"></div>
       <div class="title">
-        <h1>Fenomen Çocuk Kulübü</h1>
+        <h1>Fenomen Eğitim Kurumları</h1>
         <small>Grup dersleri planlama • Tablı</small>
       </div>
     </div>
@@ -2463,7 +2463,7 @@ function renderPrintPreview(){
   $("#btnPrint").disabled = false;
 
   const hdr = document.createElement('div'); hdr.className='print-header';
-  hdr.innerHTML = `<h2>Fenomen Çocuk Kulübü — ${mode==='group'?'Grup':'Öğretmen'} Ders Planı</h2>`;
+  hdr.innerHTML = `<h2>Fenomen Eğitim Kurumları — ${mode==='group'?'Grup':'Öğretmen'} Ders Planı</h2>`;
   div.appendChild(hdr);
 
   if(mode==='group'){
@@ -2876,11 +2876,11 @@ function printAllGrades() {
 
   w.document.write(`<!DOCTYPE html><html lang="tr"><head>
     <meta charset="utf-8">
-    <title>Fenomen Çocuk Kulübü birebir ve Grup Listesi</title>
+    <title>Fenomen Eğitim Kurumları birebir ve Grup Listesi</title>
     <style>${css}</style>
   </head><body>`);
 
-  w.document.write(`<h1>Fenomen Çocuk Kulübü birebir ve Grup Listesi</h1>`);
+  w.document.write(`<h1>Fenomen Eğitim Kurumları birebir ve Grup Listesi</h1>`);
 
   // Baskıya dahil edilecek sınıf düzeyleri; 5-8 arasındaki tüm sınıflar
   [5,6,7,8].forEach(grade => {
@@ -3266,7 +3266,7 @@ function printTeachersV2(){
 
       const head = `
         <div class="brandbar">
-          <div class="org">Fenomen Çocuk Kulübü</div>
+          <div class="org">Fenomen Eğitim Kurumları</div>
           <div class="chip">${++pageNo}. Sayfa / ${totalPages}</div>
         </div>
         <div class="title">Öğretmen Ders Planı</div>
