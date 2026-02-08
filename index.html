@@ -1721,10 +1721,12 @@ function teacherBranchesById(tid){
   return result;
 }
 function listFreeTeachersAt(day, slot, max=5){
+  // Not: Sadece state.teachers içindeki öğretmenleri listele (why: availability içinde "hayalet" id kalabiliyor)
   const tAvail = state.availability?.teachers || {};
-  const busy = new Set(state.assignments.filter(a=>a.day===day && a.slot===slot).map(a=>a.teacherId));
+  const busy = new Set((state.assignments||[]).filter(a=>a.day===day && a.slot===slot).map(a=>String(a.teacherId)));
   const res = [];
-  for (const tid of Object.keys(tAvail)) {
+  for (const t of (state.teachers || [])) {
+    const tid = String(t.id);
     if (tAvail[tid]?.[day]?.[slot] === true && !busy.has(tid)) {
       res.push({ id: tid, name: teacherNameById(tid), branches: teacherBranchesById(tid) });
     }
@@ -2056,6 +2058,15 @@ async function autoAssign() {
 
   const sleep0 = () => new Promise(r => setTimeout(r, 0));
 
+  let bestStrictScore = -1;
+  let bestStrictVio = Infinity;
+  let bestStrictSolution = null;
+
+  let bestRelaxScore = -1;
+  let bestRelaxVio = Infinity;
+  let bestRelaxSolution = null;
+
+  // UI için genel "en iyi"
   let bestScore = -1;
   let bestVio = Infinity;
   let bestSolution = null;
@@ -2076,11 +2087,18 @@ async function autoAssign() {
     if (elSub && msg) elSub.textContent = msg;
   };
 
+  const STRICT_UNTIL_MS = TIME_LIMIT_MS - 15000; // son 15 sn
+  let totalNeedCount = 0; // needs hesaplandıktan sonra set edilir
+
   const shouldRelax = () => {
+    // Kural esnetme: sadece son 15 sn ve hâlâ tüm ihtiyaçlar dolmamışsa
     if (!RELAX_CONSECUTIVE_WHEN_TIGHT) return false;
-    const p = (performance.now() - startTime) / TIME_LIMIT_MS;
-    // zaman ilerledikçe esnetmeyi artır (why: çok sıkışınca izin ver)
-    return p >= 0.65;
+    if (!totalNeedCount) return false;
+    const elapsed = performance.now() - startTime;
+    if (elapsed < STRICT_UNTIL_MS) return false;
+    // Sadece "katı" modda daha iyi sonuç çıkmazsa esnetmeye anlam var
+    if (bestStrictScore >= totalNeedCount) return false;
+    return true;
   };
 
   showOverlay();
@@ -2137,6 +2155,7 @@ async function autoAssign() {
 
   // İhtiyaç yoksa sadece yeniden çiz ve rapor
   const remainingNeedsCount = Object.values(needsByGroup).reduce((acc, arr) => acc + (arr?.length || 0), 0);
+  totalNeedCount = remainingNeedsCount;
   if (remainingNeedsCount === 0) {
     renderAssignCards();
     state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now() };
@@ -2198,6 +2217,8 @@ async function autoAssign() {
 
   while ((performance.now() - startTime) < TIME_LIMIT_MS) {
     restartsDone++;
+
+    const allowConsecutive = shouldRelax();
     if (restartsDone > TARGET_RESTARTS && (performance.now()-startTime) < TIME_LIMIT_MS*0.85) {
       // Hedef restart sayısı bittiyse, kalan sürede daha hızlı küçük denemeler (why: süreyi tam kullan)
       // Burada yine devam ediyoruz; amaç tie-break iyileştirmek.
@@ -2240,7 +2261,7 @@ async function autoAssign() {
         const lastB = prevBranchOf(gGrid, gid, d, s);
         const uniqBranches = Array.from(new Set(needArr));
         shuffle(uniqBranches);
-        if (lastB && !shouldRelax()) {
+        if (lastB && !allowConsecutive) {
           // normalde ardışık aynı branşı sona it (soft)
           const ix = uniqBranches.indexOf(lastB);
           if (ix > -1) { uniqBranches.splice(ix,1); uniqBranches.push(lastB); }
@@ -2249,6 +2270,7 @@ async function autoAssign() {
         let placedHere = false;
 
         for (const branch of uniqBranches) {
+          if (!allowConsecutive && lastB && branch === lastB) continue; // ardışık aynı branşı katı modda engelle
           // Tüm aday öğretmenleri filtrele (uygunluk ve boşluk kontrolü)
           const allCandidates = findTeacherOptions(branch)
             .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true && !(tGrid[t.id] || [])[d]?.[s]);
@@ -2305,15 +2327,47 @@ async function autoAssign() {
     }
 
     const vio = countConsecutiveViolations(gGrid);
-    if (placedCount > bestScore || (placedCount === bestScore && vio < bestVio)) {
-      bestScore = placedCount;
-      bestVio = vio;
-      bestSolution = solution;
-      updateOverlay(`Yeni en iyi çözüm: ${bestScore} atama${bestVio<Infinity ? ` • ardışık ihlal: ${bestVio}` : ''}`);
+
+    // === En iyi çözümü ayrı ayrı tut: katı mod vs. esnetilmiş mod ===
+    if (!allowConsecutive) {
+      if (placedCount > bestStrictScore || (placedCount === bestStrictScore && vio < bestStrictVio)) {
+        bestStrictScore = placedCount;
+        bestStrictVio = vio;
+        bestStrictSolution = solution;
+      }
+    } else {
+      if (placedCount > bestRelaxScore || (placedCount === bestRelaxScore && vio < bestRelaxVio)) {
+        bestRelaxScore = placedCount;
+        bestRelaxVio = vio;
+        bestRelaxSolution = solution;
+      }
+    }
+
+    // UI'da göstermek için genel en iyi
+    const candBestScore = Math.max(bestStrictScore, bestRelaxScore);
+    const candBestVio = (candBestScore === bestRelaxScore && bestRelaxScore > bestStrictScore)
+      ? bestRelaxVio
+      : bestStrictVio;
+
+    if (candBestScore > bestScore || (candBestScore === bestScore && candBestVio < bestVio)) {
+      bestScore = candBestScore;
+      bestVio = candBestVio;
+      bestSolution = (bestRelaxScore > bestStrictScore) ? bestRelaxSolution : bestStrictSolution;
+      updateOverlay(`Yeni en iyi çözüm: ${bestScore} atama${bestVio<Infinity ? ` • ardışık ihlal: ${bestVio}` : ''}${bestRelaxScore > bestStrictScore ? ' • (esnetme ile)' : ''}`);
     }
   }
 
   // En iyi sonucu uygula
+  // Not: Esnetme ancak gerçekten daha fazla atama getiriyorsa seçilir.
+  if (bestRelaxScore > bestStrictScore) {
+    bestSolution = bestRelaxSolution;
+    bestScore = bestRelaxScore;
+    bestVio = bestRelaxVio;
+  } else {
+    bestSolution = bestStrictSolution;
+    bestScore = bestStrictScore;
+    bestVio = bestStrictVio;
+  }
     if (bestSolution) {
       const seen = new Set();
       const merged = [];
@@ -3561,6 +3615,13 @@ if (btnAssgnLoadFb) {
     loadDataFromFirebase('atamapath', obj => {
       state.assignments = Array.isArray(obj) ? obj : [];
       renderAssignCards();
+
+      // Firebase'den yükleyince de "Son Otomatik Atama Raporu" kullanılabilsin
+      state.autoAssignMeta = { prevCount: state.assignments.length, lastRunAt: Date.now(), loadedFromFirebase: true };
+      const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
+      state.lastAutoAssignReport = rep;
+      const btnRpt = document.getElementById('btnAutoAssignReport');
+      if (btnRpt) btnRpt.disabled = false;
     });
   });
 }
