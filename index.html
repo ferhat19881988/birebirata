@@ -760,8 +760,8 @@
     <div class="section-title">
       <h2>5) Atama Paneli</h2>
       <div class="chips">
-        <span class="pill">Aynı gruba ardışık aynı branş verilmez</span>
-        <span class="pill">Branşa göre öğretmen yükü dengelenir</span>
+        <span class="pill">Hedef: 30 sn içinde en çok atama</span>
+        <span class="pill">Ardışık aynı branş: sıkışınca izin ver (opsiyon)</span>
       </div>
     </div>
     <div class="row">
@@ -775,7 +775,19 @@
       <button class="btn ghost" id="btnAssgnLoadFb">Firebase Yükle</button>
       <button class="btn ghost" id="btnAssgnDeleteFb">Firebase Sil</button>
     </div>
-    <div id="assignCards" class="cards"></div>
+
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <label class="pill" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="chkSoftConsecutive" checked />
+        Ardışık aynı branş: <span style="font-weight:800">sıkışınca izin ver</span>
+      </label>
+      <label class="pill" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="chkPreserveAssignments" checked />
+        Mevcut atamaları <span style="font-weight:800">koru</span>
+      </label>
+      <span class="pill">Zaman limiti: <span style="font-weight:800">30 sn</span></span>
+    </div>
+<div id="assignCards" class="cards"></div>
 
     <dialog id="dlgAssign">
       <header>Manuel Atama</header>
@@ -828,6 +840,58 @@
     <div id="printPreview" class="grid printable"></div>
   </section>
 </div>
+
+
+<div id="assignOverlay" class="overlay" hidden>
+  <div class="overlayCard">
+    <div class="spinner" aria-hidden="true"></div>
+    <div style="min-width:260px">
+      <div id="assignOverlayTitle" style="font-weight:900;font-size:16px">En iyi plan aranıyor…</div>
+      <div id="assignOverlayTime" class="muted" style="margin-top:4px">Kalan süre: 30 sn</div>
+      <div class="progressBar" style="margin-top:10px">
+        <div id="assignOverlayBar" class="progressBarFill" style="width:0%"></div>
+      </div>
+      <div id="assignOverlayStats" class="muted" style="margin-top:8px;font-size:13px"></div>
+    </div>
+    <button class="btn ghost" id="btnCancelAutoAssign" type="button">Durdur</button>
+  </div>
+</div>
+
+
+
+<style>
+/* ===== AutoAssign Overlay ===== */
+.overlay{
+  position:fixed; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(15,23,42,.35);
+  z-index:9999;
+}
+.overlayCard{
+  display:flex; gap:14px; align-items:center;
+  background:#fff; border:1px solid #e5e7eb;
+  border-radius:16px; padding:14px 16px;
+  box-shadow:0 18px 40px rgba(2,8,23,.18);
+}
+.spinner{
+  width:36px; height:36px; border-radius:50%;
+  border:4px solid #e5e7eb;
+  border-top-color: var(--pri, #1e88e5);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.progressBar{
+  height:10px; width:100%;
+  border-radius:999px;
+  background:#eef2ff;
+  overflow:hidden;
+  border:1px solid #e5e7eb;
+}
+.progressBarFill{
+  height:100%;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+}
+</style>
 
 <script>
 /* ===== Global Durum ===== */
@@ -1657,7 +1721,7 @@ $("#dlgOk").onclick = () => {
 
   // 4) Atamayı yaz
   state.assignments = state.assignments.filter(a => !(a.group===group && a.day===day && a.slot===slot));
-  state.assignments.push({group, day, slot, branch, teacherId});
+  state.assignments.push({group, day, slot, branch, teacherId, locked:true});
   dlg.close();
   renderAssignCards(); // why: UI ve uygunluk anında güncellensin
 
@@ -1674,7 +1738,7 @@ $("#dlgOk").onclick = () => {
  * Amaç: Öğretmen yük dengesini tamamen devre dışı bırakarak,
  * mümkün olan EN ÇOK derse atama yapan varyasyonu bulup uygulamak.
  */
-function autoAssign() {
+function autoAssignLegacy() {
   const D = state.program.days.length;
   const S = state.program.slots;
 
@@ -2412,7 +2476,7 @@ const importAssgn = obj=>{
 function doAutoAssign(maxAttempts = 3) {
   let attempts = 0;
   while (attempts < maxAttempts) {
-    autoAssign();
+    autoAssignLegacy();
     // Kalan ihtiyaçları hesapla: her grup için talep edilen derslerden atananlar çıkartılır
     let remaining = 0;
     for (const g of Object.values(state.groups)) {
@@ -2433,7 +2497,1084 @@ function doAutoAssign(maxAttempts = 3) {
   }
 }
 
-/* ===== 6) Yazdır ===== */
+
+/* =========================================================
+ * Auto Assign (V5): 30 sn içinde "en çok atama" odaklı arama
+ * - UI donmasın diye Web Worker kullanır
+ * - Aynı veride daha tutarlı sonuç için deterministik (seed'li) arama
+ * - "Ardışık aynı branş" kuralı: strict / soft (sıkışınca izin ver)
+ * ========================================================= */
+const AUTOASSIGN_BUDGET_MS = 30000;
+let __autoAssignWorker = null;
+let __autoAssignCancelRequested = false;
+
+function getAutoAssignSettings(){
+  return {
+    budgetMs: AUTOASSIGN_BUDGET_MS,
+    allowConsecutiveSoft: $("#chkSoftConsecutive") ? $("#chkSoftConsecutive").checked : true,
+    preserveExisting: $("#chkPreserveAssignments") ? $("#chkPreserveAssignments").checked : true
+  };
+}
+
+function fmtSec(sec){
+  sec = Math.max(0, Math.ceil(sec));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return (m ? String(m).padStart(2,'0')+':' : '') + String(s).padStart(2,'0');
+}
+
+function setOverlayVisible(visible){
+  const ov = $("#assignOverlay");
+  if(!ov) return;
+  ov.hidden = !visible;
+}
+function updateOverlay(progress){
+  const bar = $("#assignOverlayBar");
+  const tEl = $("#assignOverlayTime");
+  const st = $("#assignOverlayStats");
+  if(bar && typeof progress?.ratio === 'number'){
+    bar.style.width = Math.max(0, Math.min(100, progress.ratio*100)).toFixed(1) + '%';
+  }
+  if(tEl && typeof progress?.remainingSec === 'number'){
+    tEl.textContent = `Kalan süre: ${fmtSec(progress.remainingSec)} sn`;
+  }
+  if(st && progress?.text){
+    st.textContent = progress.text;
+  }
+}
+
+function disableAutoAssignUI(disabled){
+  const ids = ["btnAutoAssign","btnAssgnClear","btnAssgnExport","btnAssgnImport","btnReqExport","btnReqImport","btnReqClear"];
+  for (const id of ids){
+    const el = document.getElementById(id);
+    if(el) el.disabled = !!disabled;
+  }
+}
+
+function stableHash32(str){
+  // FNV-1a 32-bit
+  let h = 2166136261 >>> 0;
+  for (let i=0;i<str.length;i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function buildAutoAssignSnapshot(settings){
+  const D = state.program.days.length;
+  const S = state.program.slots;
+
+  // "locked" atamalar her koşulda korunur.
+  const lockedOnly = (state.assignments || []).filter(a => a && a.locked === true);
+  const baseAssignments = settings.preserveExisting ? (state.assignments || []) : lockedOnly;
+
+  // Deterministik seed (aynı veri -> aynı seed)
+  const seedStr = [
+    "D"+D,"S"+S,
+    "T"+(state.teachers?.length||0),
+    "G"+Object.keys(state.groups||{}).length,
+    "A"+(baseAssignments?.length||0),
+    "R"+Object.keys(state.requests||{}).length
+  ].join("|");
+  const seed = stableHash32(seedStr);
+
+  return {
+    seed,
+    budgetMs: settings.budgetMs,
+    allowConsecutiveSoft: settings.allowConsecutiveSoft,
+    program: { days: state.program.days.slice(), slots: S, slotLabels: (state.program.slotLabels||[]).slice() },
+    branches: (state.branches||[]).slice(),
+    teachers: (state.teachers||[]).map(t => ({ id: t.id, branch: t.branch, name: t.name || "" })),
+    groups: Object.values(state.groups||{}).map(g => ({ id: g.id, name: g.name || String(g.id) })),
+    availability: state.availability || {teachers:{},groups:{}},
+    requests: state.requests || {},
+    assignments: baseAssignments.map(a => ({ group:a.group, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId, locked: !!a.locked }))
+  };
+}
+
+function createAutoAssignWorker(){
+  const workerCode = `
+  let canceled = false;
+
+  self.onmessage = (e) => {
+    const msg = e.data || {};
+    if (msg.type === 'start') {
+      canceled = false;
+      run(msg.payload);
+    }
+    if (msg.type === 'cancel') {
+      canceled = true;
+    }
+  };
+
+  function now(){ return (self.performance && performance.now) ? performance.now() : Date.now(); }
+
+  function mulberry32(seed){
+    let t = seed >>> 0;
+    return function(){
+      t += 0x6D2B79F5;
+      let x = t;
+      x = Math.imul(x ^ (x >>> 15), x | 1);
+      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function rndInt(rng, n){ return Math.floor(rng() * n); }
+  function shuffleInPlace(rng, arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = rndInt(rng, i+1);
+      const tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+    }
+    return arr;
+  }
+
+  function run(input){
+    const start = now();
+    const budgetMs = Math.max(1000, input.budgetMs || 30000);
+    const D = (input.program?.days||[]).length;
+    const S = input.program?.slots || 0;
+    const T = (input.teachers||[]).length;
+    const G = (input.groups||[]).length;
+    const branches = (input.branches||[]).map(String);
+
+    const allowSoft = !!input.allowConsecutiveSoft;
+    const rng = mulberry32((input.seed||123456789) >>> 0);
+
+    // --- ID -> index maps (string key) ---
+    const teacherIdxById = new Map();
+    input.teachers.forEach((t,i)=>teacherIdxById.set(String(t.id), i));
+    const groupIdxById = new Map();
+    input.groups.forEach((g,i)=>groupIdxById.set(String(g.id), i));
+
+    // --- Branch -> teacher indices ---
+    const teacherIdxByBranch = new Map();
+    for (let i=0;i<T;i++){
+      const br = String(input.teachers[i].branch || "");
+      if(!teacherIdxByBranch.has(br)) teacherIdxByBranch.set(br, []);
+      teacherIdxByBranch.get(br).push(i);
+    }
+
+    // Flatten time index
+    const TS = D * S;
+    const tOf = (d,s)=>d*S+s;
+    const dOf = (t)=>Math.floor(t/S);
+    const sOf = (t)=>t%S;
+
+    // Availability arrays
+    const gAvail = Array.from({length:G}, ()=> new Uint8Array(TS));
+    const tAvail = Array.from({length:T}, ()=> new Uint8Array(TS));
+
+    // Fill group availability
+    for (const g of input.groups){
+      const gi = groupIdxById.get(String(g.id));
+      const mat = input.availability?.groups?.[g.id] || input.availability?.groups?.[String(g.id)] || [];
+      for(let d=0; d<D; d++){
+        const row = mat[d] || [];
+        for(let s=0; s<S; s++){
+          if(row[s] === true) gAvail[gi][tOf(d,s)] = 1;
+        }
+      }
+    }
+    // Fill teacher availability
+    for (const t of input.teachers){
+      const ti = teacherIdxById.get(String(t.id));
+      const mat = input.availability?.teachers?.[t.id] || input.availability?.teachers?.[String(t.id)] || [];
+      for(let d=0; d<D; d++){
+        const row = mat[d] || [];
+        for(let s=0; s<S; s++){
+          if(row[s] === true) tAvail[ti][tOf(d,s)] = 1;
+        }
+      }
+    }
+
+    // Precompute teachers available per (branch, time)
+    const brTimeTeachers = new Map(); // key br -> Array(TS) each is Int32Array (packed indices)
+    for (const br of branches){
+      const tids = teacherIdxByBranch.get(br) || [];
+      const lists = Array.from({length:TS}, ()=>[]);
+      for (let ti of tids){
+        const av = tAvail[ti];
+        for (let tt=0; tt<TS; tt++){
+          if(av[tt]) lists[tt].push(ti);
+        }
+      }
+      // Convert to typed arrays
+      brTimeTeachers.set(br, lists.map(a => Int32Array.from(a)));
+    }
+
+    // Fixed (locked) assignments are always fixed; other base assignments are also fixed here because snapshot already filtered.
+    const fixed = (input.assignments||[]).map(a=>({
+      groupId: a.group, teacherId: a.teacherId, branch: String(a.branch||""), day: a.day|0, slot: a.slot|0, locked: !!a.locked
+    }));
+
+    // Build initial plan arrays
+    function emptyPlan(){
+      const gBr = Array.from({length:G}, ()=> new Int32Array(TS).fill(-1)); // store branchIndex in branches array (or -1)
+      const gTi = Array.from({length:G}, ()=> new Int32Array(TS).fill(-1)); // teacher index
+      const tBusy = Array.from({length:T}, ()=> new Uint8Array(TS));
+      const tLoad = new Int32Array(T);
+      let violations = 0;
+
+      // Apply fixed
+      for (const a of fixed){
+        const gi = groupIdxById.get(String(a.groupId));
+        const ti = teacherIdxById.get(String(a.teacherId));
+        const brIdx = branches.indexOf(a.branch);
+        const tt = tOf(a.day, a.slot);
+        if(gi==null || ti==null || brIdx<0) continue;
+        if(gBr[gi][tt] !== -1) continue;
+        if(tBusy[ti][tt]) continue;
+
+        gBr[gi][tt] = brIdx;
+        gTi[gi][tt] = ti;
+        tBusy[ti][tt] = 1;
+        tLoad[ti]++;
+
+        // count violations contributed by fixed as well (so tie-break works)
+        const prev = tt-1;
+        if(prev >= 0 && gBr[gi][prev] === brIdx) violations++;
+        const next = tt+1;
+        if(next < TS && gBr[gi][next] === brIdx) violations++;
+      }
+
+      return { gBr, gTi, tBusy, tLoad, violations };
+    }
+
+    // Build tasks (unmet requests)
+    const tasks = [];
+    for (const g of input.groups){
+      const gid = g.id;
+      const gi = groupIdxById.get(String(gid));
+      const req = input.requests?.[gid] || input.requests?.[String(gid)] || {};
+      // count fixed per branch
+      const have = new Map();
+      for (const a of fixed){
+        if(String(a.groupId) !== String(gid)) continue;
+        have.set(a.branch, (have.get(a.branch)||0) + 1);
+      }
+      for (const br of Object.keys(req)){
+        const need = Math.max(0, (req[br]|0) - (have.get(String(br))||0));
+        for (let i=0;i<need;i++){
+          tasks.push({ gi, br: String(br) });
+        }
+      }
+    }
+    const totalNeeds = tasks.length;
+
+    if (totalNeeds === 0){
+      self.postMessage({ type:'done', payload:{ assignments: fixed.map(a=>({group:a.groupId, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId, locked:a.locked})), metrics:{totalNeeds:0, assigned:0, violations:0, iters:0} }});
+      return;
+    }
+
+    // Precompute base candidate counts for ordering
+    function baseCandidateCount(task){
+      const {gi, br} = task;
+      const lists = brTimeTeachers.get(br);
+      if(!lists) return 0;
+      let cnt = 0;
+      const gAv = gAvail[gi];
+      for (let tt=0; tt<TS; tt++){
+        if(!gAv[tt]) continue;
+        cnt += lists[tt].length;
+      }
+      return cnt;
+    }
+    const baseCounts = tasks.map(baseCandidateCount);
+
+    // Helper: incremental violation count if place brIdx at gi,tt
+    function deltaViolations(plan, gi, tt, brIdx){
+      let dv = 0;
+      const prev = tt-1;
+      if(prev >= 0 && plan.gBr[gi][prev] === brIdx) dv++;
+      const next = tt+1;
+      if(next < TS && plan.gBr[gi][next] === brIdx) dv++;
+      return dv;
+    }
+
+    function choosePlacement(plan, task, strictNoConsec){
+      const {gi, br} = task;
+      const lists = brTimeTeachers.get(br);
+      if(!lists) return null;
+
+      const gAv = gAvail[gi];
+      let best = null;
+      let bestScore = Infinity;
+
+      // iterate all time slots
+      for (let tt=0; tt<TS; tt++){
+        if(!gAv[tt]) continue;
+        if(plan.gBr[gi][tt] !== -1) continue;
+
+        const candTeachers = lists[tt];
+        if(candTeachers.length === 0) continue;
+
+        // slot pressure = number of teachers that can do br at tt (lower better)
+        const pressure = candTeachers.length;
+
+        // Try teachers in order of low load (scan min; keep it fast)
+        for (let k=0; k<candTeachers.length; k++){
+          const ti = candTeachers[k];
+          if(plan.tBusy[ti][tt]) continue;
+
+          const brIdx = branches.indexOf(br);
+          const dv = deltaViolations(plan, gi, tt, brIdx);
+
+          if(strictNoConsec && dv>0) continue;
+
+          // score: prioritize non-violation, then scarce slot, then low teacher load
+          const score = (dv>0 ? 1e9 : 0) + pressure*1000 + plan.tLoad[ti]*10 + rndInt(rng, 5);
+          if(score < bestScore){
+            bestScore = score;
+            best = { tt, ti, brIdx, dv };
+          }
+        }
+      }
+      return best;
+    }
+
+    function applyPlacement(plan, gi, tt, ti, brIdx, dv){
+      plan.gBr[gi][tt] = brIdx;
+      plan.gTi[gi][tt] = ti;
+      plan.tBusy[ti][tt] = 1;
+      plan.tLoad[ti] += 1;
+      plan.violations += dv;
+    }
+
+    // Greedy fill (deterministic ordering + soft relax)
+    function greedyBuild(orderSeed){
+      const plan = emptyPlan();
+
+      // Build task order
+      const idxs = tasks.map((_,i)=>i);
+      // sort by base count asc; tie-break by seeded shuffle
+      idxs.sort((i,j)=> {
+        const di = baseCounts[i] - baseCounts[j];
+        if(di !== 0) return di;
+        // deterministic pseudo-random tie-break
+        return ( ( (i + orderSeed*1315423911) % 97) - ( (j + orderSeed*1315423911) % 97) );
+      });
+
+      const unassigned = [];
+
+      // First pass: strict consecutive
+      for (const i of idxs){
+        if(canceled) break;
+        const task = tasks[i];
+        const strict = true;
+        const p = choosePlacement(plan, task, strict);
+        if(p){
+          applyPlacement(plan, task.gi, p.tt, p.ti, p.brIdx, p.dv);
+        } else {
+          unassigned.push(task);
+        }
+      }
+
+      // Second pass: if soft enabled, allow consecutive when stuck
+      if(allowSoft && !canceled){
+        const still = [];
+        for (const task of unassigned){
+          const p = choosePlacement(plan, task, false);
+          if(p){
+            applyPlacement(plan, task.gi, p.tt, p.ti, p.brIdx, p.dv);
+          } else {
+            still.push(task);
+          }
+        }
+        unassigned.length = 0;
+        still.forEach(x=>unassigned.push(x));
+      }
+
+      // assigned count excludes fixed? We'll compute total in plan
+      let assigned = 0;
+      for (let gi=0; gi<G; gi++){
+        const row = plan.gBr[gi];
+        for (let tt=0; tt<TS; tt++){
+          if(row[tt] !== -1) assigned++;
+        }
+      }
+      // fixed are included in assigned; we want only new? metrics will include total assigned minus fixed if needed
+      return { plan, unassigned, assignedTotal: assigned };
+    }
+
+    // Local repair: 1-eject move for a limited number of unassigned tasks
+    function tryOneEject(plan, unassigned, limitOps){
+      const brIdxCache = new Map();
+      function brIndex(br){
+        if(brIdxCache.has(br)) return brIdxCache.get(br);
+        const idx = branches.indexOf(br);
+        brIdxCache.set(br, idx);
+        return idx;
+      }
+
+      let ops = 0;
+      for (let u=0; u<unassigned.length && ops<limitOps && !canceled; u++){
+        const task = unassigned[u];
+        const gi = task.gi;
+        const br = task.br;
+        const lists = brTimeTeachers.get(br);
+        if(!lists) continue;
+
+        // iterate candidate times
+        for (let tt=0; tt<TS && ops<limitOps; tt++){
+          if(!gAvail[gi][tt]) continue;
+          // if slot free for group -> easy
+          if(plan.gBr[gi][tt] === -1){
+            // try any teacher free
+            const candTeachers = lists[tt];
+            for (let k=0;k<candTeachers.length;k++){
+              const ti = candTeachers[k];
+              if(plan.tBusy[ti][tt]) continue;
+              const bidx = brIndex(br);
+              const dv = allowSoft ? deltaViolations(plan, gi, tt, bidx) : (deltaViolations(plan, gi, tt, bidx)>0 ? 999 : 0);
+              if(!allowSoft && dv>0) continue;
+              applyPlacement(plan, gi, tt, ti, bidx, dv);
+              unassigned.splice(u,1);
+              u--;
+              ops++;
+              break;
+            }
+            if(ops>=limitOps) break;
+          } else {
+            // group occupied: try to move that assignment elsewhere (same teacher, same branch) to free this slot
+            const occBrIdx = plan.gBr[gi][tt];
+            const occTi = plan.gTi[gi][tt];
+            if(occBrIdx < 0) continue;
+
+            // candidate teacher for the needed task at this time
+            const candTeachers = lists[tt];
+            for (let k=0;k<candTeachers.length && ops<limitOps;k++){
+              const tiNeed = candTeachers[k];
+              if(plan.tBusy[tiNeed][tt]) continue;
+
+              // try move occupant to a different time slot t2
+              for (let t2=0; t2<TS && ops<limitOps; t2++){
+                if(t2===tt) continue;
+                if(!gAvail[gi][t2]) continue;
+                if(plan.gBr[gi][t2] !== -1) continue;
+                if(!tAvail[occTi][t2]) continue;
+                if(plan.tBusy[occTi][t2]) continue;
+
+                // also keep consecutive strict if needed
+                const dvMoveOut = allowSoft ? 0 : 0; // we don't compute exact delta; keep it simple
+                // move occupant
+                plan.gBr[gi][t2] = occBrIdx;
+                plan.gTi[gi][t2] = occTi;
+                plan.tBusy[occTi][t2] = 1;
+
+                plan.gBr[gi][tt] = -1;
+                plan.gTi[gi][tt] = -1;
+                plan.tBusy[occTi][tt] = 0;
+
+                // place needed task
+                const bidx = brIndex(br);
+                const dv = allowSoft ? deltaViolations(plan, gi, tt, bidx) : (deltaViolations(plan, gi, tt, bidx)>0 ? 999 : 0);
+                if(!allowSoft && dv>0){
+                  // revert move if strict violated
+                  plan.gBr[gi][tt] = occBrIdx;
+                  plan.gTi[gi][tt] = occTi;
+                  plan.tBusy[occTi][tt] = 1;
+
+                  plan.gBr[gi][t2] = -1;
+                  plan.gTi[gi][t2] = -1;
+                  plan.tBusy[occTi][t2] = 0;
+                  continue;
+                }
+
+                applyPlacement(plan, gi, tt, tiNeed, bidx, dv);
+                unassigned.splice(u,1);
+                u--;
+                ops++;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function planScoreTuple(plan){
+      // higher assigned is better, lower violations is better
+      let assigned = 0;
+      for (let gi=0; gi<G; gi++){
+        const row = plan.gBr[gi];
+        for (let tt=0; tt<TS; tt++){
+          if(row[tt] !== -1) assigned++;
+        }
+      }
+      return { assigned, violations: plan.violations };
+    }
+
+    function isBetter(a, b){
+      if(!b) return true;
+      if(a.assigned !== b.assigned) return a.assigned > b.assigned;
+      return a.violations < b.violations;
+    }
+
+    let bestPlan = null;
+    let bestScore = null;
+    let iters = 0;
+    let lastProgressAt = start;
+
+    // Phase 1: multiple greedy builds
+    const GREEDY_RESTARTS = Math.max(200, Math.min(4000, totalNeeds * 25));
+    for (let r=0; r<GREEDY_RESTARTS && !canceled; r++){
+      if(now() - start > budgetMs) break;
+
+      const { plan, unassigned } = greedyBuild(r+1);
+      if(unassigned.length > 0) tryOneEject(plan, unassigned, 50);
+
+      const sc = planScoreTuple(plan);
+      if(isBetter(sc, bestScore)){
+        bestScore = sc;
+        bestPlan = plan;
+      }
+
+      iters++;
+
+      const tnow = now();
+      if(tnow - lastProgressAt > 200){
+        lastProgressAt = tnow;
+        self.postMessage({ type:'progress', payload:{
+          elapsedMs: tnow-start,
+          remainingMs: Math.max(0, budgetMs-(tnow-start)),
+          best: { assigned: bestScore.assigned, totalNeeds, violations: bestScore.violations },
+          iters
+        }});
+        if(bestScore.assigned >= totalNeeds + fixed.length) break; // all tasks placed (fixed included in assigned)
+      }
+      if(bestScore.assigned >= totalNeeds + fixed.length) break;
+    }
+
+    // Phase 2: LNS on bestPlan (destroy & repair)
+    if(bestPlan && !canceled){
+      while(!canceled && (now()-start) < budgetMs){
+        // build from current best by removing some non-fixed assignments
+        const plan = emptyPlan();
+
+        // collect non-fixed assignments from bestPlan
+        const nonFixed = [];
+        for (let gi=0; gi<G; gi++){
+          for (let tt=0; tt<TS; tt++){
+            const brIdx = bestPlan.gBr[gi][tt];
+            if(brIdx === -1) continue;
+            // if slot is occupied by fixed in input, treat as fixed; approximate by checking fixed list
+            let isFx = false;
+            for (const fx of fixed){
+              const fgi = groupIdxById.get(String(fx.groupId));
+              const ftt = tOf(fx.day, fx.slot);
+              if(fgi===gi && ftt===tt){ isFx = true; break; }
+            }
+            if(!isFx){
+              nonFixed.push({gi, tt, brIdx, ti: bestPlan.gTi[gi][tt]});
+            }
+          }
+        }
+
+        // decide how many to remove
+        const removeCount = Math.max(1, Math.floor(nonFixed.length * (0.15 + rng()*0.20)));
+        shuffleInPlace(rng, nonFixed);
+
+        // apply kept assignments to plan
+        const removedSet = new Set();
+        for (let i=0; i<removeCount && i<nonFixed.length; i++){
+          const k = nonFixed[i];
+          removedSet.add(k.gi + "|" + k.tt);
+        }
+
+        for (const k of nonFixed){
+          if(removedSet.has(k.gi + "|" + k.tt)) continue;
+          // only place if feasible
+          const ti = k.ti;
+          const tt = k.tt;
+          if(plan.gBr[k.gi][tt] !== -1) continue;
+          if(plan.tBusy[ti][tt]) continue;
+          if(!gAvail[k.gi][tt]) continue;
+          if(!tAvail[ti][tt]) continue;
+
+          const dv = deltaViolations(plan, k.gi, tt, k.brIdx);
+          if(!allowSoft && dv>0) continue;
+          applyPlacement(plan, k.gi, tt, ti, k.brIdx, dv);
+        }
+
+        // Rebuild unassigned tasks list from scratch relative to plan
+        const unassigned = [];
+        // Count have per group/branch in current plan
+        const have = Array.from({length:G}, ()=> new Map());
+        for (let gi=0; gi<G; gi++){
+          for (let tt=0; tt<TS; tt++){
+            const bidx = plan.gBr[gi][tt];
+            if(bidx === -1) continue;
+            const br = branches[bidx];
+            have[gi].set(br, (have[gi].get(br)||0) + 1);
+          }
+        }
+        for (const g of input.groups){
+          const gi = groupIdxById.get(String(g.id));
+          const req = input.requests?.[g.id] || input.requests?.[String(g.id)] || {};
+          for (const br of Object.keys(req)){
+            const need = req[br]|0;
+            const cur = have[gi].get(String(br)) || 0;
+            const miss = Math.max(0, need - cur);
+            for (let i=0; i<miss; i++) unassigned.push({gi, br:String(br)});
+          }
+        }
+
+        // Greedy place remaining
+        // Sort by base candidate count for speed
+        unassigned.sort((a,b)=>{
+          const ca = baseCandidateCount(a);
+          const cb = baseCandidateCount(b);
+          if(ca!==cb) return ca-cb;
+          return rndInt(rng,3)-1;
+        });
+
+        const still = [];
+        for (const task of unassigned){
+          if(canceled) break;
+          const p = choosePlacement(plan, task, true);
+          if(p) applyPlacement(plan, task.gi, p.tt, p.ti, p.brIdx, p.dv);
+          else still.push(task);
+        }
+        if(allowSoft && !canceled){
+          const still2 = [];
+          for (const task of still){
+            const p = choosePlacement(plan, task, false);
+            if(p) applyPlacement(plan, task.gi, p.tt, p.ti, p.brIdx, p.dv);
+            else still2.push(task);
+          }
+        }
+
+        const sc = planScoreTuple(plan);
+        if(isBetter(sc, bestScore)){
+          bestScore = sc;
+          bestPlan = plan;
+        }
+
+        iters++;
+        const tnow = now();
+        if(tnow - lastProgressAt > 200){
+          lastProgressAt = tnow;
+          self.postMessage({ type:'progress', payload:{
+            elapsedMs: tnow-start,
+            remainingMs: Math.max(0, budgetMs-(tnow-start)),
+            best: { assigned: bestScore.assigned, totalNeeds, violations: bestScore.violations },
+            iters
+          }});
+        }
+
+        if(bestScore.assigned >= totalNeeds + fixed.length) break;
+      }
+    }
+
+    // Build output assignments from bestPlan
+    const out = [];
+    // keep fixed first (original IDs)
+    for (const a of fixed){
+      out.push({ group: a.groupId, day: a.day, slot: a.slot, branch: a.branch, teacherId: a.teacherId, locked: a.locked });
+    }
+    if(bestPlan){
+      for (let gi=0; gi<G; gi++){
+        for (let tt=0; tt<TS; tt++){
+          const brIdx = bestPlan.gBr[gi][tt];
+          if(brIdx === -1) continue;
+
+          // skip if this is already a fixed slot
+          let isFx = false;
+          for (const fx of fixed){
+            const fgi = groupIdxById.get(String(fx.groupId));
+            const ftt = tOf(fx.day, fx.slot);
+            if(fgi===gi && ftt===tt){ isFx = true; break; }
+          }
+          if(isFx) continue;
+
+          const ti = bestPlan.gTi[gi][tt];
+          const gId = input.groups[gi].id;
+          const tId = input.teachers[ti].id;
+          out.push({ group: gId, day: dOf(tt), slot: sOf(tt), branch: branches[brIdx], teacherId: tId, locked: false });
+        }
+      }
+    }
+
+    // De-dup by (group,day,slot)
+    const seen = new Set();
+    const merged = [];
+    for (const a of out){
+      const k = String(a.group)+"|"+a.day+"|"+a.slot;
+      if(seen.has(k)) continue;
+      seen.add(k);
+      merged.push(a);
+    }
+
+    self.postMessage({ type:'done', payload:{
+      assignments: merged,
+      metrics: {
+        totalNeeds,
+        assigned: bestScore ? bestScore.assigned : 0,
+        violations: bestScore ? bestScore.violations : 0,
+        iters
+      }
+    }});
+  }
+  `;
+  const blob = new Blob([workerCode], { type: "application/javascript" });
+  return new Worker(URL.createObjectURL(blob));
+}
+
+function ensureAutoAssignWorker(){
+  if(__autoAssignWorker) return __autoAssignWorker;
+  __autoAssignWorker = createAutoAssignWorker();
+  return __autoAssignWorker;
+}
+
+/* ---------- Akıllı Raporlama (basit + önerili) ---------- */
+
+function computeRemainingNeeds(){
+  const out = [];
+  const groups = Object.values(state.groups||{});
+  for (const g of groups){
+    const req = state.requests[g.id] || {};
+    const have = {};
+    (state.assignments||[]).filter(a=>a.group===g.id).forEach(a=>{
+      have[a.branch] = (have[a.branch]||0)+1;
+    });
+    for (const b of Object.keys(req)){
+      const need = Math.max(0, (req[b]|0) - (have[b]||0));
+      if(need>0) out.push({ gid:g.id, gname:g.name||String(g.id), branch:b, need });
+    }
+  }
+  // group name order
+  out.sort((a,b)=>{
+    const gn = (x)=>String(x||"");
+    const c = gn(a.gname).localeCompare(gn(b.gname), 'tr');
+    if(c!==0) return c;
+    return String(a.branch).localeCompare(String(b.branch), 'tr');
+  });
+  return out;
+}
+
+function timeLabel(d,s){
+  const day = state.program.days[d] || `Gün${d+1}`;
+  const lbl = state.program.slotLabels?.[s] || `${s+1}. saat`;
+  return `${day} • ${lbl}`;
+}
+
+function getPrevBranchForGroup(gid, d, s){
+  const S = state.program.slots;
+  if(s>0){
+    const prev = state.assignments.find(a=>a.group===gid && a.day===d && a.slot===s-1);
+    return prev?.branch || null;
+  }
+  if(d>0){
+    const prev = state.assignments.find(a=>a.group===gid && a.day===d-1 && a.slot===S-1);
+    return prev?.branch || null;
+  }
+  return null;
+}
+function getNextBranchForGroup(gid, d, s){
+  const S = state.program.slots;
+  const D = state.program.days.length;
+  if(s < S-1){
+    const nx = state.assignments.find(a=>a.group===gid && a.day===d && a.slot===s+1);
+    return nx?.branch || null;
+  }
+  if(d < D-1){
+    const nx = state.assignments.find(a=>a.group===gid && a.day===d+1 && a.slot===0);
+    return nx?.branch || null;
+  }
+  return null;
+}
+
+function listCandidateSlots(gid, branch, limit=3){
+  const D = state.program.days.length;
+  const S = state.program.slots;
+  const soft = $("#chkSoftConsecutive") ? $("#chkSoftConsecutive").checked : true;
+
+  const suggestions = [];
+  const suggestionsWithViolation = [];
+  for(let d=0; d<D; d++){
+    for(let s=0; s<S; s++){
+      // group availability
+      if(state.availability.groups[gid]?.[d]?.[s] !== true) continue;
+      // group slot empty
+      if((state.assignments||[]).some(a=>a.group===gid && a.day===d && a.slot===s)) continue;
+
+      const prevB = getPrevBranchForGroup(gid,d,s);
+      const nextB = getNextBranchForGroup(gid,d,s);
+      const violates = (prevB===branch) || (nextB===branch);
+
+      // teachers for branch
+      const teachers = findTeacherOptions(branch)
+        .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true)
+        .filter(t => !isTeacherBusy(t.id, d, s));
+
+      if(teachers.length===0) continue;
+
+      // sort teachers by current load
+      const loadMap = getTeacherAssignmentsMap();
+      teachers.sort((a,b)=> (loadMap.get(a.id)?.length||0) - (loadMap.get(b.id)?.length||0));
+
+      const item = { d,s, label: timeLabel(d,s), teachers, violates };
+      if(violates) suggestionsWithViolation.push(item);
+      else suggestions.push(item);
+    }
+  }
+
+  const sortFn = (a,b)=> (a.teachers.length - b.teachers.length) || (a.d-b.d) || (a.s-b.s);
+  suggestions.sort(sortFn);
+  suggestionsWithViolation.sort(sortFn);
+
+  const pick = suggestions.slice(0, limit);
+  if(pick.length >= limit) return { list: pick, onlyViaConsec:false };
+
+  if(soft){
+    const extra = suggestionsWithViolation.slice(0, Math.max(0, limit-pick.length));
+    return { list: pick.concat(extra), onlyViaConsec: (pick.length===0 && extra.length>0) };
+  }
+  return { list: pick, onlyViaConsec:false };
+}
+
+function showSmartReport(metrics){
+  let dlg = document.getElementById("dlgSmartReport");
+  if(!dlg){
+    dlg = document.createElement("dialog");
+    dlg.id = "dlgSmartReport";
+    dlg.style.padding = "16px";
+    dlg.style.borderRadius = "14px";
+    dlg.style.maxWidth = "1200px";
+    dlg.style.width = "min(98vw, 1200px)";
+    dlg.innerHTML = `
+      <header style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-weight:900;font-size:18px">🧠 Akıllı Rapor — Açıkta Kalan Dersler</div>
+        <button class="btn" id="btnSmartRptClose">Kapat</button>
+      </header>
+      <section style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="pill" id="srSum"></span>
+        <span class="pill" id="srMode"></span>
+        <span class="pill" id="srViol"></span>
+      </section>
+      <section style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <input id="srSearch" placeholder="Grup ara (örn: 7A)" style="flex:1;min-width:220px;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb"/>
+        <button class="btn ghost" id="srRefresh">Yenile</button>
+      </section>
+      <section id="smartReportBody" style="max-height:60vh;overflow:auto"></section>
+    `;
+    document.body.appendChild(dlg);
+
+    dlg.querySelector("#btnSmartRptClose").onclick = ()=>dlg.close();
+    dlg.querySelector("#srRefresh").onclick = ()=>render();
+    dlg.querySelector("#srSearch").addEventListener("input", ()=>render());
+
+    dlg.addEventListener("click", (e)=>{
+      const btn = e.target.closest(".btn-sr-assign");
+      if(!btn) return;
+      const row = btn.closest("[data-gid]");
+      if(!row) return;
+
+      const gid = row.dataset.gid;
+      const d = +row.dataset.day;
+      const s = +row.dataset.slot;
+      const branch = row.dataset.branch;
+
+      const selT = row.querySelector("select.sr-teacher");
+      const teacherId = selT?.value;
+
+      if(!teacherId){ alert("Lütfen öğretmen seçiniz."); return; }
+
+      // güvenlik kontrolleri
+      if(state.availability.groups[gid]?.[d]?.[s] !== true){ alert("Grup bu saat için müsait değil."); return; }
+      if(state.availability.teachers[teacherId]?.[d]?.[s] !== true){ alert("Öğretmen bu saat için müsait değil."); return; }
+      if(isTeacherBusy(teacherId,d,s)){ alert("Öğretmen bu saat çakışıyor."); return; }
+      if(isGroupBusy(gid,d,s)){ alert("Bu grupta bu slot dolu."); return; }
+
+      state.assignments.push({group: gid, day: d, slot: s, branch, teacherId, locked:true});
+      renderAssignCards();
+      render(); // modal açık kalsın
+    });
+
+    function render(){
+      const needs = computeRemainingNeeds();
+      const search = (dlg.querySelector("#srSearch")?.value || "").trim().toLowerCase();
+
+      // totals
+      let totalReq = 0, totalAssigned = (state.assignments||[]).length, totalRemaining = 0;
+      for(const gid of Object.keys(state.requests||{})){
+        const req = state.requests[gid] || {};
+        for(const b of Object.keys(req)) totalReq += (req[b]|0);
+      }
+      for(const n of needs) totalRemaining += n.need;
+
+      const sumEl = dlg.querySelector("#srSum");
+      sumEl.textContent = `Toplam İhtiyaç: ${totalReq} • Atanan: ${totalAssigned} • Kalan: ${totalRemaining}`;
+
+      const modeEl = dlg.querySelector("#srMode");
+      const soft = $("#chkSoftConsecutive") ? $("#chkSoftConsecutive").checked : true;
+      modeEl.textContent = `Ardışık Branş: ${soft ? "Sıkışınca izin ver" : "Kesin yasak"}`;
+
+      const violEl = dlg.querySelector("#srViol");
+      violEl.textContent = dlg._lastMetrics?.violations != null ? `Ardışık İhlal (yaklaşık): ${metrics.violations}` : `Ardışık İhlal: —`;
+
+      const body = dlg.querySelector("#smartReportBody");
+      if(!needs.length){
+        body.innerHTML = `<div class="card" style="padding:14px"><div style="font-weight:900">🎉 Açıkta kalan ders yok.</div><div class="muted" style="margin-top:6px">Tüm talepler karşılandı.</div></div>`;
+        return;
+      }
+
+      const rows = [];
+      for(const n of needs){
+        if(search && !String(n.gname).toLowerCase().includes(search) && !String(n.gid).toLowerCase().includes(search)) continue;
+
+        const {list, onlyViaConsec} = listCandidateSlots(n.gid, n.branch, 3);
+
+        let sugHtml = "";
+        if(list.length){
+          sugHtml = list.map((it,idx)=>{
+            const teacherOpts = it.teachers.map(t=>`<option value="${escapeAttr(String(t.id))}">${escapeHtml(t.name || String(t.id))}</option>`).join("");
+            const warn = it.violates ? `<span class="pill" style="background:#fff7ed;border-color:#fed7aa">⚠️ Ardışık</span>` : ``;
+            return `
+              <div class="sr-sug" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px"
+                   data-gid="${escapeAttr(String(n.gid))}" data-day="${it.d}" data-slot="${it.s}" data-branch="${escapeAttr(String(n.branch))}">
+                <span class="pill">${escapeHtml(it.label)}</span>
+                ${warn}
+                <select class="sr-teacher" style="min-width:220px;padding:8px 10px;border-radius:12px;border:1px solid #e5e7eb">
+                  <option value="">Öğretmen seç</option>
+                  ${teacherOpts}
+                </select>
+                <button class="btn btn-sr-assign">Ata</button>
+              </div>`;
+          }).join("");
+          if(onlyViaConsec){
+            sugHtml = `<div class="muted" style="margin-top:6px">Not: Bu branş için uygun seçenekler <b>sadece</b> ardışık branş kuralına takılıyor. “Sıkışınca izin ver” açık olduğu için öneriler gösterildi.</div>` + sugHtml;
+          }
+        } else {
+          // reason hint
+          const hasAnyGroupSlot = (()=> {
+            const D = state.program.days.length, S = state.program.slots;
+            for(let d=0; d<D; d++) for(let s=0; s<S; s++){
+              if(state.availability.groups[n.gid]?.[d]?.[s] === true && !isGroupBusy(n.gid,d,s)) return true;
+            }
+            return false;
+          })();
+          const hasAnyTeacherAtAny = (()=> {
+            const D = state.program.days.length, S = state.program.slots;
+            for(let d=0; d<D; d++) for(let s=0; s<S; s++){
+              if(state.availability.groups[n.gid]?.[d]?.[s] !== true) continue;
+              const teachers = findTeacherOptions(n.branch)
+                .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true)
+                .filter(t => !isTeacherBusy(t.id, d, s));
+              if(teachers.length) return true;
+            }
+            return false;
+          })();
+          let msg = "Uygun slot + öğretmen kombinasyonu bulunamadı.";
+          if(!hasAnyGroupSlot) msg = "Grubun uygun boş slotu yok (müsaitlik kapalı ya da tüm slotlar dolu).";
+          else if(!hasAnyTeacherAtAny) msg = "Bu branş için uygun öğretmen bulunamadı (müsaitlik / çakışma).";
+          sugHtml = `<div class="muted" style="margin-top:6px">${escapeHtml(msg)}</div>`;
+        }
+
+        rows.push(`
+          <div class="card" style="padding:14px;margin-bottom:10px">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between">
+              <div style="font-weight:900;font-size:15px">${escapeHtml(n.gname)}</div>
+              <div class="pill">Kalan: <span style="font-weight:900">${n.need}</span> • <span style="font-weight:900">${escapeHtml(n.branch)}</span></div>
+            </div>
+            ${sugHtml}
+          </div>
+        `);
+      }
+
+      body.innerHTML = rows.join("") || `<div class="muted">Arama kriterine göre sonuç yok.</div>`;
+    }
+    render();
+  }
+
+  // dialog already exists -> refresh content using current state
+  // metrics stored for display
+  dlg._lastMetrics = metrics || {};
+  // trigger internal render by clicking refresh
+  const refreshBtn = dlg.querySelector("#srRefresh");
+  if(refreshBtn) refreshBtn.click();
+
+  if(!dlg.open) dlg.showModal();
+}
+
+async function autoAssign30s(){
+  if((state.teachers||[]).length === 0 || Object.keys(state.groups||{}).length === 0){
+    alert("Önce öğretmen ve grupları yükleyin.");
+    return;
+  }
+
+  const settings = getAutoAssignSettings();
+  const snapshot = buildAutoAssignSnapshot(settings);
+
+  // UI
+  __autoAssignCancelRequested = false;
+  setOverlayVisible(true);
+  disableAutoAssignUI(true);
+
+  const btnCancel = $("#btnCancelAutoAssign");
+  if(btnCancel){
+    btnCancel.onclick = ()=>{ __autoAssignCancelRequested = true; try{ ensureAutoAssignWorker().postMessage({type:'cancel'}); }catch{} };
+  }
+
+  const start = performance.now();
+  updateOverlay({ ratio:0, remainingSec: settings.budgetMs/1000, text:"Hazırlanıyor…" });
+
+  const worker = ensureAutoAssignWorker();
+
+  const runPromise = new Promise((resolve, reject)=>{
+    const onMsg = (e)=>{
+      const msg = e.data || {};
+      if(msg.type === "progress"){
+        const elapsedMs = msg.payload.elapsedMs || 0;
+        const remainingMs = msg.payload.remainingMs || 0;
+        const ratio = clamp(elapsedMs / settings.budgetMs, 0, 1);
+        const best = msg.payload.best || {};
+        updateOverlay({
+          ratio,
+          remainingSec: remainingMs/1000,
+          text: `Deneme: ${msg.payload.iters||0} • En iyi: ${best.assigned||0} atama • Kalan ihtiyaç: ${Math.max(0, (best.totalNeeds||0) - Math.max(0,(best.assigned||0) - (snapshot.assignments?.length||0)))}`
+        });
+        return;
+      }
+      if(msg.type === "done"){
+        worker.removeEventListener("message", onMsg);
+        resolve(msg.payload);
+      }
+    };
+    worker.addEventListener("message", onMsg);
+    worker.postMessage({ type:"start", payload: snapshot });
+  });
+
+  let result = null;
+  try{
+    result = await runPromise;
+  }catch(err){
+    console.error(err);
+  }finally{
+    setOverlayVisible(false);
+    disableAutoAssignUI(false);
+  }
+
+  if(!result || !Array.isArray(result.assignments)){
+    if(__autoAssignCancelRequested){
+      alert("Otomatik atama durduruldu.");
+    } else {
+      alert("Otomatik atama tamamlanamadı.");
+    }
+    return;
+  }
+
+  // apply best solution
+  state.assignments = result.assignments.map(a=>({group:a.group, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId, locked: !!a.locked}));
+  renderAssignCards();
+
+  // show smart report
+  showSmartReport(result.metrics || {});
+}
+
+
+/\* ===== 6\) Yazdır ===== \*/
 function hasAnyAssignments(){ return state.assignments && state.assignments.length>0; }
 function refreshPrintFilters(){
   const mode = $("#printMode").value;
@@ -2608,7 +3749,7 @@ $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
 
 // Otomatik Atama düğmesi birden fazla deneme yapacak şekilde sarmalayıcıyı çağırır.
-$("#btnAutoAssign").onclick = () => doAutoAssign();
+$("#btnAutoAssign").onclick = () => autoAssign30s();
 $("#btnAssgnExport").onclick = exportAssgn;
 $("#btnAssgnImport").onclick = ()=>openFile($("#fileAssgnImport"), importAssgn);
 $("#btnAssgnClear").onclick = ()=>{ state.assignments=[]; renderAssignCards(); };
