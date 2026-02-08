@@ -572,6 +572,38 @@
     margin-top: 4px;
   }
 
+  /* ===== Otomatik Atama Çalışıyor Overlay ===== */
+  .aa-overlay{
+    position:fixed; inset:0; background:rgba(15,23,42,.35);
+    display:none; align-items:center; justify-content:center;
+    z-index:9999;
+  }
+  .aa-overlay.open{display:flex}
+  .aa-box{
+    width:min(680px, 94vw);
+    background:#ffffff;
+    border-radius:18px;
+    border:1px solid #e5e7eb;
+    box-shadow:0 18px 40px rgba(15,23,42,.18);
+    padding:16px;
+  }
+  .aa-head{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .aa-title{font-weight:900;font-size:18px}
+  .aa-sub{color:#475569;font-size:13px}
+  .aa-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .aa-spin{
+    width:18px;height:18px;border-radius:999px;
+    border:3px solid #cbd5e1;border-top-color:var(--pri);
+    animation:aaSpin .9s linear infinite;
+  }
+  @keyframes aaSpin{to{transform:rotate(360deg)}}
+  .aa-bar{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden;flex:1;min-width:220px}
+  .aa-bar > div{height:100%;background:linear-gradient(90deg,var(--pri),#8b5cf6);width:0%}
+  .aa-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  .aa-kpis{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .aa-kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:8px 10px}
+  .aa-kpi b{font-weight:900}
+
 </style>
 </head>
 <body>
@@ -766,8 +798,11 @@
     </div>
     <div class="row">
       <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
-      <!-- Akıllı rapor butonu: Otomatik atama tamamlandığında aktifleştirilir -->
-      <button class="btn ghost" id="btnShowReport" disabled>Raporu Göster</button>
+      <label class="pill" style="background:#f1f5f9;cursor:pointer">
+        <input type="checkbox" id="chkRelaxConsecutive" checked style="margin-right:8px;transform:translateY(1px)" />
+        Çok sıkışınca <b>ardışık aynı branş</b> kuralını esnet
+      </label>
+      <button class="btn sec" id="btnOpenAutoAssignReport" disabled>Son Otomatik Atama Raporu</button>
       <button class="btn ghost" id="btnAssgnExport">JSON Dışa Aktar</button>
       <input id="fileAssgnImport" type="file" accept="application/json" hidden />
       <button class="btn ghost" id="btnAssgnImport">JSON İçeri Al</button>
@@ -829,16 +864,32 @@
     </div>
     <div id="printPreview" class="grid printable"></div>
   </section>
+</div>
 
-  <!-- İşlem göstergesi (otomatik atama esnasında) -->
-  <div id="autoAssignOverlay"
-       style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;z-index:10000;">
-    <div style="background:#ffffff;padding:24px 32px;border-radius:16px;box-shadow:0 8px 20px rgba(0,0,0,0.15);display:flex;flex-direction:column;align-items:center;gap:12px;min-width:220px">
-      <div class="spinner" style="width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:var(--pri);border-radius:50%;animation:spin 1s linear infinite;"></div>
-      <div id="autoAssignCountdown" style="font-weight:600;color:var(--ink);text-align:center">İşlem yapılıyor…</div>
+<!-- Otomatik Atama Çalışıyor Overlay (UI bloklamasın diye) -->
+<div id="aaOverlay" class="aa-overlay" aria-hidden="true">
+  <div class="aa-box" role="dialog" aria-modal="true" aria-label="Otomatik atama çalışıyor">
+    <div class="aa-head">
+      <div>
+        <div class="aa-title">⚙️ Otomatik Atama Çalışıyor</div>
+        <div class="aa-sub">45 saniye boyunca tüm denemeler yapılıyor, en iyi sonuç seçilecek.</div>
+      </div>
+      <div class="aa-row" style="justify-content:flex-end">
+        <div class="aa-spin" aria-hidden="true"></div>
+        <div class="aa-mono" id="aaRemain">00:45</div>
+      </div>
     </div>
+    <div class="aa-row">
+      <div class="aa-bar" aria-hidden="true"><div id="aaBar"></div></div>
+      <div class="aa-mono" id="aaPct">0%</div>
+    </div>
+    <div class="aa-kpis">
+      <div class="aa-kpi">En iyi atama: <b id="aaBest">0</b></div>
+      <div class="aa-kpi">Ardışık branş ihlali: <b id="aaViol">0</b></div>
+      <div class="aa-kpi">Deneme: <b id="aaIter">0</b></div>
+    </div>
+    <div class="aa-sub" id="aaStatus" style="margin-top:8px">Başlatılıyor…</div>
   </div>
-
 </div>
 
 <script>
@@ -850,7 +901,13 @@ window.state = {
   teachers: [], students: [], groups: {}, branches: [],
   program: { days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"], slots:8, slotLabels:[], cells:{} },
   availability: { teachers:{}, groups:{} },
-  requests: {}, assignments: []
+  requests: {}, assignments: [],
+  autoAssign: {
+    hasRun: false,
+    baseAssigned: 0,       // otomatik atama başlamadan önceki atama sayısı
+    lastReport: null,      // son rapor nesnesi
+    lastRunAt: 0
+  }
 };
 
 /* ===== Yardımcılar ===== */
@@ -872,193 +929,6 @@ const openFile = (inputEl, cb) => { inputEl.onchange = e=>{
   }catch(err){ alert('Dosya okunamadı: '+err.message); }
 }; inputEl.click(); };
 const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
-
-/* ==== Akıllı rapor ve otomatik atama göstergesi yardımcıları ==== */
-// Akıllı rapor düğmesinin durumunu ayarla (enabled=true → aktif)
-function setSmartReportButton(enabled){
-  const btn = document.getElementById('btnShowReport');
-  if (btn) btn.disabled = !enabled;
-}
-// Otomatik atama sırasında kullanılan overlay'i gösterir
-function showAutoAssignOverlay(){
-  const ov = document.getElementById('autoAssignOverlay');
-  if (ov) ov.style.display = 'flex';
-}
-// Otomatik atama overlay'ini gizler
-function hideAutoAssignOverlay(){
-  const ov = document.getElementById('autoAssignOverlay');
-  if (ov) ov.style.display = 'none';
-}
-// Geriye kalan süreyi güncelle (ms)
-function updateAutoAssignCountdown(msLeft){
-  const el = document.getElementById('autoAssignCountdown');
-  if (!el) return;
-  const secs = Math.max(0, Math.ceil(msLeft/1000));
-  el.textContent = secs > 0 ? `Kalan süre: ${secs} sn` : 'Tamamlandı';
-}
-// Rapor hesaplama (akıllı rapor için). Bu fonksiyon, mevcut atamalar ve
-// talepleri göz önüne alarak hangi slotların boş olduğunu ve bunların
-// nedenlerini döndürür. İçerik buildAutoAssignReport işlevinden ilham
-// alınmıştır ancak sadeleştirilmiştir ve global kapsamda kullanılabilir.
-function generateSmartReport(){
-  const D = state.program.days.length;
-  const S = state.program.slots;
-  const groups = Object.values(state.groups);
-
-  const report = { totals:{}, reasons:{}, details:[] };
-  const totalCells = groups.length * D * S;
-
-  // Grup müsait hücre sayısı
-  let groupAvailableCells = 0;
-  for (const g of groups) {
-    const mat = state.availability.groups[g.id] || [];
-    for (let d=0; d<D; d++) for (let s=0; s<S; s++) {
-      if (mat?.[d]?.[s] === true) groupAvailableCells++;
-    }
-  }
-  const blockedByGroup = totalCells - groupAvailableCells;
-
-  const totalAssigned = state.assignments.length;
-
-  // Kalan ihtiyaçlar (grup->branş->sayı)
-  const needsLeft = {};
-  for (const g of groups) {
-    const counts = {};
-    (state.branches || []).forEach(b => counts[b] = +(state.requests[g.id]?.[b] || 0));
-    state.assignments
-      .filter(a => a.group === g.id)
-      .forEach(a => counts[a.branch] = Math.max(0, (counts[a.branch] || 0) - 1));
-    needsLeft[g.id] = counts;
-  }
-
-  let emptyAll = 0;
-  let emptyOnAvailable = 0;
-  const reasonStats = { grup_musait_degildi:0, talep_kalmadi:0, ogretmen_yok_veya_mecbur_cakisiyor:0, uygun_kombo_var_ama_yerlesmedi:0 };
-
-  const isAssigned = (gid,d,s) => state.assignments.some(a => a.group===gid && a.day===d && a.slot===s);
-
-  for (const g of groups) {
-    for (let d=0; d<D; d++) for (let s=0; s<S; s++) {
-      if (isAssigned(g.id,d,s)) continue;
-      emptyAll++;
-
-      // Grup müsait değilse devam
-      if (state.availability.groups[g.id]?.[d]?.[s] !== true) {
-        reasonStats.grup_musait_degildi++;
-        continue;
-      }
-      emptyOnAvailable++;
-
-      // Talep kalmadı mı?
-      const totalLeft = Object.values(needsLeft[g.id]).reduce((a,b)=>a+b,0);
-      if (totalLeft <= 0) {
-        reasonStats.talep_kalmadi++;
-        report.details.push({ group:g.id, day:d, slot:s, reason:'talep_kalmadi', suggestion:['Etüt/Ödev Çalışması','Okuma Saati','Rehberlik','Tekrar/Teknik drill'] });
-        continue;
-      }
-
-      // Talep var – branş önceliği
-      const neededBranches = Object.entries(needsLeft[g.id])
-        .filter(([,cnt]) => cnt > 0)
-        .sort((a,b) => b[1] - a[1])
-        .map(([b]) => b);
-
-      let branchSuggestions = [];
-      for (const b of neededBranches) {
-        const teachers = findTeacherOptions(b)
-          .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true)
-          .filter(t => !state.assignments.some(a => a.teacherId===t.id && a.day===d && a.slot===s))
-          .map(t => t.name);
-        if (teachers.length) branchSuggestions.push({branch:b, teachers: teachers.slice(0,3)});
-      }
-
-      if (branchSuggestions.length === 0) {
-        reasonStats.ogretmen_yok_veya_mecbur_cakisiyor++;
-        report.details.push({ group:g.id, day:d, slot:s, reason:'ogretmen_yok_veya_mecbur_cakisiyor', neededBranches, freeTeachers: listFreeTeachersAt(d,s) });
-      } else {
-        reasonStats.uygun_kombo_var_ama_yerlesmedi++;
-        report.details.push({ group:g.id, day:d, slot:s, reason:'uygun_kombo_var_ama_yerlesmedi', suggestion: branchSuggestions.slice(0,2) });
-      }
-    }
-  }
-
-  report.totals = {
-    groups: groups.length,
-    days: D,
-    slotsPerDay: S,
-    totalCells,
-    blockedByGroup,
-    effectiveCapacity: groupAvailableCells,
-    totalAssigned,
-    newlyAssigned: totalAssigned, // burada önemsenmiyor
-    emptyOnAvailable,
-    emptyAll
-  };
-  report.reasons = reasonStats;
-  return report;
-}
-// Akıllı raporu (sadeleştirilmiş) göster
-function showSmartReport(){
-  // Raporu oluştur
-  const report = generateSmartReport();
-  let dlg = document.getElementById('dlgSmartReport');
-  if (!dlg) {
-    dlg = document.createElement('dialog');
-    dlg.id = 'dlgSmartReport';
-    dlg.style.padding = '16px';
-    dlg.style.borderRadius = '14px';
-    dlg.style.maxWidth = '1000px';
-    dlg.style.width = 'min(96vw,1000px)';
-    dlg.innerHTML = `
-      <header style="font-weight:800;font-size:18px;margin-bottom:8px">Boş Dersler ve Öneriler</header>
-      <section id="smartReportBody" style="max-height:60vh;overflow:auto"></section>
-      <footer style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn ghost" id="btnSmartRptClose">Kapat</button>
-      </footer>
-    `;
-    document.body.appendChild(dlg);
-    dlg.querySelector('#btnSmartRptClose').onclick = () => dlg.close();
-  }
-  const bodyEl = dlg.querySelector('#smartReportBody');
-  // Rapor içeriği: toplu sayılar
-  const t = report.totals;
-  let html = '';
-  html += `<div class="grid" style="gap:8px;margin-bottom:8px">
-    <div class="pill">Toplam Atama: <b>${t.totalAssigned}</b></div>
-    <div class="pill">Etkin Kapasite: <b>${t.effectiveCapacity}</b></div>
-    <div class="pill">Boş Ders (etkin): <b>${t.emptyOnAvailable}</b></div>
-  </div>`;
-  // Boş slotları listele
-  html += '<ul style="list-style:none;padding:0;margin:0">';
-  const dayNames = state.program.days;
-  const slotLabels = state.program.slotLabels || [];
-  report.details.forEach(det => {
-    // Grup müsait değilse boş ders olarak göstermeyelim
-    if (det.reason === 'grup_musait_degildi') return;
-    const groupName = state.groups[det.group]?.name || det.group;
-    const day = dayNames[det.day] || det.day;
-    const label = slotLabels[det.slot] || `${det.slot+1}. saat`;
-    html += `<li style="margin-bottom:8px;padding:8px;border-bottom:1px solid #e5e7eb">
-      <div><b>${escapeHtml(String(groupName))}</b> — ${escapeHtml(day)} • ${escapeHtml(label)}</div>`;
-    if (det.reason === 'talep_kalmadi') {
-      const sugg = Array.isArray(det.suggestion) ? det.suggestion.join(', ') : (det.suggestion || '').toString();
-      html += `<div class="mini2 muted">Talep kalmadı. Öneri: ${escapeHtml(sugg || 'Etüt/Serbest Çalışma')}</div>`;
-    } else if (det.reason === 'ogretmen_yok_veya_mecbur_cakisiyor') {
-      const neededList = (det.neededBranches || []).join(', ');
-      const teachers = (det.freeTeachers || []).map(t => t.name).join(', ');
-      if (neededList) html += `<div class="mini2 muted">İhtiyaç: ${escapeHtml(neededList)}</div>`;
-      if (teachers) html += `<div class="mini2 muted">Müsait öğretmenler: ${escapeHtml(teachers)}</div>`;
-    } else if (det.reason === 'uygun_kombo_var_ama_yerlesmedi') {
-      const suggs = det.suggestion || [];
-      const items = suggs.map(s => `${s.branch}: ${(s.teachers || []).join(', ')}`).join('; ');
-      html += `<div class="mini2 muted">Öneri: ${escapeHtml(items)}</div>`;
-    }
-    html += '</li>';
-  });
-  html += '</ul>';
-  bodyEl.innerHTML = html;
-  dlg.showModal();
-}
 
 // ========== Branch Color Helpers ==========
 // In order to visually distinguish different course assignments in the schedule,
@@ -1727,9 +1597,6 @@ $("#dlgDelete").onclick = () => {
     state.assignments = state.assignments.filter(a => !(a.group === group && a.day === day && a.slot === slot));
     dlg.close();
     renderAssignCards(); // why: öğretmen anında tekrar 'müsait' görünsün
-
-    // Manuel silme sonrası akıllı rapor butonunu devre dışı bırak
-    setSmartReportButton(false);
   }
 };
 
@@ -1863,9 +1730,6 @@ $("#dlgOk").onclick = () => {
   dlg.close();
   renderAssignCards(); // why: UI ve uygunluk anında güncellensin
 
-  // Manuel atama yapıldığında akıllı rapor butonunu devre dışı bırak
-  setSmartReportButton(false);
-
   // Yazdır sekmesi açıksa anında tazele (why: manuel atama sonrası önizleme güncel kalsın)
   const printPanel = $('#step6');
   if (printPanel && !printPanel.hasAttribute('hidden')) {
@@ -1879,21 +1743,18 @@ $("#dlgOk").onclick = () => {
  * Amaç: Öğretmen yük dengesini tamamen devre dışı bırakarak,
  * mümkün olan EN ÇOK derse atama yapan varyasyonu bulup uygulamak.
  */
-async function autoAssign() {
+async function autoAssign(options = {}) {
   const D = state.program.days.length;
   const S = state.program.slots;
 
   // --------- Ayarlar ---------
   // Geliştirilmiş ayarlar: daha uzun zaman limiti ve daha fazla deneme,
   // böylece algoritma ilk çalıştırmada daha iyi sonuçlar bulabilir.
-  // İşlem süresi sınırı (ms) – 45 saniye boyunca mümkün olduğunca çok çözüm araştırılır
-  const TIME_LIMIT_MS = 45000;
-  // Etkinlik: işlem sırasında düzenli olarak ana döngüden çıkarak
-  // kullanıcı arayüzünün donmamasını sağlamak için aralık. Bu değer
-  // milisaniye cinsindendir ve her aralıkta bir kez boş beklemeye alınır.
-  const YIELD_INTERVAL_MS = 250;
-  const AVOID_SAME_BRANCH_SOFT = true;
-  const MAX_FREE_TEACHER_SUGGESTIONS = 5;
+  const TIME_LIMIT_MS = Number.isFinite(options.timeLimitMs) ? options.timeLimitMs : 45000;
+  const RELAX_CONSECUTIVE_MODE = options.relaxConsecutive !== false;
+  const onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
+  const AVOID_SAME_BRANCH_SOFT = true; // not: esnetme modunda "çok sıkışınca" izin verir
+  const MAX_FREE_TEACHER_SUGGESTIONS = 10;
   const MAX_CONFLICT_ROWS_IN_UI = 20;
   // ---------------------------
 
@@ -1962,7 +1823,7 @@ async function autoAssign() {
   };
 
   // O gün/saat boşta öğretmenleri listele (branş + isim)
-  const listFreeTeachersAt = (d, s, max = MAX_FREE_TEACHER_SUGGESTIONS) => {
+  const listFreeTeachersAt = (d, s, neededBranches = [], max = MAX_FREE_TEACHER_SUGGESTIONS) => {
     const tAvail = state.availability?.teachers || {};
     const tids = Object.keys(tAvail);
     const busyAt = new Set(state.assignments.filter(a => a.day === d && a.slot === s).map(a => a.teacherId));
@@ -1970,10 +1831,12 @@ async function autoAssign() {
     for (const tid of tids) {
       if (tAvail[tid]?.[d]?.[s] === true && !busyAt.has(tid)) {
         const branches = getTeacherBranches(tid);
-        res.push({ id: tid, name: getTeacherName(tid), branches });
+        const assignedNow = state.assignments.filter(a=>a.teacherId===tid).length;
+        const inter = Array.isArray(neededBranches) ? branches.filter(b=>neededBranches.includes(b)) : [];
+        res.push({ id: tid, name: getTeacherName(tid), branches, assignedNow, matchCount: inter.length });
       }
     }
-    res.sort((a,b) => (a.name || '').localeCompare(b.name || ''));
+    res.sort((a,b) => (b.matchCount - a.matchCount) || (a.assignedNow - b.assignedNow) || (a.name || '').localeCompare(b.name || ''));
     return res.slice(0, max);
   };
 
@@ -2029,18 +1892,21 @@ async function autoAssign() {
   const remainingNeedsCount = Object.values(needsByGroup).reduce((acc, arr) => acc + (arr?.length || 0), 0);
   if (remainingNeedsCount === 0) {
     renderAssignCards();
-    showAutoAssignReport(buildAutoAssignReport(fixed.length));
-    return;
+    const rep = buildAutoAssignReport(fixed.length);
+    state.autoAssign.hasRun = true;
+    state.autoAssign.baseAssigned = fixed.length;
+    state.autoAssign.lastReport = rep;
+    state.autoAssign.lastRunAt = Date.now();
+    state.autoAssign._buildReport = buildAutoAssignReport;
+    state.autoAssign._showReport = showAutoAssignReport;
+    showAutoAssignReport(rep);
+    return rep;
   }
 
-  // Deneme sayısı (ihtiyaca göre dinamik)
-  // Geliştirilmiş değerler: daha yüksek başlangıç ve ihtiyaç başına deneme sayısı,
-  // ayrıca maksimum deneme sayısı artırıldı. Bu sayede algoritma geniş bir arama
-  // alanını keşfeder ve en iyi sonucu bulmak için daha fazla şans elde eder.
-  const BASE_RESTARTS = 500;
-  const RESTARTS_PER_NEED = 25;
-  const MAX_RESTARTS = 20000;
-  const TARGET_RESTARTS = Math.min(MAX_RESTARTS, BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED);
+  // Deneme sayısını sabit bir limit ile kısıtlamıyoruz.
+  // Neden: Kullanıcı 45 saniyenin tamamını kullanıp mümkün olan EN İYİ sonucu
+  // seçmek istiyor. Bu yüzden asıl sınır süre.
+  const TARGET_RESTARTS = Number.POSITIVE_INFINITY;
 
   // Hücre sıra paternleri
   const orderings = {
@@ -2066,16 +1932,33 @@ async function autoAssign() {
   const startTime = performance.now();
   const groupsAll = Object.values(state.groups).map(x => x.id);
 
-  let bestScore = -1;
+  let bestPlaced = -1;
+  let bestEvalScore = -Infinity;
+  let bestViol = 0;
   let bestSolution = null;
   let restartsDone = 0;
 
-  // Kullanıcı arayüzü donmasını engellemek için belirli aralıklarla
-  // event loop'a dönmek üzere son yield zamanını izleriz.
-  let lastYield = performance.now();
+  let lastUiTick = startTime;
 
   while (restartsDone < TARGET_RESTARTS && (performance.now() - startTime) < TIME_LIMIT_MS) {
     restartsDone++;
+
+    // UI'ı kilitlememek için arada bir event loop'a dön
+    if ((performance.now() - lastUiTick) > 70) {
+      if (onProgress) {
+        try{
+          onProgress({
+            elapsedMs: performance.now() - startTime,
+            timeLimitMs: TIME_LIMIT_MS,
+            iter: restartsDone,
+            bestPlaced,
+            bestViol
+          });
+        } catch { /* ignore */ }
+      }
+      await new Promise(requestAnimationFrame);
+      lastUiTick = performance.now();
+    }
 
     const gGrid = {};
     const tGrid = {};
@@ -2092,6 +1975,10 @@ async function autoAssign() {
       .map(x => x.gid);
 
     let placedCount = 0;
+    let violations = 0;
+    const tLoad = new Map();
+    // sabit atamaları yük olarak say
+    for (const a of fixed) tLoad.set(a.teacherId, (tLoad.get(a.teacherId)||0)+1);
 
     for (const [d,s] of cells) {
       const localGroups = groupOrder.slice();
@@ -2106,14 +1993,26 @@ async function autoAssign() {
         const lastB = AVOID_SAME_BRANCH_SOFT ? prevBranchOf(gGrid, gid, d, s) : null;
         const uniqBranches = Array.from(new Set(needArr));
         shuffle(uniqBranches);
-        if (lastB) {
-          const ix = uniqBranches.indexOf(lastB);
-          if (ix > -1) { uniqBranches.splice(ix,1); uniqBranches.push(lastB); }
+
+        // Ardışık aynı branşı "çok sıkışınca" serbest bırak:
+        // - Normalde lastB'yi en sona atarak kaçınmaya çalışır.
+        // - Eğer hiç yerleştiremezse, en son lastB'yi de dener (ihlal sayılır).
+        let primaryBranches = uniqBranches;
+        const hasLast = lastB && uniqBranches.includes(lastB);
+        if (hasLast) {
+          if (RELAX_CONSECUTIVE_MODE) {
+            const noLast = uniqBranches.filter(b => b !== lastB);
+            primaryBranches = noLast.length ? noLast : uniqBranches;
+          } else {
+            const ix = uniqBranches.indexOf(lastB);
+            if (ix > -1) { uniqBranches.splice(ix,1); uniqBranches.push(lastB); }
+          }
         }
 
         let placedHere = false;
 
-        for (const branch of uniqBranches) {
+        const tryBranchList = (list)=>{
+          for (const branch of list) {
           // Tüm aday öğretmenleri filtrele (uygunluk ve boşluk kontrolü)
           const allCandidates = findTeacherOptions(branch)
             .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true && !(tGrid[t.id] || [])[d]?.[s]);
@@ -2135,6 +2034,8 @@ async function autoAssign() {
           const candidateList = preferred.length > 0 ? preferred : allCandidates;
 
           shuffle(candidateList);
+          // Yük dengeleme: daha az ders alan öğretmeni önce dene (eşitlikte rastgele)
+          candidateList.sort((a,b)=> (tLoad.get(a.id)||0) - (tLoad.get(b.id)||0) || (Math.random()-0.5));
 
           for (const t of candidateList) {
             if (!canUse(gGrid, tGrid, gid, t.id, d, s)) continue;
@@ -2142,6 +2043,9 @@ async function autoAssign() {
             const a = { group: gid, day: d, slot: s, branch, teacherId: t.id };
             (gGrid[gid] ||= makeGrid(D, S))[d][s] = a;
             (tGrid[t.id] ||= makeGrid(D, S))[d][s] = a;
+
+            if (lastB && lastB === branch) violations++;
+            tLoad.set(t.id, (tLoad.get(t.id)||0)+1);
 
             const idx = needArr.indexOf(branch);
             if (idx > -1) needArr.splice(idx, 1);
@@ -2151,6 +2055,16 @@ async function autoAssign() {
             break;
           }
           if (placedHere) break;
+        }
+          }
+        };
+
+        // 1) Önce ardışık olmayan branşları dene
+        tryBranchList(primaryBranches);
+
+        // 2) Hâlâ yerleşmediyse ve "esnet" açıksa lastB'yi de dene
+        if (!placedHere && RELAX_CONSECUTIVE_MODE && hasLast) {
+          tryBranchList([lastB]);
         }
       }
 
@@ -2169,20 +2083,19 @@ async function autoAssign() {
       }
     }
 
-    if (placedCount > bestScore) {
-      bestScore = placedCount;
-      bestSolution = solution;
-      // Erken çıkış kaldırıldı; en iyi sonuca ulaşmak için zaman sonuna kadar devam edilir
-    }
+    // Skor: Önce maksimum atama, sonra ardışık branş ihlali az, sonra öğretmen yükü dengesi.
+    // Not: placedCount çok daha baskın olmalı.
+    const loads = Array.from(tLoad.values());
+    const mean = loads.length ? loads.reduce((a,b)=>a+b,0)/loads.length : 0;
+    const variance = loads.length ? (loads.reduce((acc,v)=>acc + Math.pow(v-mean,2),0)/loads.length) : 0;
+    const loadStd = Math.sqrt(variance);
+    const evalScore = (placedCount * 1e6) - (violations * 1e3) - (loadStd * 50);
 
-    // Belirli aralıklarla ana döngüden çıkıp arayüzü güncelle
-    const nowTime = performance.now();
-    if (nowTime - lastYield >= YIELD_INTERVAL_MS) {
-      // Kalan süreyi güncelle
-      updateAutoAssignCountdown(TIME_LIMIT_MS - (nowTime - startTime));
-      // Event loop'a geçmek için küçük bir bekleme
-      await new Promise(res => setTimeout(res));
-      lastYield = performance.now();
+    if (evalScore > bestEvalScore) {
+      bestEvalScore = evalScore;
+      bestPlaced = placedCount;
+      bestViol = violations;
+      bestSolution = solution;
     }
   }
 
@@ -2211,7 +2124,7 @@ async function autoAssign() {
      * appended to state.assignments. Otherwise, the existing assignments are
      * left untouched.
      */
-    function fillRemainingAssignments() {
+    function fillRemainingAssignments(deadlineMs = performance.now() + 250) {
       // Build grids based off the current assignments
       const gGrid = {};
       const tGrid = {};
@@ -2246,10 +2159,14 @@ async function autoAssign() {
             // group availability and no assignment in this slot
             if (state.availability.groups[gid]?.[d]?.[s] !== true) continue;
             if (gGrid[gid]?.[d]?.[s]) continue;
-            // avoid consecutive same branch for the group
+            // Ardışık aynı branş: normalde kaçın, ama "esnet" açıksa sadece cezalandır
+            let sameBranchPenalty = 0;
             if (AVOID_SAME_BRANCH_SOFT) {
               const lastB = prevBranchOf(gGrid, gid, d, s);
-              if (lastB && lastB === branch) continue;
+              if (lastB && lastB === branch) {
+                if (!RELAX_CONSECUTIVE_MODE) continue;
+                sameBranchPenalty = 1;
+              }
             }
             // list candidate teachers for this branch at (d,s)
             const teachers = findTeacherOptions(branch)
@@ -2269,7 +2186,7 @@ async function autoAssign() {
             const pref = teachers.filter(t => !used.has(t.id));
             const finalList = pref.length ? pref : teachers;
             for (const t of finalList) {
-              candidates.push({ day: d, slot: s, teacherId: t.id });
+              candidates.push({ day: d, slot: s, teacherId: t.id, sameBranchPenalty });
             }
           }
         }
@@ -2282,19 +2199,22 @@ async function autoAssign() {
       const newAssignments = [];
 
       function backtrack(index) {
+        if (performance.now() > deadlineMs) return false;
         if (index === tasks.length) return true;
         const task = tasks[index];
         const cand = getCandidates(task);
         // If no placements possible, fail
         if (cand.length === 0) return false;
-        // Heuristic: sort candidate placements to use least busy teachers first
+        // Heuristic: 1) ardışık branşı en sona at, 2) daha az yoğun öğretmeni önce dene
         cand.sort((c1, c2) => {
+          if ((c1.sameBranchPenalty||0) !== (c2.sameBranchPenalty||0)) return (c1.sameBranchPenalty||0) - (c2.sameBranchPenalty||0);
           // count existing classes for teacher in final assignments
           const t1Count = state.assignments.concat(newAssignments).filter(a => a.teacherId === c1.teacherId).length;
           const t2Count = state.assignments.concat(newAssignments).filter(a => a.teacherId === c2.teacherId).length;
           return t1Count - t2Count;
         });
         for (const { day: d, slot: s, teacherId: tid } of cand) {
+          if (performance.now() > deadlineMs) return false;
           // tentative assign
           const assignment = { group: task.group, day: d, slot: s, branch: task.branch, teacherId: tid };
           // mark in grids
@@ -2319,12 +2239,22 @@ async function autoAssign() {
     }
 
     // Attempt to fill any remaining unassigned needs deterministically
-    fillRemainingAssignments();
+    // Kalan çok az süreyi de kullanıp (varsa) birkaç ek yerleşim daha yakalamaya çalış
+    fillRemainingAssignments(startTime + TIME_LIMIT_MS - 30);
 
     renderAssignCards();
 
     // --- Raporu hesapla ve göster ---
-    showAutoAssignReport(buildAutoAssignReport(fixed.length));
+    const rep = buildAutoAssignReport(fixed.length);
+    // Son raporu tekrar açabilmek için fonksiyonları ve temel sayıyı sakla
+    state.autoAssign.hasRun = true;
+    state.autoAssign.baseAssigned = fixed.length;
+    state.autoAssign.lastReport = rep;
+    state.autoAssign.lastRunAt = Date.now();
+    state.autoAssign._buildReport = buildAutoAssignReport;
+    state.autoAssign._showReport = showAutoAssignReport;
+    showAutoAssignReport(rep);
+    return rep;
 
   // ---------- Rapor yardımcıları ----------
   function buildAutoAssignReport(prevCount) {
@@ -2345,12 +2275,14 @@ async function autoAssign() {
 
     // Kalan ihtiyaçlar (grup->branş->sayı)
     const needsLeft = {};
+    let unmetRequestsTotal = 0;
     for (const g of groups) {
       const counts = Object.fromEntries(state.branches.map(b => [b, +(state.requests[g.id]?.[b] || 0)]));
       state.assignments
         .filter(a => a.group === g.id)
         .forEach(a => counts[a.branch] = Math.max(0, (counts[a.branch] || 0) - 1));
       needsLeft[g.id] = counts;
+      unmetRequestsTotal += Object.values(counts).reduce((a,b)=>a+(b||0),0);
     }
 
     const emptyDetails = [];
@@ -2402,7 +2334,7 @@ async function autoAssign() {
           emptyDetails.push({
             group:g.id, day:d, slot:s, reason:'ogretmen_yok_veya_mecbur_cakisiyor',
             neededBranches,                       // [en çok ihtiyaç, ...]
-            freeTeachers: listFreeTeachersAt(d,s) // [{id,name,branches}]
+            freeTeachers: listFreeTeachersAt(d,s,neededBranches) // [{id,name,branches}]
           });
         } else {
           emptyDetails.push({
@@ -2424,7 +2356,8 @@ async function autoAssign() {
         totalAssigned,
         newlyAssigned,
         emptyOnAvailable: Math.max(0, groupAvailableCells - totalAssigned),
-        emptyAll: emptyCount
+        emptyAll: emptyCount,
+        unmetRequests: unmetRequestsTotal
       },
       reasons: reasonStats,
       details: emptyDetails
@@ -2538,7 +2471,7 @@ async function autoAssign() {
           const teacherOpts = (x.freeTeachers||[])
             .map(t => {
               const branches = (t.branches || []).map(b => String(b)).join('|');
-              const label = `${t.name || t.id}${t.branches?.length ? ' ('+t.branches.join(', ')+')' : ''}`;
+              const label = `${t.name || t.id} • eşleşme:${t.matchCount||0} • yük:${t.assignedNow||0}${t.branches?.length ? ' ('+t.branches.join(', ')+')' : ''}`;
               return `<option value="${escapeHtml(String(t.id))}" data-branches="${escapeAttr(branches)}">${escapeHtml(label)}</option>`;
             }).join('');
           const neededPipe = (x.neededBranches||[]).map(b => String(b)).join('|');
@@ -2577,31 +2510,29 @@ async function autoAssign() {
         }).join('');
 
       el.innerHTML = `
-        <div class="grid" style="gap:8px">
-          <div class="pill">Toplam Atama: <b>${t.totalAssigned}</b> • Bu oturumda yeni: <b>${t.newlyAssigned}</b></div>
-          <div class="pill">Etkin Kapasite (grup müsait): <b>${t.effectiveCapacity}</b> • Boş (etkin): <b>${t.emptyOnAvailable}</b></div>
-          <div class="pill">Bloklu (grup müsait değil): <b>${t.blockedByGroup}</b> • Tüm Boş: <b>${t.emptyAll}</b></div>
-
+        <div class="grid" style="gap:10px">
           <div class="card">
-            <h3>Sebep Kırılımı</h3>
-            <ul style="margin:6px 0 0 18px">
-              <li>Grup müsait değildi: <b>${r.grup_musait_degildi}</b></li>
-              <li>Talep kalmadı: <b>${r.talep_kalmadi}</b></li>
-              <li>Öğretmen yok / mecbur çakışıyor: <b>${r.ogretmen_yok_veya_mecbur_cakisiyor}</b></li>
-            </ul>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+              <div class="pill">Toplam atama: <b>${t.totalAssigned}</b> <span class="muted">(+${t.newlyAssigned})</span></div>
+              <div class="pill">Kalan ihtiyaç dersi: <b>${t.unmetRequests}</b></div>
+              <div class="pill">Etkin boş slot (grup müsait): <b>${t.emptyOnAvailable}</b></div>
+            </div>
+            <div class="muted" style="margin-top:8px">
+              Boş slotların kısa özeti: Grup müsait değil <b>${r.grup_musait_degildi}</b> • Talep yok <b>${r.talep_kalmadi}</b> • Öğretmen yok/çakışma <b>${r.ogretmen_yok_veya_mecbur_cakisiyor}</b>
+            </div>
           </div>
 
           <div class="card">
-            <h3>Boş Slotlar için Branşa Uygun Öneriler (İlk 10)</h3>
+            <h3>Hızlı Öneriler (branşa uygun) — İlk 10</h3>
             ${topBranchSuggestions ? `<ol style="margin:6px 0 0 18px">${topBranchSuggestions}</ol>`
-                                   : `<div class="muted">Bu turda branş bazlı eşleşme önerisi oluşmadı.</div>`}
+                                   : `<div class="muted">Bu turda hızlı öneri çıkmadı.</div>`}
           </div>
 
           <div class="card">
-            <h3>Atanamayan (Çakışma) Slotlar: Branş Farketmez Öğretmen Seç–Ata</h3>
+            <h3>Hızlı Elle Atama (boşta öğretmenle) — Öğretmen Seç–Ata</h3>
             ${conflictRows ? `<ol style="margin:6px 0 0 18px">${conflictRows}</ol>`
-                           : `<div class="muted">Çakışma kaynaklı atanamayan slot kalmadı.</div>`}
-            <div class="muted" style="margin-top:6px">Not: Öğretmen/branş seçip <b>Ata</b> dediğinizde modal kapanmadan liste güncellenir.</div>
+                           : `<div class="muted">Bu başlık altında elle doldurulabilecek boş slot kalmadı.</div>`}
+            <div class="muted" style="margin-top:6px">İpucu: Listede “eşleşme” = öğretmenin branşı ile ihtiyaç branşlarının kesişimi; “yük” = öğretmenin mevcut ders sayısı.</div>
           </div>
         </div>
       `;
@@ -2625,6 +2556,8 @@ const importAssgn = obj=>{
   state.assignments = obj;
   reconcileAllToProgram(getAssignPolicy());
   renderAssignCards();
+  // Dışarıdan yüklenen atamalar "son otomatik atama raporu" akışını bozar
+  resetAutoAssignMemory();
 };
 
 /*
@@ -2634,36 +2567,86 @@ const importAssgn = obj=>{
  * talepler karşılanıncaya kadar veya `maxAttempts` kadar denemeye devam eder.
  * Böylece kullanıcı manuel olarak aynı düğmeye birkaç kez tıklamak zorunda kalmaz.
  */
-async function doAutoAssign(maxAttempts = 3) {
-  // Otomatik atama başlarken rapor düğmesini devre dışı bırak ve overlay göster
-  setSmartReportButton(false);
-  showAutoAssignOverlay();
-  updateAutoAssignCountdown(45000);
-  let attempts = 0;
-  while (attempts < maxAttempts) {
-    await autoAssign();
-    // Kalan ihtiyaçları hesapla: her grup için talep edilen derslerden atananlar çıkartılır
-    let remaining = 0;
-    for (const g of Object.values(state.groups)) {
-      const req = state.requests[g.id] || {};
-      // Mevcut atamalar içinde bu gruba ait ders sayısı
-      const have = {};
-      state.assignments.filter(a => a.group === g.id).forEach(a => {
-        have[a.branch] = (have[a.branch] || 0) + 1;
-      });
-      for (const [b, cnt] of Object.entries(req)) {
-        const need = Math.max(0, (cnt | 0) - (have[b] || 0));
-        remaining += need;
-      }
+function resetAutoAssignMemory() {
+  state.autoAssign.hasRun = false;
+  state.autoAssign.baseAssigned = 0;
+  state.autoAssign.lastReport = null;
+  state.autoAssign.lastRunAt = 0;
+  state.autoAssign._buildReport = null;
+  state.autoAssign._showReport = null;
+  const btn = $("#btnOpenAutoAssignReport");
+  if (btn) btn.disabled = true;
+}
+
+function openAutoAssignOverlay(totalMs = 45000) {
+  const ov = $("#aaOverlay");
+  if (!ov) return;
+  ov.classList.add('open');
+  ov.setAttribute('aria-hidden','false');
+  $("#aaRemain").textContent = `00:${String(Math.ceil(totalMs/1000)).padStart(2,'0')}`;
+  $("#aaPct").textContent = '0%';
+  $("#aaBar").style.width = '0%';
+  $("#aaBest").textContent = '0';
+  $("#aaViol").textContent = '0';
+  $("#aaIter").textContent = '0';
+  $("#aaStatus").textContent = 'Başlatılıyor…';
+}
+
+function closeAutoAssignOverlay() {
+  const ov = $("#aaOverlay");
+  if (!ov) return;
+  ov.classList.remove('open');
+  ov.setAttribute('aria-hidden','true');
+}
+
+function fmtMMSS(ms) {
+  const sec = Math.max(0, Math.ceil(ms/1000));
+  const m = Math.floor(sec/60);
+  const s = sec % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+async function doAutoAssign() {
+  const btn = $("#btnAutoAssign");
+  if (btn?.disabled) return;
+
+  const TOTAL_MS = 45000;
+  const relaxConsecutive = $("#chkRelaxConsecutive")?.checked !== false;
+
+  openAutoAssignOverlay(TOTAL_MS);
+  btn.disabled = true;
+  const started = performance.now();
+
+  const rep = await autoAssign({
+    timeLimitMs: TOTAL_MS,
+    relaxConsecutive,
+    onProgress: ({elapsedMs, timeLimitMs, iter, bestPlaced, bestViol}) => {
+      const remain = Math.max(0, timeLimitMs - elapsedMs);
+      const pct = Math.min(100, Math.max(0, Math.round((elapsedMs/timeLimitMs)*100)));
+      $("#aaRemain").textContent = fmtMMSS(remain);
+      $("#aaPct").textContent = `${pct}%`;
+      $("#aaBar").style.width = `${pct}%`;
+      $("#aaBest").textContent = String(bestPlaced ?? 0);
+      $("#aaViol").textContent = String(bestViol ?? 0);
+      $("#aaIter").textContent = String(iter ?? 0);
+      $("#aaStatus").textContent = `Denemeler sürüyor… (geçen: ${fmtMMSS(elapsedMs)})`;
     }
-    // Tüm ihtiyaçlar karşılandıysa döngüden çık
-    if (remaining === 0) break;
-    attempts++;
-  }
-  // Otomatik atama tamamlandı: overlay'i gizle ve rapor düğmesini aktifleştir
-  hideAutoAssignOverlay();
-  updateAutoAssignCountdown(0);
-  setSmartReportButton(true);
+  });
+
+  // Tam 45 sn sınırında bitir: overlay'de "tamamlandı" yazısı kısa görünür
+  const spent = performance.now() - started;
+  const remainUi = Math.max(0, TOTAL_MS - spent);
+  if (remainUi > 0) await new Promise(r => setTimeout(r, Math.min(200, remainUi)));
+
+  closeAutoAssignOverlay();
+  btn.disabled = false;
+
+  // "Son Otomatik Atama Raporu" tuşunu aktif et
+  const rptBtn = $("#btnOpenAutoAssignReport");
+  if (rptBtn) rptBtn.disabled = !(state.autoAssign?.hasRun);
+
+  // Güvenlik: rep yoksa da state içindekinden açılabilir
+  state.autoAssign.lastReport = rep || state.autoAssign.lastReport;
 }
 
 /* ===== 6) Yazdır ===== */
@@ -2840,25 +2823,20 @@ $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
 
-// Otomatik Atama düğmesi birden fazla deneme yapacak şekilde sarmalayıcıyı çağırır.
-$("#btnAutoAssign").onclick = () => {
-  // Başlatma sırasında overlay gösterildiğinden event loop hemen geriye dönmeden önce
-  // butonu devre dışı bırak.
-  doAutoAssign();
+// Otomatik Atama: 45 sn boyunca arama yapar, UI'da ilerleme gösterir.
+$("#btnAutoAssign").onclick = () => doAutoAssign();
+
+// Son otomatik atama raporunu tekrar aç (yalnız otomatikten sonra aktif)
+$("#btnOpenAutoAssignReport").onclick = () => {
+  if (!state.autoAssign?.hasRun || typeof state.autoAssign._buildReport !== 'function' || typeof state.autoAssign._showReport !== 'function') return;
+  // En güncel veriye göre raporu yeniden hesapla (elle değişiklik yapıldıysa da güncel olur)
+  const rep = state.autoAssign._buildReport(state.autoAssign.baseAssigned || 0);
+  state.autoAssign.lastReport = rep;
+  state.autoAssign._showReport(rep);
 };
 $("#btnAssgnExport").onclick = exportAssgn;
 $("#btnAssgnImport").onclick = ()=>openFile($("#fileAssgnImport"), importAssgn);
-$("#btnAssgnClear").onclick = ()=>{
-  state.assignments=[];
-  renderAssignCards();
-  // Temizleme sonrası akıllı rapor butonunu devre dışı bırak
-  setSmartReportButton(false);
-};
-
-// Akıllı rapor butonunun davranışı: yalnızca otomatik atama sonrasında etkin
-$("#btnShowReport").onclick = () => {
-  showSmartReport();
-};
+$("#btnAssgnClear").onclick = ()=>{ state.assignments=[]; renderAssignCards(); resetAutoAssignMemory(); };
 
 $("#printMode").onchange = ()=> { refreshPrintFilters(); renderPrintPreview(); };
 $("#btnRenderPrint").onclick = renderPrintPreview;
@@ -2908,12 +2886,6 @@ showTopTab('step1');
     font-family: "Google Sans", Roboto, system-ui, sans-serif !important;
     font-size: 16px !important;
     line-height: 1.6 !important;
-  }
-
-  /* Spinner animasyonu */
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
   }
 
   .btn {
