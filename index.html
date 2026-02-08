@@ -488,56 +488,6 @@
   .qty button{border:0;background:rgba(79,70,229,.10);padding:8px 10px;cursor:pointer;font-weight:900}
   .qty button:hover{background:rgba(79,70,229,.16)}
   .qty button:active{background:rgba(79,70,229,.22)}
-  /* ===========================
-     STEP 4 – TALEPLER (Sade + Hızlı)
-     =========================== */
-  #step4 .reqCard{ padding:14px; }
-  #step4 .reqHead{
-    display:flex;
-    gap:10px;
-    align-items:flex-start;
-    justify-content:space-between;
-    border-bottom:1px solid #f1f5f9;
-    padding-bottom:10px;
-    margin-bottom:10px;
-  }
-  #step4 .reqHeadLeft{display:flex;gap:10px;align-items:flex-start}
-  #step4 .reqHeadRight{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-  #step4 .reqTools{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    align-items:center;
-    margin: 0 0 10px 0;
-  }
-  #step4 .reqGrid{
-    display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap:10px;
-  }
-  #step4 .reqRow{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:10px 12px;
-    border:1px solid rgba(15,23,42,.10);
-    border-radius:14px;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-  }
-  #step4 .reqBranch{
-    font-weight:900;
-    letter-spacing:.2px;
-  }
-  #step4 .reqControls{display:flex;align-items:center;gap:8px}
-  #step4 .reqQty{border-color: rgba(15,23,42,.16)}
-  #step4 .reqQty input{min-width:64px;font-weight:900}
-  #step4 .btn-group select{
-    min-width: 160px;
-    padding: 8px 10px;
-    border-radius: 12px;
-  }
-
 
   /* Yazdırma */
   @media print{
@@ -750,6 +700,96 @@
     font-size: 11px;
     margin-top: 4px;
   }
+
+
+/* ===========================
+   STEP 4 – TALEPLER (Sade & Hızlı)
+   =========================== */
+#step4 .reqCard{ padding:14px; }
+#step4 .reqHead{
+  display:flex; gap:12px; align-items:center; justify-content:space-between;
+  padding:10px 12px; border:1px solid rgba(15,23,42,.10); border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
+}
+#step4 .reqHeadLeft{ min-width: 220px; }
+#step4 .reqTitle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#step4 .reqHeadRight{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+}
+#step4 .reqPreset{
+  padding:8px 10px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  background:#fff; min-width: 190px; font-weight:700;
+}
+#step4 .reqTools{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  margin-top:12px;
+}
+#step4 #reqSearch{
+  padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  min-width: 260px;
+}
+#step4 .reqHint{ margin-left:auto; }
+#step4 .reqGrid{
+  margin-top:10px;
+  display:grid;
+  gap:8px;
+}
+#step4 .reqRow{
+  display:grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, .9fr) minmax(140px, .7fr);
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:14px;
+  background:#fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 16px rgba(2,8,23,.05);
+}
+#step4 .reqBranch{ font-weight:900; color:#0f172a; }
+#step4 .reqStepper{
+  display:flex; align-items:center; gap:8px;
+  padding:6px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:12px;
+  background:#f8fafc;
+}
+#step4 .reqStepBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff; cursor:pointer; font-weight:900;
+}
+#step4 .reqStepBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+#step4 .reqInput{
+  width:76px; text-align:center;
+  padding:8px 10px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.14);
+  background:#fff; font-weight:900;
+}
+#step4 .reqQuick{
+  display:flex; gap:6px; justify-content:flex-end;
+}
+#step4 .reqQuickBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
+  cursor:pointer; font-weight:900; color:#0f172a;
+}
+#step4 .reqQuickBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+@media (max-width: 920px){
+  #step4 .reqRow{ grid-template-columns: 1fr; }
+  #step4 .reqQuick{ justify-content:flex-start; }
+  #step4 .reqHint{ margin-left:0; width:100%; }
+  #step4 .reqPreset{ min-width: 160px; }
+}
+@media (prefers-color-scheme: dark){
+  #step4 .reqHead{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); border-color:#1f2a44; }
+  #step4 .reqRow{ background:#0f172a; border-color:#1f2a44; box-shadow:none; }
+  #step4 .reqBranch{ color:#e5e7eb; }
+  #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
+  #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
+  #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
+}
 
 </style>
 </head>
@@ -1126,6 +1166,41 @@ const openFile = (inputEl, cb) => { inputEl.onchange = e=>{
 }; inputEl.click(); };
 const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
 
+// Küçük bildirim (toast) – kopyala/yapıştır sonrası kullanıcıya geri bildirim
+function toast(msg){
+  try{
+    let t = document.getElementById('toast');
+    if(!t){
+      t = document.createElement('div');
+      t.id='toast';
+      t.style.cssText = [
+        'position:fixed',
+        'left:50%',
+        'bottom:18px',
+        'transform:translateX(-50%)',
+        'background:rgba(15,23,42,.92)',
+        'color:#fff',
+        'padding:10px 14px',
+        'border-radius:999px',
+        'font-weight:800',
+        'box-shadow:0 12px 28px rgba(2,8,23,.28)',
+        'z-index:10000',
+        'opacity:0',
+        'transition:opacity .18s ease',
+        'pointer-events:none',
+        'max-width:min(92vw,720px)',
+        'text-align:center'
+      ].join(';');
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._tm);
+    t._tm = setTimeout(()=>{ t.style.opacity='0'; }, 1200);
+  }catch(_){ /* no-op */ }
+}
+
+
 // ========== Branch Color Helpers ==========
 // In order to visually distinguish different course assignments in the schedule,
 // we generate pastel colors based off of the branch name. These colors are
@@ -1188,7 +1263,7 @@ function showTopTab(panelId){
 
   if(panelId==='step2'){ buildProgramGrid(true); renderSlotLabels(); }
   if(panelId==='step3'){ reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); }
-  if(panelId==='step4'){ refreshReqFilterOptions(); if(typeof refreshReqCopyFromOptions==='function') refreshReqCopyFromOptions(); renderRequests(); }
+  if(panelId==='step4'){ refreshReqFilterOptions(); renderRequests(); }
   if(panelId==='step5'){ renderAssignCards(); }
   if(panelId==='step6'){ refreshPrintFilters(); renderPrintPreview(); }
 }
@@ -1480,62 +1555,52 @@ function renderAvailGrids(){
           cell.textContent = val?'Uygun':'Değil';
           cell.onclick = ()=>{
             const cur = state.availability.groups[g.id][d][s] = !state.availability.groups[g.id][d][s];
-            cell.classNam<!-- STEP 4 -->
-  <section class="content grid tabpanel" id="step4" role="tabpanel" hidden>
-    <div class="section-title">
-      <h2>4) Grupların Haftalık Ders Talepleri</h2>
-      <div class="chips" id="branchChips"></div>
-    </div>
+            cell.className='kcell ' + (cur?'ok':'bad'); cell.textContent = cur ? 'Uygun' : 'Değil';
+          };
+          row.appendChild(cell);
+        }
+        grid.appendChild(row);
+      }
+      card.appendChild(grid); gWrap.appendChild(card);
+    });
+  }
+}
+function bulkSet(matrix, val){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=val; }
+function bulkToggle(matrix){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=!matrix[d][s]; }
+function copyDayPattern(matrix, fromDay){ const row = matrix[fromDay].slice(); for(let d=0; d<matrix.length; d++){ matrix[d] = row.slice(); } }
 
-    
-    <div class="toolbar">
-      <div class="left">
-        <label>Grup Seçin<br/>
-          <select id="reqGroupSelect"></select>
-        </label>
-      </div>
-      <div class="right">
-        <div class="btn-group" aria-label="JSON işlemleri">
-          <span class="gtitle">JSON</span>
-          <button class="btn ghost" id="btnReqExport">Dışa Aktar</button>
-          <input id="fileReqImport" type="file" accept="application/json" hidden />
-          <button class="btn ghost" id="btnReqImport">İçeri Al</button>
-        </div>
-        <div class="btn-group" aria-label="Toplu işlemler">
-          <span class="gtitle">Toplu</span>
-          <button class="btn warn" id="btnReqClear">Tüm Talepleri Sıfırla</button>
-        </div>
-        <div class="btn-group" aria-label="Kopyala / Yapıştır">
-          <span class="gtitle">Kopyala</span>
-          <button class="btn ghost" id="btnReqCopy">Bu Grubu Kopyala</button>
-          <button class="btn ghost" id="btnReqPaste" title="En son kopyalanan talepleri bu gruba yapıştırır">Yapıştır</button>
-          <select id="reqCopyFromSelect" title="Başka bir grup seçip bu gruba aktarabilirsiniz" style="min-width:180px"></select>
-          <button class="btn ghost" id="btnReqPasteFrom" title="Seçilen gruptaki talepleri bu gruba aktarır">Aktar</button>
-        </div>
+/* ===== 4) Talepler ===== */
+function ensureRequests(){
+  Object.values(state.groups).forEach(g=>{
+    state.requests[g.id] = state.requests[g.id] || {};
+    state.branches.forEach(b=>{
+      if(typeof state.requests[g.id][b] !== 'number') state.requests[g.id][b] = 0;
+    });
+  });
+}
+function refreshReqFilterOptions(){
+  const sel = $("#reqGroupSelect"); sel.innerHTML='';
+  const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='(Grup seçin)'; sel.appendChild(opt0);
+  Object.values(state.groups).sort(groupComparator).forEach(g=>{
+    const opt=document.createElement('option'); opt.value=g.id; opt.textContent=g.name; sel.appendChild(opt);
+  });
+}
+function totalRequestForGroup(gid){
+  const req = state.requests[gid]||{};
+  return Object.values(req).reduce((a,b)=>a+(+b||0),0);
+}
 
-        <div class="btn-group" aria-label="Firebase işlemleri">
-          <span class="gtitle">Firebase</span>
-          <button class="btn ghost" id="btnReqSaveFb">Kaydet</button>
-          <button class="btn ghost" id="btnReqLoadFb">Yükle</button>
-          <button class="btn ghost" id="btnReqDeleteFb">Sil</button>
-        </div>
-      </div>
-    </div>
+function renderRequests(){
+  ensureRequests();
 
-
-    <div id="reqWrap" class="grid"></div>
-
-    <div class="row">
-      <button class="btn sec right" id="goto5">Devam → Atama Paneli</button>
-    </div>
-  </section>
-
-  <!-- STEP 5 -->psSummary();
+  // Branş rozetleri (mevcut helper varsa onu kullan)
+  if (typeof renderBranchChipsSummary === 'function') {
+    renderBranchChipsSummary();
   } else {
     const bc = $("#branchChips");
     if (bc) {
       bc.innerHTML = '';
-      (state.branches||[]).forEach(b=>{
+      state.branches.forEach(b=>{
         const x = document.createElement('span');
         x.className = 'pill';
         x.textContent = b;
@@ -1544,148 +1609,226 @@ function renderAvailGrids(){
     }
   }
 
-  const gid = $("#reqGroupSelect").value;
+  const selVal = $("#reqGroupSelect").value;
   const wrap = $("#reqWrap");
   wrap.innerHTML = '';
 
-  if(!gid){
-    wrap.innerHTML = '<div class="muted">Soldan bir grup seçin. Seçilen gruba ait talepleri hızlıca belirleyin. (Kopyala/Yapıştır ile başka gruplara aktarabilirsiniz.)</div>';
+  if(!selVal){
+    wrap.innerHTML = '<div class="muted">Soldan bir grup seçin. Seçilen gruba ait talepleri düzenleyin.</div>';
     return;
   }
 
-  const g = state.groups[gid];
+  const g = state.groups[selVal];
   if(!g){
     wrap.innerHTML = '<div class="muted">Seçilen grup bulunamadı.</div>';
     return;
   }
 
-  const capacity = (state.program.days?.length||0) * (state.program.slots||0);
-  const req = state.requests[gid] || {};
-  const total = totalRequestForGroup(gid);
+  // --- Basit "clipboard": bir grubun taleplerini kopyala/yapıştır ---
+  if(!window.reqClipboard) window.reqClipboard = null;
+
+  const capacity = state.program.days.length * state.program.slots;
 
   const card = document.createElement('div');
   card.className = 'card reqCard';
 
-  // Header
+  const total = totalRequestForGroup(g.id);
+
   const head = document.createElement('div');
   head.className = 'reqHead';
 
   const left = document.createElement('div');
   left.className = 'reqHeadLeft';
-  left.innerHTML = `
-    <div class="reqTitle">
-      <div style="font-weight:900;font-size:16px">${escapeHtml(g.name)}</div>
-      <div class="mini2">${g.students?.length||0} öğrenci</div>
-    </div>
-  `;
+  left.innerHTML = `<div class="reqTitle"><b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span></div>`;
 
   const right = document.createElement('div');
   right.className = 'reqHeadRight';
 
-  const pill = document.createElement('span');
-  pill.className = 'pill' + (total > capacity ? ' bad' : '');
-  pill.textContent = `Toplam: ${total} • Kapasite: ${capacity}`;
-  right.appendChild(pill);
+  const chip = document.createElement('span');
+  chip.className = 'pill' + (total > capacity ? ' bad' : '');
+  chip.textContent = `Toplam: ${total} • Kapasite: ${capacity}`;
 
-  // Quick tools
-  const tools = document.createElement('div');
-  tools.className = 'reqTools';
+  const btnCopy = document.createElement('button');
+  btnCopy.className = 'btn xs ghost';
+  btnCopy.type = 'button';
+  btnCopy.textContent = 'Kopyala';
 
-  tools.innerHTML = `
-    <button class="btn xs ghost" id="btnReqAll0" title="Tüm branşları 0 yapar">Hepsi 0</button>
-    <button class="btn xs ghost" id="btnReqAll1" title="Tüm branşlara 1 ekler">+1</button>
-    <button class="btn xs ghost" id="btnReqAll2" title="Tüm branşlara 2 ekler">+2</button>
-    <span class="mini2" style="margin-left:6px">İpucu: Sayıya tıklayıp yazabilirsiniz.</span>
+  const btnPaste = document.createElement('button');
+  btnPaste.className = 'btn xs ghost';
+  btnPaste.type = 'button';
+  btnPaste.textContent = 'Yapıştır';
+  btnPaste.disabled = !window.reqClipboard;
+
+  const btnZero = document.createElement('button');
+  btnZero.className = 'btn xs ghost';
+  btnZero.type = 'button';
+  btnZero.textContent = 'Sıfırla';
+
+  // Hızlı preset: tüm branşlara aynı değer
+  const preset = document.createElement('select');
+  preset.className = 'reqPreset';
+  preset.title = 'Hızlı dağıtım: tüm branşları aynı değere ayarla';
+  preset.innerHTML = `
+    <option value="">Hızlı: tüm branşlar…</option>
+    <option value="0">0 yap</option>
+    <option value="1">1 yap</option>
+    <option value="2">2 yap</option>
+    <option value="3">3 yap</option>
+    <option value="4">4 yap</option>
   `;
+
+  btnCopy.onclick = ()=>{
+    // sadece branş->sayı kopyalanır
+    window.reqClipboard = JSON.parse(JSON.stringify(state.requests[g.id]||{}));
+    try{ localStorage.setItem('reqClipboard', JSON.stringify(window.reqClipboard)); }catch(_){}
+    btnPaste.disabled = false;
+    toast(`Kopyalandı: ${g.name}`);
+  };
+
+  btnPaste.onclick = ()=>{
+    const src = window.reqClipboard || (()=>{ try{return JSON.parse(localStorage.getItem('reqClipboard')||'null');}catch(_){return null;} })();
+    if(!src) return alert('Önce bir grupta "Kopyala" yapın.');
+    state.requests[g.id] = state.requests[g.id] || {};
+    state.branches.forEach(b=>{ state.requests[g.id][b] = clamp(parseInt(src[b]||0),0,999); });
+    renderRequests();
+    toast(`Yapıştırıldı: ${g.name}`);
+  };
+
+  btnZero.onclick = ()=>{
+    if(!confirm(`${g.name} talepleri sıfırlansın mı?`)) return;
+    state.branches.forEach(b=> state.requests[g.id][b]=0);
+    renderRequests();
+  };
+
+  preset.onchange = ()=>{
+    const v = preset.value;
+    if(v==='') return;
+    const n = clamp(parseInt(v||'0'),0,999);
+    state.branches.forEach(b=> state.requests[g.id][b]=n);
+    preset.value='';
+    renderRequests();
+  };
+
+  right.append(chip, preset, btnZero, btnCopy, btnPaste);
 
   head.append(left, right);
   card.appendChild(head);
-  card.appendChild(tools);
 
-  // Grid rows
+  // --- Kompakt grid ---
   const grid = document.createElement('div');
   grid.className = 'reqGrid';
 
-  (state.branches||[]).forEach(branch=>{
+  // Arama/filtre
+  const tools = document.createElement('div');
+  tools.className = 'reqTools';
+  tools.innerHTML = `
+    <input type="text" id="reqSearch" placeholder="Branş ara…" />
+    <div class="reqHint muted mini">İpucu: Sayı kutusuna tıkla ve klavyeden yaz. + / – ile hızlı arttır/azalt.</div>
+  `;
+  card.appendChild(tools);
+
+  const searchEl = tools.querySelector('#reqSearch');
+
+  function repaintTotals(){
+    const t = totalRequestForGroup(g.id);
+    chip.className = 'pill' + (t > capacity ? ' bad' : '');
+    chip.textContent = `Toplam: ${t} • Kapasite: ${capacity}`;
+    if (typeof renderBranchChipsSummary === 'function') renderBranchChipsSummary();
+  }
+
+  function makeRow(branch){
     const row = document.createElement('div');
     row.className = 'reqRow';
 
-    const b = document.createElement('div');
-    b.className = 'reqBranch';
-    b.textContent = branch;
+    const name = document.createElement('div');
+    name.className = 'reqBranch';
+    name.textContent = branch;
 
-    const controls = document.createElement('div');
-    controls.className = 'reqControls';
-
-    const box = document.createElement('div');
-    box.className = 'qty reqQty';
+    const step = document.createElement('div');
+    step.className = 'reqStepper';
 
     const minus = document.createElement('button');
     minus.type='button';
-    minus.textContent = '−';
+    minus.className='reqStepBtn';
+    minus.textContent='–';
 
     const inp = document.createElement('input');
     inp.type='number';
     inp.min='0';
-    inp.step='1';
-    inp.value = +req[branch] || 0;
-    inp.inputMode = 'numeric';
+    inp.max='999';
+    inp.inputMode='numeric';
+    inp.value = state.requests[g.id][branch] || 0;
+    inp.className='reqInput';
 
     const plus = document.createElement('button');
     plus.type='button';
-    plus.textContent = '+';
+    plus.className='reqStepBtn';
+    plus.textContent='+';
 
-    const sync = ()=>{
-      const v = clamp(parseInt(inp.value||'0'), 0, 999);
-      inp.value = v;
-      state.requests[gid][branch] = v;
-      // toplam rozetini canlı güncelle
-      const t = totalRequestForGroup(gid);
-      pill.className = 'pill' + (t > capacity ? ' bad' : '');
-      pill.textContent = `Toplam: ${t} • Kapasite: ${capacity}`;
-      if (typeof renderBranchChipsSummary === 'function') renderBranchChipsSummary();
-    };
-
-    minus.onclick = ()=>{ inp.value = Math.max(0, (+inp.value||0)-1); sync(); };
-    plus.onclick = ()=>{ inp.value = (+inp.value||0)+1; sync(); };
-    inp.onchange = sync;
-    inp.oninput = ()=>{ /* hızlı yazımda gecikmesiz */ };
-
-    // Enter ile sync
-    inp.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter'){ e.preventDefault(); sync(); }
+    const quick = document.createElement('div');
+    quick.className='reqQuick';
+    [0,1,2,3].forEach(n=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='reqQuickBtn';
+      b.textContent=String(n);
+      b.onclick=()=>{ inp.value=String(n); inp.dispatchEvent(new Event('input')); };
+      quick.appendChild(b);
     });
 
-    box.append(minus, inp, plus);
-    controls.appendChild(box);
+    const applyDelta = (d)=>{
+      inp.value = String(clamp((+inp.value||0)+d,0,999));
+      inp.dispatchEvent(new Event('input'));
+    };
 
-    row.append(b, controls);
-    grid.appendChild(row);
-  });
+    minus.onclick = ()=>applyDelta(-1);
+    plus.onclick  = ()=>applyDelta(+1);
+
+    inp.onkeydown = (e)=>{
+      if(e.key==='+') { e.preventDefault(); applyDelta(+1); }
+      if(e.key==='-') { e.preventDefault(); applyDelta(-1); }
+    };
+
+    inp.oninput = (e)=>{
+      state.requests[g.id][branch] = clamp(parseInt(e.target.value || '0'), 0, 999);
+      repaintTotals();
+    };
+
+    step.append(minus, inp, plus);
+    row.append(name, step, quick);
+    return row;
+  }
+
+  function renderList(){
+    grid.innerHTML = '';
+    const q = (searchEl.value||'').trim().toLowerCase();
+    const list = state.branches.filter(b=> !q || b.toLowerCase().includes(q));
+    if(list.length===0){
+      grid.innerHTML = '<div class="muted">Eşleşen branş yok.</div>';
+      return;
+    }
+    list.forEach(b=> grid.appendChild(makeRow(b)));
+  }
+
+  searchEl.addEventListener('input', renderList);
 
   card.appendChild(grid);
   wrap.appendChild(card);
 
-  // Quick buttons handlers
-  $("#btnReqAll0").onclick = ()=>{
-    (state.branches||[]).forEach(br=> state.requests[gid][br]=0);
-    renderRequests();
-  };
-  $("#btnReqAll1").onclick = ()=>{
-    (state.branches||[]).forEach(br=> state.requests[gid][br]=(+state.requests[gid][br]||0)+1);
-    renderRequests();
-  };
-  $("#btnReqAll2").onclick = ()=>{
-    (state.branches||[]).forEach(br=> state.requests[gid][br]=(+state.requests[gid][br]||0)+2);
-    renderRequests();
-  };
+  // clipboard restore
+  if(!window.reqClipboard){
+    try{ const v = JSON.parse(localStorage.getItem('reqClipboard')||'null'); if(v) window.reqClipboard=v; }catch(_){}
+    btnPaste.disabled = !window.reqClipboard;
+  }
+
+  renderList();
+  repaintTotals();
 }
 const exportReq = ()=>download('grup-talepleri.json', state.requests);
 const importReq = obj=>{
   if(!obj || typeof obj!=='object') return alert('Geçersiz talepler JSON.');
   state.requests = obj;
   refreshReqFilterOptions();
-  if(typeof refreshReqCopyFromOptions==='function') refreshReqCopyFromOptions();
   renderRequests();
 };
 
@@ -3034,36 +3177,8 @@ $("#goto6").onclick = ()=> showTopTab('step6');
 $("#btnReqExport").onclick = exportReq;
 $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
-
-$("#btnReqCopy").onclick = ()=>{
-  const gid = $("#reqGroupSelect").value;
-  if(!gid) return alert("Önce bir grup seçin.");
-  copyRequestsFromGroup(gid);
-  alert("Bu grubun talepleri kopyalandı. (Yapıştır ile başka gruba aktarabilirsiniz.)");
-};
-$("#btnReqPaste").onclick = ()=>{
-  const gid = $("#reqGroupSelect").value;
-  if(!gid) return alert("Önce bir grup seçin.");
-  if(!__reqCopyBuffer) return alert("Önce 'Bu Grubu Kopyala' ile bir talep seti kopyalayın.");
-  if(confirm("Kopyalanan talepleri bu gruba yapıştırmak istiyor musunuz? Mevcut talepler değişecek.")){
-    pasteRequestsToGroup(gid, __reqCopyBuffer);
-    renderRequests();
-  }
-};
-$("#btnReqPasteFrom").onclick = ()=>{
-  const target = $("#reqGroupSelect").value;
-  if(!target) return alert("Önce hedef grubu seçin.");
-  const from = $("#reqCopyFromSelect").value;
-  if(!from) return alert("Kaynak grup seçin.");
-  if(from===target) return alert("Kaynak ve hedef grup aynı olamaz.");
-  if(confirm("Seçilen grubun taleplerini bu gruba aktarmak istiyor musunuz? Mevcut talepler değişecek.")){
-    const src = copyRequestsFromGroup(from);
-    pasteRequestsToGroup(target, src);
-    renderRequests();
-  }
-};
-
 $("#reqGroupSelect").onchange = renderRequests;
+
 // Otomatik atama: 45 sn boyunca farklı yerleşimler dener, en iyisini uygular (async)
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
 $("#btnAutoAssignReport").onclick = () => {
@@ -3107,6 +3222,96 @@ showTopTab('step1');
 </script>
 <style>
 :root{ /* ders paleti */ --b-mat:#6366f1; /* Matematik */ --b-fen:#10b981; /* Fen Bilimleri */ --b-trk:#f97316; /* Türkçe */ --b-sos:#06b6d4; /* Sosyal Bilgiler */ --b-ing:#22c55e; /* İngilizce */ --b-din:#a78bfa; /* Din Kültürü */ /* tonlar */ --t-50: 14%; --t-150: 26%; --ring:#94a3b8; } /* üst sekmeler – daha modern görünüm */ .tabs{gap:8px;border:0;margin-bottom:10px;position:relative} .tabs:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#e5e7eb} .tab{padding:12px 16px;border-radius:12px;background:#f1f5f9;font-weight:800;color:#0f172a;box-shadow:0 1px 0 #e5e7eb inset} .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;box-shadow:0 6px 18px rgba(2,8,23,.06);} /* kartlar */ .card{border-radius:16px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.06)} .card header{font-weight:800;margin-bottom:8px} /* grid hücreleri – daha “takvim” hissi */ .kgrid[data-cols]{grid-template-columns:160px repeat(var(--cols), minmax(72px,1fr));} .kcell{position:relative;border:1px solid #e5e7eb;background:#fff;min-height:58px;border-radius:12px} .kcell:hover{outline:3px solid rgba(99,102,241,.08);outline-offset:0} .kcell .mini2{opacity:.9} /* atama yapılmış hücre */ .kcell.assigned{color:#0f172a;font-weight:700} .kcell.assigned .mini2{color:#111827;font-weight:600} /* ders renkleri (UI) */ .kcell.assigned.b-mat{ background:color-mix(in srgb, var(--b-mat) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-mat) var(--t-150), #fff); } .kcell.assigned.b-fen{ background:color-mix(in srgb, var(--b-fen) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-fen) var(--t-150), #fff); } .kcell.assigned.b-trk{ background:color-mix(in srgb, var(--b-trk) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-trk) var(--t-150), #fff); } .kcell.assigned.b-sos{ background:color-mix(in srgb, var(--b-sos) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-sos) var(--t-150), #fff); } .kcell.assigned.b-ing{ background:color-mix(in srgb, var(--b-ing) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-ing) var(--t-150), #fff); } .kcell.assigned.b-din{ background:color-mix(in srgb, var(--b-din) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-din) var(--t-150), #fff); } /* mini yoğunluk modu – istersen .app'a .dense ekle */ .app.dense .kcell{min-height:44px;padding:4px 6px;border-radius:10px} /* Yazdır: ders renklerinin hafif tonu ve okunabilirlik */ @media print{ .print-table td.b-mat { background:#e6e8ff; } .print-table td.b-fen { background:#d6f7e9; } .print-table td.b-trk { background:#ffe8d6; } .print-table td.b-sos { background:#d8f6fb; } .print-table td.b-ing { background:#e3f9e9; } .print-table td.b-din { background:#ece7ff; } .print-table td[class^="b-"], .print-table td[class*=" b-"]{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .print-header{margin-bottom:10px} .print-sub{margin:8px 0 10px} } ``` > Not: mevcut print bloğun temelini koruyoruz, sadece tablo hücrelerine ders rengine göre arka plan veriyoruz. --- # 2) JS – Ders rengi sınıfı ekle & Yazdır hücrelerine sınıf bas Aşağıdaki yardımcıları `<script>` içinde bir yere (ör. global yardımcıların altı) ekle: ```js /* === Ders -> sınıf kısaltması (güvenli) === */ const BRANCH_CLASS = { 'MATEMATİK':'mat','FEN BİLİMLERİ':'fen','TÜRKÇE':'trk', 'SOSYAL BİLGİLER':'sos','İNGİLİZCE':'ing','DİN KÜLTÜRÜ':'din' }; const bcls = b => 'b-' + (BRANCH_CLASS[b] || toId(b)); ``` ## 2.a Atama panelinde renkli hücre `renderAssignCards()` içinde, atanmış hücre oluşturduğun bölümde şu değişikliği yap: **ÖNCE:** ```js if(cur){ cell.classList.add('busy'); cell.innerHTML = `<div style="text-align:center"><div><b>${cur.branch}</b></div><div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div></div>`; } ``` **SONRA:** ```js if(cur){ cell.classList.add('assigned', bcls(cur.branch)); cell.innerHTML = `<div style="text-align:center"> <div><b>${cur.branch}</b></div> <div class="mini2">👤 ${state.teachers.find(t=>t.id===cur.teacherId)?.name||''}</div> </div>`; } ``` > Bu düzenleme, eski “busy” görselini ders rengine göre modern panele çevirir. ## 2.b Yazdır tablosunda renk sınıfı ver `renderPrintPreview()` içinde hücre HTML’lerini üretirken, `<td>`’lere ders sınıfını ekleyelim. **Grup görünümü** satır oluşturma kısmında (td içeriği üretilirken) bu satırı değiştir: ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += `<td>${txt}</td>`; ``` **şu hale getir:** ```js const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : ''; row += a ? `<td class="${bcls(a.branch)}">${txt}</td>` : `<td></td>`; ``` **Öğretmen görünümü** için de benzer şekilde: ```js row += a ? `<td style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` **yerine:** ```js row += a ? `<td class="${bcls(a.branch)}" style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`; ``` >
+
+
+/* ===========================
+   STEP 4 – TALEPLER (Sade & Hızlı)
+   =========================== */
+#step4 .reqCard{ padding:14px; }
+#step4 .reqHead{
+  display:flex; gap:12px; align-items:center; justify-content:space-between;
+  padding:10px 12px; border:1px solid rgba(15,23,42,.10); border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
+}
+#step4 .reqHeadLeft{ min-width: 220px; }
+#step4 .reqTitle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#step4 .reqHeadRight{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+}
+#step4 .reqPreset{
+  padding:8px 10px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  background:#fff; min-width: 190px; font-weight:700;
+}
+#step4 .reqTools{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  margin-top:12px;
+}
+#step4 #reqSearch{
+  padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  min-width: 260px;
+}
+#step4 .reqHint{ margin-left:auto; }
+#step4 .reqGrid{
+  margin-top:10px;
+  display:grid;
+  gap:8px;
+}
+#step4 .reqRow{
+  display:grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, .9fr) minmax(140px, .7fr);
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:14px;
+  background:#fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 16px rgba(2,8,23,.05);
+}
+#step4 .reqBranch{ font-weight:900; color:#0f172a; }
+#step4 .reqStepper{
+  display:flex; align-items:center; gap:8px;
+  padding:6px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:12px;
+  background:#f8fafc;
+}
+#step4 .reqStepBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff; cursor:pointer; font-weight:900;
+}
+#step4 .reqStepBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+#step4 .reqInput{
+  width:76px; text-align:center;
+  padding:8px 10px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.14);
+  background:#fff; font-weight:900;
+}
+#step4 .reqQuick{
+  display:flex; gap:6px; justify-content:flex-end;
+}
+#step4 .reqQuickBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
+  cursor:pointer; font-weight:900; color:#0f172a;
+}
+#step4 .reqQuickBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+@media (max-width: 920px){
+  #step4 .reqRow{ grid-template-columns: 1fr; }
+  #step4 .reqQuick{ justify-content:flex-start; }
+  #step4 .reqHint{ margin-left:0; width:100%; }
+  #step4 .reqPreset{ min-width: 160px; }
+}
+@media (prefers-color-scheme: dark){
+  #step4 .reqHead{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); border-color:#1f2a44; }
+  #step4 .reqRow{ background:#0f172a; border-color:#1f2a44; box-shadow:none; }
+  #step4 .reqBranch{ color:#e5e7eb; }
+  #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
+  #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
+  #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
+}
 
 </style>
 <style>
@@ -3226,6 +3431,96 @@ showTopTab('step1');
     display: none !important;
   }
 }
+
+/* ===========================
+   STEP 4 – TALEPLER (Sade & Hızlı)
+   =========================== */
+#step4 .reqCard{ padding:14px; }
+#step4 .reqHead{
+  display:flex; gap:12px; align-items:center; justify-content:space-between;
+  padding:10px 12px; border:1px solid rgba(15,23,42,.10); border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
+}
+#step4 .reqHeadLeft{ min-width: 220px; }
+#step4 .reqTitle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#step4 .reqHeadRight{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+}
+#step4 .reqPreset{
+  padding:8px 10px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  background:#fff; min-width: 190px; font-weight:700;
+}
+#step4 .reqTools{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  margin-top:12px;
+}
+#step4 #reqSearch{
+  padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  min-width: 260px;
+}
+#step4 .reqHint{ margin-left:auto; }
+#step4 .reqGrid{
+  margin-top:10px;
+  display:grid;
+  gap:8px;
+}
+#step4 .reqRow{
+  display:grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, .9fr) minmax(140px, .7fr);
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:14px;
+  background:#fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 16px rgba(2,8,23,.05);
+}
+#step4 .reqBranch{ font-weight:900; color:#0f172a; }
+#step4 .reqStepper{
+  display:flex; align-items:center; gap:8px;
+  padding:6px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:12px;
+  background:#f8fafc;
+}
+#step4 .reqStepBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff; cursor:pointer; font-weight:900;
+}
+#step4 .reqStepBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+#step4 .reqInput{
+  width:76px; text-align:center;
+  padding:8px 10px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.14);
+  background:#fff; font-weight:900;
+}
+#step4 .reqQuick{
+  display:flex; gap:6px; justify-content:flex-end;
+}
+#step4 .reqQuickBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
+  cursor:pointer; font-weight:900; color:#0f172a;
+}
+#step4 .reqQuickBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+@media (max-width: 920px){
+  #step4 .reqRow{ grid-template-columns: 1fr; }
+  #step4 .reqQuick{ justify-content:flex-start; }
+  #step4 .reqHint{ margin-left:0; width:100%; }
+  #step4 .reqPreset{ min-width: 160px; }
+}
+@media (prefers-color-scheme: dark){
+  #step4 .reqHead{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); border-color:#1f2a44; }
+  #step4 .reqRow{ background:#0f172a; border-color:#1f2a44; box-shadow:none; }
+  #step4 .reqBranch{ color:#e5e7eb; }
+  #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
+  #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
+  #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
+}
+
 </style>
 <script>
   function computeBranchTeacherCapacity(){
@@ -3347,7 +3642,97 @@ function printAllGrades() {
   w.document.write(`<!DOCTYPE html><html lang="tr"><head>
     <meta charset="utf-8">
     <title>Fenomen Eğitim Kurumları birebir ve Grup Listesi</title>
-    <style>${css}</style>
+    <style>${css}
+/* ===========================
+   STEP 4 – TALEPLER (Sade & Hızlı)
+   =========================== */
+#step4 .reqCard{ padding:14px; }
+#step4 .reqHead{
+  display:flex; gap:12px; align-items:center; justify-content:space-between;
+  padding:10px 12px; border:1px solid rgba(15,23,42,.10); border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
+}
+#step4 .reqHeadLeft{ min-width: 220px; }
+#step4 .reqTitle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#step4 .reqHeadRight{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+}
+#step4 .reqPreset{
+  padding:8px 10px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  background:#fff; min-width: 190px; font-weight:700;
+}
+#step4 .reqTools{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  margin-top:12px;
+}
+#step4 #reqSearch{
+  padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  min-width: 260px;
+}
+#step4 .reqHint{ margin-left:auto; }
+#step4 .reqGrid{
+  margin-top:10px;
+  display:grid;
+  gap:8px;
+}
+#step4 .reqRow{
+  display:grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, .9fr) minmax(140px, .7fr);
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:14px;
+  background:#fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 16px rgba(2,8,23,.05);
+}
+#step4 .reqBranch{ font-weight:900; color:#0f172a; }
+#step4 .reqStepper{
+  display:flex; align-items:center; gap:8px;
+  padding:6px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:12px;
+  background:#f8fafc;
+}
+#step4 .reqStepBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff; cursor:pointer; font-weight:900;
+}
+#step4 .reqStepBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+#step4 .reqInput{
+  width:76px; text-align:center;
+  padding:8px 10px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.14);
+  background:#fff; font-weight:900;
+}
+#step4 .reqQuick{
+  display:flex; gap:6px; justify-content:flex-end;
+}
+#step4 .reqQuickBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
+  cursor:pointer; font-weight:900; color:#0f172a;
+}
+#step4 .reqQuickBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+@media (max-width: 920px){
+  #step4 .reqRow{ grid-template-columns: 1fr; }
+  #step4 .reqQuick{ justify-content:flex-start; }
+  #step4 .reqHint{ margin-left:0; width:100%; }
+  #step4 .reqPreset{ min-width: 160px; }
+}
+@media (prefers-color-scheme: dark){
+  #step4 .reqHead{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); border-color:#1f2a44; }
+  #step4 .reqRow{ background:#0f172a; border-color:#1f2a44; box-shadow:none; }
+  #step4 .reqBranch{ color:#e5e7eb; }
+  #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
+  #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
+  #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
+}
+
+</style>
   </head><body>`);
 
   w.document.write(`<h1>Fenomen Eğitim Kurumları birebir ve Grup Listesi</h1>`);
@@ -3519,6 +3904,96 @@ function printAllGrades() {
   .print-teacher-v2 .page{ break-after: page; page-break-after: always; }
   th,td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
+
+/* ===========================
+   STEP 4 – TALEPLER (Sade & Hızlı)
+   =========================== */
+#step4 .reqCard{ padding:14px; }
+#step4 .reqHead{
+  display:flex; gap:12px; align-items:center; justify-content:space-between;
+  padding:10px 12px; border:1px solid rgba(15,23,42,.10); border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
+}
+#step4 .reqHeadLeft{ min-width: 220px; }
+#step4 .reqTitle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#step4 .reqHeadRight{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+}
+#step4 .reqPreset{
+  padding:8px 10px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  background:#fff; min-width: 190px; font-weight:700;
+}
+#step4 .reqTools{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  margin-top:12px;
+}
+#step4 #reqSearch{
+  padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  min-width: 260px;
+}
+#step4 .reqHint{ margin-left:auto; }
+#step4 .reqGrid{
+  margin-top:10px;
+  display:grid;
+  gap:8px;
+}
+#step4 .reqRow{
+  display:grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, .9fr) minmax(140px, .7fr);
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:14px;
+  background:#fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 16px rgba(2,8,23,.05);
+}
+#step4 .reqBranch{ font-weight:900; color:#0f172a; }
+#step4 .reqStepper{
+  display:flex; align-items:center; gap:8px;
+  padding:6px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:12px;
+  background:#f8fafc;
+}
+#step4 .reqStepBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff; cursor:pointer; font-weight:900;
+}
+#step4 .reqStepBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+#step4 .reqInput{
+  width:76px; text-align:center;
+  padding:8px 10px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.14);
+  background:#fff; font-weight:900;
+}
+#step4 .reqQuick{
+  display:flex; gap:6px; justify-content:flex-end;
+}
+#step4 .reqQuickBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
+  cursor:pointer; font-weight:900; color:#0f172a;
+}
+#step4 .reqQuickBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+@media (max-width: 920px){
+  #step4 .reqRow{ grid-template-columns: 1fr; }
+  #step4 .reqQuick{ justify-content:flex-start; }
+  #step4 .reqHint{ margin-left:0; width:100%; }
+  #step4 .reqPreset{ min-width: 160px; }
+}
+@media (prefers-color-scheme: dark){
+  #step4 .reqHead{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); border-color:#1f2a44; }
+  #step4 .reqRow{ background:#0f172a; border-color:#1f2a44; box-shadow:none; }
+  #step4 .reqBranch{ color:#e5e7eb; }
+  #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
+  #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
+  #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
+}
+
 </style>
 
 <script>
@@ -3694,7 +4169,97 @@ function printTeachersV2(){
 <head>
   <meta charset="utf-8" />
   <title>Öğretmen Yazdır (Yeni)</title>
-  <style>${baseCSS}</style>
+  <style>${baseCSS}
+/* ===========================
+   STEP 4 – TALEPLER (Sade & Hızlı)
+   =========================== */
+#step4 .reqCard{ padding:14px; }
+#step4 .reqHead{
+  display:flex; gap:12px; align-items:center; justify-content:space-between;
+  padding:10px 12px; border:1px solid rgba(15,23,42,.10); border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
+}
+#step4 .reqHeadLeft{ min-width: 220px; }
+#step4 .reqTitle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#step4 .reqHeadRight{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+}
+#step4 .reqPreset{
+  padding:8px 10px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  background:#fff; min-width: 190px; font-weight:700;
+}
+#step4 .reqTools{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  margin-top:12px;
+}
+#step4 #reqSearch{
+  padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+  min-width: 260px;
+}
+#step4 .reqHint{ margin-left:auto; }
+#step4 .reqGrid{
+  margin-top:10px;
+  display:grid;
+  gap:8px;
+}
+#step4 .reqRow{
+  display:grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, .9fr) minmax(140px, .7fr);
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:14px;
+  background:#fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 16px rgba(2,8,23,.05);
+}
+#step4 .reqBranch{ font-weight:900; color:#0f172a; }
+#step4 .reqStepper{
+  display:flex; align-items:center; gap:8px;
+  padding:6px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:12px;
+  background:#f8fafc;
+}
+#step4 .reqStepBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff; cursor:pointer; font-weight:900;
+}
+#step4 .reqStepBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+#step4 .reqInput{
+  width:76px; text-align:center;
+  padding:8px 10px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.14);
+  background:#fff; font-weight:900;
+}
+#step4 .reqQuick{
+  display:flex; gap:6px; justify-content:flex-end;
+}
+#step4 .reqQuickBtn{
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(15,23,42,.12);
+  background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
+  cursor:pointer; font-weight:900; color:#0f172a;
+}
+#step4 .reqQuickBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
+@media (max-width: 920px){
+  #step4 .reqRow{ grid-template-columns: 1fr; }
+  #step4 .reqQuick{ justify-content:flex-start; }
+  #step4 .reqHint{ margin-left:0; width:100%; }
+  #step4 .reqPreset{ min-width: 160px; }
+}
+@media (prefers-color-scheme: dark){
+  #step4 .reqHead{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); border-color:#1f2a44; }
+  #step4 .reqRow{ background:#0f172a; border-color:#1f2a44; box-shadow:none; }
+  #step4 .reqBranch{ color:#e5e7eb; }
+  #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
+  #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
+  #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
+}
+
+</style>
 </head>
 <body class="print-teacher-v2">
 </body></html>`);
