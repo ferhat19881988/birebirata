@@ -498,6 +498,7 @@
     .print-header{font-weight:900;text-align:center;margin-bottom:6px}
     .print-sub{color:#475569;text-align:center;margin-bottom:8px}
     .print-page{page-break-after:always;break-after:page}
+    .print-page:last-child{page-break-after:auto;break-after:auto}
     /* Increased font-size for print clarity */
     .print-table{width:100%;border-collapse:collapse;font-size:11px}
     .print-table th,.print-table td{border:1px solid #000;padding:5px 6px;vertical-align:top}
@@ -510,6 +511,19 @@
     .att-table{width:100%;border-collapse:collapse;font-size:10px;margin-top:6px}
     .att-table th,.att-table td{border:1px solid #000;padding:3px 4px;text-align:center}
     .att-table th:first-child,.att-table td:first-child{text-align:left}
+
+    /* Mini yoklama kartları (Yazdır/Rapor - öğretmene göre) */
+    .att-grid-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .att-mini{border:1px solid #000;border-radius:10px;padding:6px 8px;break-inside:avoid;page-break-inside:avoid}
+    .att-mini-head{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(0,0,0,.15);padding-bottom:4px;margin-bottom:4px}
+    .att-g{font-weight:900}
+    .att-legend{display:flex;gap:12px;font-weight:800;font-size:10px;color:#334155}
+    .att-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0;border-bottom:1px dotted rgba(0,0,0,.25)}
+    .att-row:last-child{border-bottom:0}
+    .att-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .att-boxes{display:flex;gap:12px;flex:0 0 auto}
+    .att-row .box{width:11px;height:11px;border:1.4px solid #000;border-radius:3px;display:inline-block}
+
   }
 
 /*
@@ -3081,6 +3095,10 @@ function renderPrintPreview(){
       t.innerHTML = `<thead>${thead}</thead><tbody>${body}</tbody>`; wr.appendChild(t);
 
       page.appendChild(wr); div.appendChild(page);
+      if (typeof extraPages !== 'undefined' && Array.isArray(extraPages) && extraPages.length){ extraPages.forEach(pg=>div.appendChild(pg)); }
+
+      // Ek sayfaları ana sayfanın arkasına ekle
+      (extraPages||[]).forEach(pg=>div.appendChild(pg));
     });
 
   } else {
@@ -3111,27 +3129,42 @@ function renderPrintPreview(){
       });
       tTbl.innerHTML = `<thead>${thead}</thead><tbody>${body}</tbody>`; wr.appendChild(tTbl);
 
-      // Yoklama blokları — her grup için küçük tablo
-      const groupsForT = Array.from(new Set(aForT.map(a=>a.group))).map(gid=>state.groups[gid]).filter(Boolean).sort(groupComparator);
-      groupsForT.forEach(g=>{
-        const blockTitle = document.createElement('div'); blockTitle.className='print-sub';
-        blockTitle.innerHTML = `<b>${g.name}</b> • Öğrenci Yoklama`;
-        wr.appendChild(blockTitle);
+      // Yoklama (mini kartlar) — 20 grup / A4
+      const groupsForT = Array.from(new Set(aForT.map(a=>a.group)))
+        .map(gid=>state.groups[gid])
+        .filter(Boolean)
+        .sort(groupComparator);
 
-        const att = document.createElement('table'); att.className='att-table';
-        att.innerHTML = `<thead>
-            <tr><th>👤 Öğrenci</th><th>Geldi</th><th>Gelmedi</th><th>Geç Geldi</th><th>İzinli</th></tr>
-          </thead><tbody></tbody>`;
-        const tbody = att.querySelector('tbody');
-        state.students.filter(s=>s.group===g.id).forEach(st=>{
-          const tr=document.createElement('tr');
-          tr.innerHTML = `<td>${st.name}</td><td>□</td><td>□</td><td>□</td><td>□</td>`;
-          tbody.appendChild(tr);
-        });
-        wr.appendChild(att);
-      });
+      const chunks = chunkInto(groupsForT, 20);
+      const total = chunks.length || 0;
+      const extraPages = [];
+
+      if(total){
+        // 1. sayfaya ilk 20 grup
+        const html0 = renderAttendanceChunk(chunks[0], 1, total);
+        const att0 = document.createElement('div');
+        att0.innerHTML = html0;
+        wr.appendChild(att0);
+
+        // 21. grup ve sonrası için ek sayfalar
+        for(let i=1;i<chunks.length;i++){
+          const page2=document.createElement('div'); page2.className='print-page';
+          const wr2 = document.createElement('div'); wr2.className='print-wrapper avoid-break';
+
+          const head2 = document.createElement('div'); head2.className='print-sub';
+          head2.innerHTML = `<b>${t.name} — ${t.branch}</b> • Yoklama (Devam)`;
+          wr2.appendChild(head2);
+
+          const attX = document.createElement('div');
+          attX.innerHTML = renderAttendanceChunk(chunks[i], i+1, total);
+          wr2.appendChild(attX);
+
+          page2.appendChild(wr2); extraPages.push(page2);
+        }
+      }
 
       page.appendChild(wr); div.appendChild(page);
+      (extraPages||[]).forEach(pg=>div.appendChild(pg));
     });
   }
 }
@@ -3589,7 +3622,7 @@ function renderBranchChipsSummary(){
   btn.className = 'btn warn';
   btn.textContent = 'Tüm listeyi yazdır';
   // Değiştirilen fonksiyon çağrısı: tüm sınıflar için liste yazdırılır
-  btn.addEventListener('click', ()=> openPrintAllModal());
+  btn.addEventListener('click', openPrintAllGradesDialog);
   host.appendChild(btn);
 })();
 
@@ -3599,87 +3632,106 @@ function renderBranchChipsSummary(){
  * için atama bulunmuyorsa, o bölüm atlanır.
  */
 
-function openPrintAllModal(){
-  try{
-    const dlg = document.getElementById('dlgPrintAll');
-    if(!dlg) return printAllGrades(); // fallback
-    const list = document.getElementById('printAllClassList');
-    const selAll = document.getElementById('chkPrintAllSelectAll');
-    const hint = document.getElementById('printAllCountHint');
-    const btnGo = document.getElementById('btnPrintAllGo');
+function ensurePrintAllGradesDialog(){
+  let dlg = document.getElementById('dlgPrintAllGrades');
+  if(dlg) return dlg;
 
-    // sınıf listesi (örn. 7A, 8B) — sadece ataması olan gruplardan
-    const classKeys = Array.from(new Set(
-      Object.values(state.groups || {})
-        .filter(g => state.assignments?.some(a=>a.group===g.id))
-        .map(g => {
-          const p = parseGroupName(g.name || g.id || '');
-          return p && p.grade && p.sec ? (String(p.grade)+String(p.sec).toUpperCase()) : null;
-        })
-        .filter(Boolean)
-    )).sort((a,b)=>{
-      const ga=parseInt(a,10)||0, gb=parseInt(b,10)||0;
-      if(ga!==gb) return ga-gb;
-      return a.localeCompare(b,'tr');
-    });
+  dlg = document.createElement('dialog');
+  dlg.id = 'dlgPrintAllGrades';
+  dlg.className = 'no-print';
+  dlg.style.maxWidth = '560px';
+  dlg.style.width = '92vw';
+  dlg.style.border = '1px solid rgba(15,23,42,.12)';
+  dlg.style.borderRadius = '16px';
+  dlg.style.boxShadow = '0 20px 50px rgba(2,8,23,.25)';
+  dlg.style.padding = '14px';
 
-    list.innerHTML = '';
-    classKeys.forEach(k=>{
-      const id = 'pall_'+k;
-      const item = document.createElement('label');
-      item.className = 'pill';
-      item.style.cssText = 'display:flex;gap:8px;align-items:center;cursor:pointer;user-select:none;justify-content:flex-start';
-      item.innerHTML = `<input type="checkbox" class="chkPrintAllClass" id="${id}" value="${k}" style="transform:translateY(1px)" checked> ${k}`;
-      list.appendChild(item);
-    });
+  dlg.innerHTML = `
+    <form method="dialog" class="grid" style="gap:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div>
+          <div style="font-weight:900;font-size:16px">Tüm listeyi yazdır</div>
+          <div class="muted" style="margin-top:2px">Hangi sınıf grupları yazdırılsın?</div>
+        </div>
+        <button class="btn ghost sm" value="cancel" aria-label="Kapat">Kapat</button>
+      </div>
 
-    const update = ()=>{
-      const chks = Array.from(document.querySelectorAll('#printAllClassList .chkPrintAllClass'));
-      const checked = chks.filter(c=>c.checked);
-      hint.textContent = `${checked.length} sınıf seçili`;
-      // Tümü checkbox senk.
-      if(chks.length){
-        selAll.checked = checked.length===chks.length;
-        selAll.indeterminate = checked.length>0 && checked.length<chks.length;
-      }else{
-        selAll.checked = false; selAll.indeterminate = false;
-      }
-      btnGo.disabled = checked.length===0;
-    };
+      <div id="printAllGradesChecks" class="card" style="padding:12px">
+        <div class="muted">Liste hazırlanıyor…</div>
+      </div>
 
-    selAll.onchange = ()=>{
-      const chks = Array.from(document.querySelectorAll('#printAllClassList .chkPrintAllClass'));
-      chks.forEach(c=> c.checked = selAll.checked);
-      update();
-    };
-    list.addEventListener('change', (e)=>{
-      if(e.target && e.target.classList && e.target.classList.contains('chkPrintAllClass')) update();
-    });
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn ghost" value="cancel">Vazgeç</button>
+        <button class="btn" id="btnPrintAllGradesGo" value="ok">Seçilenleri Yazdır</button>
+      </div>
+    </form>
+  `;
 
-    btnGo.onclick = (e)=>{
-      // dialog submit before close
-      try{
-        const selected = Array.from(document.querySelectorAll('#printAllClassList .chkPrintAllClass'))
-          .filter(c=>c.checked).map(c=>c.value);
-        // kapat
-        dlg.close('ok');
-        // yazdır
-        printAllGrades(selected);
-      }catch(_){ dlg.close('ok'); printAllGrades(); }
-      e.preventDefault();
-      return false;
-    };
+  document.body.appendChild(dlg);
 
-    update();
-    dlg.showModal();
-  }catch(_){
-    printAllGrades();
-  }
+  // submit (OK) yakala
+  dlg.addEventListener('close', ()=>{ /* no-op */ });
+  dlg.querySelector('#btnPrintAllGradesGo').addEventListener('click', (e)=>{
+    e.preventDefault();
+    const checks = Array.from(dlg.querySelectorAll('input[type=checkbox][data-grade]'));
+    const grades = checks.filter(c=>c.checked).map(c=>+c.dataset.grade).filter(n=>!Number.isNaN(n));
+    dlg.close();
+    if(!grades.length){
+      alert('Lütfen en az 1 sınıf seçin.');
+      return;
+    }
+    printAllGradesSelected(grades);
+  });
+
+  return dlg;
 }
 
-function printAllGrades(selectedClasses) {
+function getAvailableGradesFromGroups(){
+  const grades = new Set();
+  Object.values(state.groups || {}).forEach(g=>{
+    const pg = parseGroupName(g.name || g.id || '')?.grade;
+    if(pg) grades.add(+pg);
+  });
+  // 5-8'i önceliklendir, varsa ekleri de ekle
+  const base = [5,6,7,8].filter(g=>grades.has(g));
+  const extra = Array.from(grades).filter(g=>![5,6,7,8].includes(g)).sort((a,b)=>a-b);
+  const out = base.concat(extra);
+  return out.length ? out : [5,6,7,8];
+}
+
+function openPrintAllGradesDialog(){
+  const hasAny = Array.isArray(state.assignments) && state.assignments.length > 0;
+  if(!hasAny){ alert('Atama yok. Önce atama yapın.'); return; }
+
+  const dlg = ensurePrintAllGradesDialog();
+  const host = dlg.querySelector('#printAllGradesChecks');
+
+  const grades = getAvailableGradesFromGroups();
+  host.innerHTML = `
+    <div class="row" style="align-items:flex-start">
+      ${grades.map(g=>`
+        <label style="display:flex;align-items:center;gap:8px;min-width:120px;user-select:none">
+          <input type="checkbox" data-grade="${g}" checked />
+          <span style="font-weight:900">${g}. Sınıf</span>
+        </label>
+      `).join('')}
+    </div>
+    <div class="muted mini" style="margin-top:8px">Not: Seçili sınıflar ayrı ayrı sayfalara bölünür.</div>
+  `;
+
+  try{ dlg.showModal(); }catch(_){ alert('Tarayıcı bu pencereleri (dialog) desteklemiyor.'); printAllGradesSelected([5,6,7,8]); }
+}
+
+/**
+ * Atanmış grupları seçilen sınıf düzeylerine göre yazdırır.
+ * Her bir sınıf düzeyi yeni bir sayfada başlar.
+ */
+function printAllGradesSelected(selectedGrades) {
   const hasAny = Array.isArray(state.assignments) && state.assignments.length > 0;
   if (!hasAny) { alert('Atama yok. Önce atama yapın.'); return; }
+
+  const grades = (Array.isArray(selectedGrades) ? selectedGrades : [5,6,7,8])
+    .map(n=>+n).filter(n=>!Number.isNaN(n));
 
   const days   = state.program?.days || ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"];
   const S      = +state.program?.slots || 8;
@@ -3689,19 +3741,11 @@ function printAllGrades(selectedClasses) {
     .replaceAll('&','&amp;').replaceAll('<','&lt;')
     .replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
 
-  // Belirli bir sınıf düzeyine ait, ataması yapılmış grupları getirir
   const byGrade = (grade) => Object.values(state.groups || {})
     .filter(g => (parseGroupName(g.name || g.id || '')?.grade === grade))
-    .filter(g => {
-      if(!selectedSet) return true;
-      const p = parseGroupName(g.name || g.id || '');
-      const key = (p && p.grade && p.sec) ? (String(p.grade)+String(p.sec).toUpperCase()) : '';
-      return selectedSet.has(key);
-    })
     .filter(g => state.assignments.some(a => a.group === g.id))
     .sort(groupComparator);
 
-  // Yazdırma penceresini oluştur
   const w = window.open('', '_blank');
   const css = `
     @page { size: A4; margin: 8mm; }
@@ -3709,8 +3753,9 @@ function printAllGrades(selectedClasses) {
     body { font: 11px/1.25 system-ui, -apple-system, Segoe UI, Roboto, Arial, Helvetica, sans-serif; color:#0a0a0a; }
     h1 { font-size: 16px; margin: 0 0 6px; text-align:center; font-weight:800; }
     h2 { font-size: 13px; margin: 8px 0 6px; font-weight:800; border-bottom:1px solid #ddd; padding-bottom:3px; }
-    .grade-section + .grade-section { break-before: page; page-break-before: always; }
-    .group-block { margin: 6px 0 10px; page-break-inside: avoid; }
+    .grade-section { break-before: page; page-break-before: always; }
+    .grade-section:first-of-type { break-before: auto; page-break-before: auto; }
+    .group-block { margin: 6px 0 10px; page-break-inside: avoid; break-inside: avoid; }
     .g-head { font-weight:700; margin-bottom:4px; }
     .students { font-weight: 500; color:#374151; }
     table { width:100%; border-collapse: collapse; table-layout: fixed; }
@@ -3726,106 +3771,15 @@ function printAllGrades(selectedClasses) {
 
   w.document.write(`<!DOCTYPE html><html lang="tr"><head>
     <meta charset="utf-8">
-    <title>Fenomen Eğitim Kurumları birebir ve Grup Listesi</title>
-    <style>${css}
-/* ===========================
-   STEP 4 – TALEPLER (Sade & Hızlı)
-   =========================== */
-#step4 .reqCard{ padding:14px; }
-#step4 .reqHead{
-  display:flex; gap:12px; align-items:center; justify-content:space-between;
-  padding:10px 12px; border:1px solid rgba(15,23,42,.10); border-radius:14px;
-  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
-}
-#step4 .reqHeadLeft{ min-width: 220px; }
-#step4 .reqTitle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-#step4 .reqHeadRight{
-  display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
-}
-#step4 .reqPreset{
-  padding:8px 10px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
-  background:#fff; min-width: 190px; font-weight:700;
-}
-#step4 .reqTools{
-  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-  margin-top:12px;
-}
-#step4 #reqSearch{
-  padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
-  min-width: 260px;
-}
-#step4 .reqHint{ margin-left:auto; }
-#step4 .reqGrid{
-  margin-top:10px;
-  display:grid;
-  gap:8px;
-}
-#step4 .reqRow{
-  display:grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, .9fr) minmax(140px, .7fr);
-  gap:10px;
-  align-items:center;
-  padding:10px 12px;
-  border:1px solid rgba(15,23,42,.08);
-  border-radius:14px;
-  background:#fff;
-  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 16px rgba(2,8,23,.05);
-}
-#step4 .reqBranch{ font-weight:900; color:#0f172a; }
-#step4 .reqStepper{
-  display:flex; align-items:center; gap:8px;
-  padding:6px;
-  border:1px solid rgba(15,23,42,.10);
-  border-radius:12px;
-  background:#f8fafc;
-}
-#step4 .reqStepBtn{
-  width:34px; height:34px; border-radius:10px;
-  border:1px solid rgba(15,23,42,.12);
-  background:#fff; cursor:pointer; font-weight:900;
-}
-#step4 .reqStepBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
-#step4 .reqInput{
-  width:76px; text-align:center;
-  padding:8px 10px; border-radius:10px;
-  border:1px solid rgba(15,23,42,.14);
-  background:#fff; font-weight:900;
-}
-#step4 .reqQuick{
-  display:flex; gap:6px; justify-content:flex-end;
-}
-#step4 .reqQuickBtn{
-  width:34px; height:34px; border-radius:10px;
-  border:1px solid rgba(15,23,42,.12);
-  background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
-  cursor:pointer; font-weight:900; color:#0f172a;
-}
-#step4 .reqQuickBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
-@media (max-width: 920px){
-  #step4 .reqRow{ grid-template-columns: 1fr; }
-  #step4 .reqQuick{ justify-content:flex-start; }
-  #step4 .reqHint{ margin-left:0; width:100%; }
-  #step4 .reqPreset{ min-width: 160px; }
-}
-@media (prefers-color-scheme: dark){
-  #step4 .reqHead{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); border-color:#1f2a44; }
-  #step4 .reqRow{ background:#0f172a; border-color:#1f2a44; box-shadow:none; }
-  #step4 .reqBranch{ color:#e5e7eb; }
-  #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
-  #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
-  #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
-}
-
-</style>
+    <title>Fenomen Eğitim Kurumları • Tüm Liste</title>
+    <style>${css}</style>
   </head><body>`);
 
-  w.document.write(`<h1>Fenomen Eğitim Kurumları birebir ve Grup Listesi</h1>`);
+  w.document.write(`<h1>Fenomen Eğitim Kurumları • Birebir ve Grup Listesi</h1>`);
 
-  // Baskıya dahil edilecek sınıf düzeyleri; 5-8 arasındaki tüm sınıflar
-  [5,6,7,8].forEach(grade => {
+  grades.forEach(grade => {
     const groups = byGrade(grade);
-    if (groups.length === 0) return; // Bu sınıf için grup veya atama yoksa atla
+    if (groups.length === 0) return;
 
     w.document.write(`<section class="grade-section">`);
     w.document.write(`<h2><span class="grade-badge">${grade}. Sınıflar</span></h2>`);
@@ -3842,7 +3796,7 @@ function printAllGrades(selectedClasses) {
       w.document.write(`<div class="group-block">`);
       w.document.write(`<div class="g-head">${esc(g.name)} — <span class="students">${studentNames.join(', ') || '<span class="muted">öğrenci yok</span>'}</span></div>`);
 
-      let thead = `<tr><th style="width:90px">Gün / Saat</th>${
+      const thead = `<tr><th style="width:90px">Gün / Saat</th>${
         Array.from({length:S}, (_,i)=>`<th>${esc(labels[i] || (String(i+1)+'. Ders'))}</th>`).join('')
       }</tr>`;
 
@@ -3869,46 +3823,12 @@ function printAllGrades(selectedClasses) {
     w.document.write(`</section>`);
   });
 
-  w.document.write(`
-<!-- Yazdır: Tüm liste (sınıf grubu seçimi) -->
-<dialog id="dlgPrintAll" style="max-width:720px;width:min(92vw,720px);border:0;border-radius:16px;box-shadow:0 18px 55px rgba(2,8,23,.28);padding:0;overflow:hidden">
-  <form method="dialog" style="margin:0">
-    <div style="padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.10);background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);display:flex;gap:10px;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-weight:900;font-size:15px">Tüm listeyi yazdır</div>
-        <div style="color:#64748b;font-size:12px">Hangi sınıf grupları yazdırılsın?</div>
-      </div>
-      <button class="btn ghost sm" value="cancel" style="margin-left:auto">Kapat</button>
-    </div>
-
-    <div style="padding:14px 16px">
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <label class="pill" style="cursor:pointer;user-select:none">
-          <input type="checkbox" id="chkPrintAllSelectAll" style="transform:translateY(1px);margin-right:8px" />
-          Tümü
-        </label>
-        <div class="mini2" id="printAllCountHint">0 sınıf seçili</div>
-      </div>
-
-      <div id="printAllClassList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px"></div>
-
-      <div class="muted mini" style="margin-top:10px">
-        Not: Gruplar, isimlerinden (örn. <b>G1-7A</b>) sınıf bilgisini çıkarır. Seçili sınıflar haricindekiler yazdırılmaz.
-      </div>
-    </div>
-
-    <div style="padding:12px 16px;border-top:1px solid rgba(15,23,42,.10);background:#fff;display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn ghost" value="cancel">İptal</button>
-      <button class="btn sec" id="btnPrintAllGo" value="ok">Yazdır</button>
-    </div>
-  </form>
-</dialog>
-
-</body></html>`);
+  w.document.write(`</body></html>`);
   w.document.close();
   w.focus();
-  setTimeout(() => { try { w.print(); } catch(_){} }, 50);
+  setTimeout(() => { try { w.print(); } catch(_){} }, 60);
 }
+
 </script>
 <!-- ==== TEACHER PRINT V2 – KOMPAKT, TEK A4 ==== -->
 <style>
@@ -3991,66 +3911,26 @@ function printAllGrades(selectedClasses) {
   margin: var(--tpv2-gap) 0 4px; font-weight:900; text-align:center;
   border-top: 2px solid #e5e7eb; padding-top: 6px;
 }
-
-.print-teacher-v2 .att-mini-grid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: calc(var(--tpv2-gap) - 2px);
+.print-teacher-v2 .att-grid{
+  display:grid; grid-template-columns: 1fr 1fr; gap: var(--tpv2-gap);
 }
-.print-teacher-v2 .att-mini{
-  border:1px solid var(--tpv2-grid);
-  border-radius:10px;
-  background:#fff;
+.print-teacher-v2 .att-card{
+  border:1.2px solid var(--tpv2-grid); border-radius:8px;
   padding: calc(var(--tpv2-pad) - 1px);
   break-inside: avoid; page-break-inside: avoid;
+  background: #fff;
 }
-.print-teacher-v2 .att-mini-head{
-  font-weight:900;
-  font-size: .98em;
-  border-bottom:1px solid var(--tpv2-grid);
-  padding-bottom: 3px;
-  margin-bottom: 4px;
+.print-teacher-v2 .att-card .g-title{
+  font-weight:800; margin-bottom:2px;
 }
-.print-teacher-v2 .att-mini-body{
-  display:grid;
-  gap: 4px;
+.print-teacher-v2 .att{
+  width:100%; border-collapse:collapse;
 }
-.print-teacher-v2 .att-item{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 6px;
-  border:1px dashed rgba(15,23,42,.18);
-  border-radius:8px;
-  padding: 4px 5px;
+.print-teacher-v2 .att th, .print-teacher-v2 .att td{
+  border:1.2px solid #0f172a; padding: calc(var(--tpv2-pad) - 2px);
 }
-.print-teacher-v2 .att-name{
-  font-weight:700;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  max-width: 62%;
-}
-.print-teacher-v2 .att-marks{
-  display:flex;
-  gap: 8px;
-  align-items:center;
-  flex: 0 0 auto;
-}
-.print-teacher-v2 .att-marks .mk{
-  display:inline-flex;
-  align-items:center;
-  gap: 4px;
-  font-weight:800;
-  font-size: .92em;
-}
-.print-teacher-v2 .att-marks .box{
-  width: 12px; height: 12px;
-  border: 1.6px solid #0f172a;
-  border-radius: 3px;
-  display:inline-block;
-}
-.print-teacher-v2 .att-marks .lbl{ color:#0f172a; }
+.print-teacher-v2 .att th{ background:#f9fafb; text-align:center; }
+.print-teacher-v2 .att th:first-child, .print-teacher-v2 .att td:first-child{ text-align:left; }
 
 /* Dip bilgi */
 .print-teacher-v2 .foot{
@@ -4272,43 +4152,51 @@ function renderSchedTableForWindow(days, labels, byDay, S, start, end){
   return `<table class="sched">${thead}<tbody>${bodyRows}</tbody></table>`;
 }
 
+function chunkInto(arr, size){
+  const out=[];
+  for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+  return out;
+}
 
-function renderAttendance(groups){
-  if(groups.length===0) return '';
-  const cards = groups.map(g=>{
+// Öğrenci yoklama: A4'e sığacak mini kartlar (Var/Yok)
+// 20 birebir grup = 1 A4, 21. grup = 2. sayfa
+function renderAttendancePages(groups){
+  if(!Array.isArray(groups) || groups.length===0) return [];
+  const chunks = chunkInto(groups, 20);
+  return chunks.map((ch, ix)=> renderAttendanceChunk(ch, ix+1, chunks.length));
+}
+
+function renderAttendanceChunk(groupsChunk, pageIndex, total){
+  const cards = groupsChunk.map(g=>{
     const students = (state.students || []).filter(s=>s.group===g.id);
-    const people = students.length ? students : [{name:'', _empty:true}];
-
-    const items = people.map(st=>{
-      const nm = esc(st.name || '');
-      if(st._empty){
-        return `<div class="att-item muted">Öğrenci yok</div>`;
-      }
-      return `
-        <div class="att-item">
-          <div class="att-name">${nm}</div>
-          <div class="att-marks">
-            <span class="mk"><span class="box"></span><span class="lbl">Var</span></span>
-            <span class="mk"><span class="box"></span><span class="lbl">Yok</span></span>
+    const rows = (students.length
+      ? students.map(st=>`
+        <div class="att-row">
+          <div class="att-nm">${esc(st.name || '')}</div>
+          <div class="att-boxes">
+            <span class="box"></span>
+            <span class="box"></span>
           </div>
-        </div>
-      `;
-    }).join('');
+        </div>`).join('')
+      : `<div class="muted" style="padding:6px 8px">Öğrenci yok</div>`
+    );
 
     return `
       <div class="att-mini">
-        <div class="att-mini-head">${esc(g.name || g.id)}</div>
-        <div class="att-mini-body">${items}</div>
+        <div class="att-mini-head">
+          <div class="att-g">${esc(g.name || g.id)}</div>
+          <div class="att-legend"><span>Var</span><span>Yok</span></div>
+        </div>
+        <div class="att-mini-body">${rows}</div>
       </div>
     `;
   }).join('');
 
   return `
-    <div class="att-head">Öğrenci Yoklama</div>
-    <div class="att-mini-grid">${cards}</div>
+    <div class="att-head">Öğrenci Yoklama${total>1 ? ` • ${pageIndex}/${total}` : ''}</div>
+    <div class="att-grid att-grid-mini">${cards}</div>
   `;
 }
-
 
 /* ==== YENİ TASARIM: ÖĞRETMENE GÖRE YAZDIR ==== */
 function printTeachersV2(){
@@ -4323,7 +4211,6 @@ function printTeachersV2(){
   const labels = Array.isArray(state.program?.slotLabels)
     ? state.program.slotLabels
     : Array.from({length:S},(_,i)=> (i+1)+'. Ders');
-  // Yoklama: kompakt Var/Yok kartları (20 grup / sayfa)
 
   const w = window.open('', '_blank');
   const baseCSS = Array.from(document.querySelectorAll('style')).map(s=>s.innerHTML).join('\n');
@@ -4334,175 +4221,112 @@ function printTeachersV2(){
   <meta charset="utf-8" />
   <title>Öğretmen Yazdır (Yeni)</title>
   <style>${baseCSS}
-/* ===========================
-   STEP 4 – TALEPLER (Sade & Hızlı)
-   =========================== */
-#step4 .reqCard{ padding:14px; }
-#step4 .reqHead{
-  display:flex; gap:12px; align-items:center; justify-content:space-between;
-  padding:10px 12px; border:1px solid rgba(15,23,42,.10); border-radius:14px;
-  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
-}
-#step4 .reqHeadLeft{ min-width: 220px; }
-#step4 .reqTitle{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-#step4 .reqHeadRight{
-  display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
-}
-#step4 .reqPreset{
-  padding:8px 10px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
-  background:#fff; min-width: 190px; font-weight:700;
-}
-#step4 .reqTools{
-  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-  margin-top:12px;
-}
-#step4 #reqSearch{
-  padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
-  min-width: 260px;
-}
-#step4 .reqHint{ margin-left:auto; }
-#step4 .reqGrid{
-  margin-top:10px;
-  display:grid;
-  gap:8px;
-}
-#step4 .reqRow{
-  display:grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, .9fr) minmax(140px, .7fr);
-  gap:10px;
-  align-items:center;
-  padding:10px 12px;
-  border:1px solid rgba(15,23,42,.08);
-  border-radius:14px;
-  background:#fff;
-  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 16px rgba(2,8,23,.05);
-}
-#step4 .reqBranch{ font-weight:900; color:#0f172a; }
-#step4 .reqStepper{
-  display:flex; align-items:center; gap:8px;
-  padding:6px;
-  border:1px solid rgba(15,23,42,.10);
-  border-radius:12px;
-  background:#f8fafc;
-}
-#step4 .reqStepBtn{
-  width:34px; height:34px; border-radius:10px;
-  border:1px solid rgba(15,23,42,.12);
-  background:#fff; cursor:pointer; font-weight:900;
-}
-#step4 .reqStepBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
-#step4 .reqInput{
-  width:76px; text-align:center;
-  padding:8px 10px; border-radius:10px;
-  border:1px solid rgba(15,23,42,.14);
-  background:#fff; font-weight:900;
-}
-#step4 .reqQuick{
-  display:flex; gap:6px; justify-content:flex-end;
-}
-#step4 .reqQuickBtn{
-  width:34px; height:34px; border-radius:10px;
-  border:1px solid rgba(15,23,42,.12);
-  background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
-  cursor:pointer; font-weight:900; color:#0f172a;
-}
-#step4 .reqQuickBtn:hover{ border-color: rgba(79,70,229,.35); box-shadow:0 6px 14px rgba(2,8,23,.08); transform: translateY(-1px); }
-@media (max-width: 920px){
-  #step4 .reqRow{ grid-template-columns: 1fr; }
-  #step4 .reqQuick{ justify-content:flex-start; }
-  #step4 .reqHint{ margin-left:0; width:100%; }
-  #step4 .reqPreset{ min-width: 160px; }
-}
-@media (prefers-color-scheme: dark){
-  #step4 .reqHead{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); border-color:#1f2a44; }
-  #step4 .reqRow{ background:#0f172a; border-color:#1f2a44; box-shadow:none; }
-  #step4 .reqBranch{ color:#e5e7eb; }
-  #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
-  #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
-  #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
-}
 
-</style>
+  /* Ek: Mini yoklama kartları (Var/Yok) */
+  .print-teacher-v2 .att-grid-mini{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--tpv2-gap);
+  }
+  .print-teacher-v2 .att-mini{
+    border:1.2px solid var(--tpv2-grid);
+    border-radius:10px;
+    background:#fff;
+    padding: calc(var(--tpv2-pad) - 1px);
+    break-inside: avoid;
+    page-break-inside: avoid;
+    overflow:hidden;
+  }
+  .print-teacher-v2 .att-mini-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding: 2px 4px 6px 4px;
+    border-bottom:1px solid rgba(15,23,42,.14);
+  }
+  .print-teacher-v2 .att-g{ font-weight:900; }
+  .print-teacher-v2 .att-legend{ display:flex; gap:10px; font-weight:800; font-size:.9em; color:#334155; }
+  .print-teacher-v2 .att-legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .print-teacher-v2 .att-mini-body{ padding: 6px 4px 2px 4px; }
+  .print-teacher-v2 .att-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding: 2px 0;
+    border-bottom: 1px dotted rgba(148,163,184,.9);
+  }
+  .print-teacher-v2 .att-row:last-child{ border-bottom:0; }
+  .print-teacher-v2 .att-nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .print-teacher-v2 .att-boxes{ display:flex; gap:10px; flex:0 0 auto; }
+  .print-teacher-v2 .box{ width:11px; height:11px; border:1.4px solid #0f172a; border-radius:3px; display:inline-block; }
+
+  @media print{
+    @page{ size:A4; margin: 12mm; }
+    .print-teacher-v2 .page{ break-after: page; page-break-after: always; }
+    .print-teacher-v2 .page:last-child{ break-after: auto; page-break-after: auto; }
+    th,td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+  </style>
 </head>
 <body class="print-teacher-v2">
-
-<!-- Yazdır: Tüm liste (sınıf grubu seçimi) -->
-<dialog id="dlgPrintAll" style="max-width:720px;width:min(92vw,720px);border:0;border-radius:16px;box-shadow:0 18px 55px rgba(2,8,23,.28);padding:0;overflow:hidden">
-  <form method="dialog" style="margin:0">
-    <div style="padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.10);background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);display:flex;gap:10px;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-weight:900;font-size:15px">Tüm listeyi yazdır</div>
-        <div style="color:#64748b;font-size:12px">Hangi sınıf grupları yazdırılsın?</div>
-      </div>
-      <button class="btn ghost sm" value="cancel" style="margin-left:auto">Kapat</button>
-    </div>
-
-    <div style="padding:14px 16px">
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <label class="pill" style="cursor:pointer;user-select:none">
-          <input type="checkbox" id="chkPrintAllSelectAll" style="transform:translateY(1px);margin-right:8px" />
-          Tümü
-        </label>
-        <div class="mini2" id="printAllCountHint">0 sınıf seçili</div>
-      </div>
-
-      <div id="printAllClassList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px"></div>
-
-      <div class="muted mini" style="margin-top:10px">
-        Not: Gruplar, isimlerinden (örn. <b>G1-7A</b>) sınıf bilgisini çıkarır. Seçili sınıflar haricindekiler yazdırılmaz.
-      </div>
-    </div>
-
-    <div style="padding:12px 16px;border-top:1px solid rgba(15,23,42,.10);background:#fff;display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn ghost" value="cancel">İptal</button>
-      <button class="btn sec" id="btnPrintAllGo" value="ok">Yazdır</button>
-    </div>
-  </form>
-</dialog>
-
 </body></html>`);
 
   const addPage = (html)=> w.document.body.insertAdjacentHTML('beforeend', `<section class="page">${html}</section>`);
 
-  // === YENİ: Toplam sayfa ve global sayfa sayacı ===
-  const schedWindowsBase = Math.max(1, Math.ceil(S / 6)); // 6 slot / sayfa
+  // === TOPLAM SAYFA HESABI (20 grup / A4) ===
+  const windowsPerTeacher = Math.max(1, Math.ceil(S / 6));
   const teacherIds = Array.from(asgByTeacher.keys());
-  const totalPages = teacherIds.reduce((sum, tid)=>{
-    const list = asgByTeacher.get(tid) || [];
-    const grpCount = uniq(list.map(a=>a.group)).length;
-    const attW = Math.max(1, Math.ceil(grpCount / 20)); // 20 grup / sayfa
-    return sum + Math.max(schedWindowsBase, attW);
-  }, 0);
-  let pageNo = 0; // global sayaç                                                        // global sayaç
+  const teacherMeta = new Map();
 
-  asgByTeacher.forEach((asgList, tId)=>{
-    const t = getTeacher(tId);
-    const byDay = groupBy(asgList, a=>a.day);
+  let totalPages = 0;
+  teacherIds.forEach(tId=>{
+    const asgList = asgByTeacher.get(tId) || [];
 
-    // Grupları, öğretmenin haftalık ders sırasına göre sırala (Pazartesi 1. dersten Cuma 4. derse kadar)
+    // öğretmene ait gruplar (sıralama: ilk ders zamanı, sonra isim)
     const groupFirstSlot = new Map();
     asgList.forEach(a => {
       const score = a.day * 100 + a.slot;
       const prev = groupFirstSlot.get(a.group);
       if (prev == null || score < prev) groupFirstSlot.set(a.group, score);
     });
-
     const groups = uniq(asgList.map(a=>a.group))
-      .sort((g1, g2) => {
+      .sort((g1,g2)=>{
         const k1 = groupFirstSlot.get(g1) ?? 999999;
         const k2 = groupFirstSlot.get(g2) ?? 999999;
-        if (k1 !== k2) return k1 - k2;
+        if(k1!==k2) return k1-k2;
         const n1 = (state.groups?.[g1]?.name || g1);
         const n2 = (state.groups?.[g2]?.name || g2);
         return String(n1).localeCompare(String(n2), 'tr');
       })
       .map(getGroup);
 
-    const schedWindows = schedWindowsBase;
-    const attWindows = Math.max(1, Math.ceil(groups.length / 20));
-    const windows = Math.max(schedWindows, attWindows);
-    for(let wIx=0; wIx<windows; wIx++){
+    const attPages = renderAttendancePages(groups); // 20'şer
+    const extraAtt = Math.max(0, attPages.length - 1); // ilk parça zaten son sayfaya
+    const pagesThisTeacher = windowsPerTeacher + extraAtt;
+
+    teacherMeta.set(tId, { groups, attPages, groupFirstSlot, pagesThisTeacher });
+    totalPages += pagesThisTeacher;
+  });
+
+  // === GLOBAL SAYFA SAYACI ===
+  let pageNo = 0;
+
+  teacherIds.forEach((tId)=>{
+    const asgList = asgByTeacher.get(tId) || [];
+    const t = getTeacher(tId);
+    const byDay = groupBy(asgList, a=>a.day);
+
+    const meta = teacherMeta.get(tId) || { groups:[], attPages:[] };
+    const groups = meta.groups || [];
+    const attPages = meta.attPages || [];
+
+    // Program pencereleri
+    for(let wIx=0; wIx<windowsPerTeacher; wIx++){
+      const start = wIx*6;
+      const end   = Math.min(start+6, S);
+
       const head = `
         <div class="brandbar">
           <div class="org">Fenomen Eğitim Kurumları</div>
@@ -4515,25 +4339,40 @@ function printTeachersV2(){
         </div>
       `;
 
-      // Program: 6 slot / sayfa (varsa)
-      let sched = '';
-      if(wIx < schedWindows){
-        const start = wIx*6;
-        const end   = Math.min(start+6, S);
-        sched = renderSchedTableForWindow(days, labels, byDay, S, start, end);
-      }
+      const sched = renderSchedTableForWindow(days, labels, byDay, S, start, end);
 
-      // Yoklama: 20 grup / sayfa (21. grup → 2. A4)
-      const gStart = wIx * 20;
-      const groupsChunk = groups.slice(gStart, gStart + 20);
-      const att = groupsChunk.length ? renderAttendance(groupsChunk) : '';
-const foot = `
+      // Yoklama sadece SON program sayfasına eklenir (ilk 20 grup)
+      const showAttendanceHere = (wIx === windowsPerTeacher - 1);
+      const att = (showAttendanceHere && attPages.length) ? attPages[0] : '';
+
+      const foot = `
         <div class="foot">
           <span class="muted">Öğretmen: ${esc(t.name)}${t.branch?` • ${esc(t.branch)}`:''}</span>
         </div>
       `;
 
       addPage(`${head}${sched}${att}${foot}`);
+    }
+
+    // Ek yoklama sayfaları (21. grup ve sonrası)
+    for(let i=1; i<attPages.length; i++){
+      const head = `
+        <div class="brandbar">
+          <div class="org">Fenomen Eğitim Kurumları</div>
+          <div class="chip">${++pageNo}. Sayfa / ${totalPages}</div>
+        </div>
+        <div class="title">Öğretmen Yoklama</div>
+        <div class="t-meta">
+          <div>${esc(t.name)}</div>
+          ${t.branch ? `<div class="muted">— ${esc(t.branch)}</div>` : ''}
+        </div>
+      `;
+      const foot = `
+        <div class="foot">
+          <span class="muted">Öğretmen: ${esc(t.name)}${t.branch?` • ${esc(t.branch)}`:''}</span>
+        </div>
+      `;
+      addPage(`${head}${attPages[i]}${foot}`);
     }
   });
 
@@ -4542,7 +4381,7 @@ const foot = `
   const onReady = ()=>{
     const pages = w.document.querySelectorAll('.print-teacher-v2 .page');
     pages.forEach(pg=> fitPageToA4(pg));
-    try{ w.focus(); w.print(); }catch(_){}
+    try{ w.focus(); w.print(); }catch(_){ }
   };
   if (w.document.readyState === 'complete') onReady();
   else w.addEventListener('load', onReady);
@@ -5048,41 +4887,6 @@ window.renderAvailGrids = renderAvailGrids;
 window.renderAssignCards = renderAssignCards;
 
 </script>
-
-
-<!-- Yazdır: Tüm liste (sınıf grubu seçimi) -->
-<dialog id="dlgPrintAll" style="max-width:720px;width:min(92vw,720px);border:0;border-radius:16px;box-shadow:0 18px 55px rgba(2,8,23,.28);padding:0;overflow:hidden">
-  <form method="dialog" style="margin:0">
-    <div style="padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.10);background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);display:flex;gap:10px;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-weight:900;font-size:15px">Tüm listeyi yazdır</div>
-        <div style="color:#64748b;font-size:12px">Hangi sınıf grupları yazdırılsın?</div>
-      </div>
-      <button class="btn ghost sm" value="cancel" style="margin-left:auto">Kapat</button>
-    </div>
-
-    <div style="padding:14px 16px">
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <label class="pill" style="cursor:pointer;user-select:none">
-          <input type="checkbox" id="chkPrintAllSelectAll" style="transform:translateY(1px);margin-right:8px" />
-          Tümü
-        </label>
-        <div class="mini2" id="printAllCountHint">0 sınıf seçili</div>
-      </div>
-
-      <div id="printAllClassList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px"></div>
-
-      <div class="muted mini" style="margin-top:10px">
-        Not: Gruplar, isimlerinden (örn. <b>G1-7A</b>) sınıf bilgisini çıkarır. Seçili sınıflar haricindekiler yazdırılmaz.
-      </div>
-    </div>
-
-    <div style="padding:12px 16px;border-top:1px solid rgba(15,23,42,.10);background:#fff;display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn ghost" value="cancel">İptal</button>
-      <button class="btn sec" id="btnPrintAllGo" value="ok">Yazdır</button>
-    </div>
-  </form>
-</dialog>
 
 </body>
 </html>
