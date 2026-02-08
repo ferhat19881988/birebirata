@@ -7,12 +7,33 @@
 <title>Fenomen Eğitim Kurumları • Grup Ders Planlama (tablı)</title>
 <style>
   :root{
-    --bg:#f6f9fb; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
-    --pri:#14b8a6; --pri-ink:#083c3a; --acc:#6366f1; --warn:#f59e0b; --danger:#ef4444;
-    --chip:#e2f5f2; --grid:#e5e7eb; --radius:16px;
+    /* Light, modern palette */
+    --bg: #f5f7fb;
+    --bg2:#eef2ff;
+    --panel:#ffffff;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --grid:#e5e7eb;
+
+    /* Brand */
+    --pri:#4f46e5;           /* indigo */
+    --pri2:#06b6d4;          /* cyan accent */
+    --pri-ink:#0b1220;
+    --acc:#14b8a6;           /* teal */
+    --warn:#f59e0b;
+    --danger:#ef4444;
+
+    /* Surfaces */
+    --chip:#eef2ff;
+    --radius:16px;
+    --shadow: 0 10px 30px rgba(2,8,23,.08);
+    --shadow-sm: 0 4px 14px rgba(2,8,23,.08);
+
+    /* Focus ring */
+    --ring: rgba(79,70,229,.35);
   }
   html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+  body{margin:0;background:linear-gradient(180deg,var(--bg) 0%, #ffffff 60%);color:var(--ink);font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial;}
   h1,h2,h3{margin:0 0 .4rem}
   h1{font-size:clamp(20px,3vw,28px);font-weight:800}
   h2{font-size:clamp(18px,2.4vw,22px);font-weight:700}
@@ -21,22 +42,86 @@
   .app{max-width:1680px;margin:auto;padding:18px}
   .top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
   .brand{display:flex;align-items:center;gap:10px}
-  .brand .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--pri),#8b5cf6)}
+  .brand .logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--pri),var(--pri2))}
   .brand .title small{color:var(--muted)}
-  .content{background:var(--panel);border-radius:var(--radius);box-shadow:0 10px 25px rgba(15,23,42,.06);padding:16px}
+  .content{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
   .grid{display:grid;gap:12px}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-  .btn{appearance:none;border:0;border-radius:12px;padding:10px 14px;background:var(--pri);color:#fff;font-weight:700;cursor:pointer}
-  .btn.sm{padding:7px 10px;font-size:13px}
-  .btn.xs{padding:6px 8px;font-size:12px;border-radius:10px}
-  .btn.sec{background:var(--acc)}
-  .btn.ghost{background:#e2e8f0;color:#0f172a}
-  .btn.warn{background:var(--warn);color:#111827}
-  .btn.danger{background:var(--danger)}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
-  input[type=text], input[type=number], select, textarea{
-    padding:10px 12px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;min-width:220px
+
+  /* Modern action toolbars (button grouping) */
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    align-items:flex-end;
+    justify-content:space-between;
   }
+  .toolbar .left,
+  .toolbar .right{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:flex-end;
+  }
+  .btn-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    padding:10px 10px;
+    border-radius:14px;
+    background:linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border:1px solid rgba(15,23,42,.10);
+    box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 6px 18px rgba(2,8,23,.06);
+  }
+  .btn-group .gtitle{
+    font-weight:900;
+    font-size:12px;
+    color:var(--muted);
+    margin-right:2px;
+    padding:0 6px;
+  }
+  .btn-group .btn{ box-shadow: none; }
+  .btn-group .btn:hover{ box-shadow: 0 8px 18px rgba(2,8,23,.10); }
+
+  .btn{
+    appearance:none;
+    border:1px solid rgba(15,23,42,.06);
+    border-radius:12px;
+    padding:10px 14px;
+    background:linear-gradient(180deg, var(--pri) 0%, #4338ca 100%);
+    color:#fff;
+    font-weight:800;
+    cursor:pointer;
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease, background-color .12s ease, border-color .12s ease;
+    box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, var(--shadow-sm);
+  }
+  .btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+  .btn:active{ transform: translateY(0); box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 2px 10px rgba(2,8,23,.10); }
+  .btn:focus-visible{ outline:none; box-shadow: 0 0 0 4px var(--ring), var(--shadow-sm); }
+
+  .btn.sm{padding:8px 12px;font-size:13px;border-radius:12px}
+  .btn.xs{padding:6px 10px;font-size:12px;border-radius:11px; box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 2px 10px rgba(2,8,23,.08)}
+  .btn.sec{
+    background:linear-gradient(180deg, var(--acc) 0%, #0d9488 100%);
+  }
+  .btn.ghost{
+    background:linear-gradient(180deg,#ffffff 0%, #f1f5f9 100%);
+    color:var(--ink);
+    border:1px solid rgba(15,23,42,.10);
+    box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 2px 12px rgba(2,8,23,.06);
+  }
+  .btn.ghost:hover{ border-color: rgba(79,70,229,.35); }
+  .btn.warn{
+    background:linear-gradient(180deg, #fbbf24 0%, var(--warn) 100%);
+    color:#111827;
+  }
+  .btn.danger{
+    background:linear-gradient(180deg, #fb7185 0%, var(--danger) 100%);
+  }
+  .btn:disabled{opacity:.55;cursor:not-allowed;filter:saturate(.9);transform:none;box-shadow:none}
+  input[type=text], input[type=number], select, textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(15,23,42,.14);background:#fff;min-width:220px;transition:box-shadow .12s ease,border-color .12s ease}
+  input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus{outline:none;border-color:rgba(79,70,229,.45);box-shadow:0 0 0 4px rgba(79,70,229,.18)}
   table{width:100%;border-collapse:separate;border-spacing:0 8px}
   th,td{padding:10px 12px;background:#fff;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}
   th{position:sticky;top:0;background:#f8fafc;z-index:1}
@@ -361,15 +446,48 @@
 #step3 .kcell.busy { cursor: default; }
 
   /* Üst sekmeler */
-  .tabs{display:flex;gap:6px;border-bottom:1px solid #e5e7eb;margin-bottom:8px}
-  .tab{padding:10px 14px;border-radius:10px 10px 0 0;background:#eef2ff;color:#1f2937;cursor:pointer;font-weight:700;user-select:none}
-  .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;border-bottom-color:#fff}
+  .tabs{
+    display:flex;
+    gap:8px;
+    align-items:flex-end;
+    border-bottom:1px solid rgba(15,23,42,.10);
+    margin-bottom:10px;
+    overflow:auto;
+    padding-bottom:2px;
+  }
+  .tab{
+    appearance:none;
+    border:1px solid transparent;
+    background:transparent;
+    color:rgba(15,23,42,.78);
+    padding:10px 14px;
+    border-radius:14px;
+    cursor:pointer;
+    font-weight:900;
+    user-select:none;
+    white-space:nowrap;
+    transition: background-color .12s ease, border-color .12s ease, transform .12s ease, box-shadow .12s ease, color .12s ease;
+  }
+  .tab:hover{
+    background:rgba(79,70,229,.08);
+    color:var(--ink);
+  }
+  .tab:focus-visible{outline:none; box-shadow:0 0 0 4px var(--ring);}
+  .tab[aria-selected="true"]{
+    background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+    border-color:rgba(79,70,229,.22);
+    color:var(--ink);
+    box-shadow: 0 1px 0 rgba(255,255,255,.75) inset, 0 8px 22px rgba(2,8,23,.10);
+    transform: translateY(-1px);
+  }
   .tabpanel[hidden]{display:none !important}
 
   /* Talep sayacı kutucukları */
   .qty{display:inline-flex;align-items:center;border:1px solid #cbd5e1;border-radius:12px;overflow:hidden}
   .qty input{border:0;min-width:56px;text-align:center;padding:8px 10px}
-  .qty button{border:0;background:#eef2ff;padding:8px 10px;cursor:pointer}
+  .qty button{border:0;background:rgba(79,70,229,.10);padding:8px 10px;cursor:pointer;font-weight:900}
+  .qty button:hover{background:rgba(79,70,229,.16)}
+  .qty button:active{background:rgba(79,70,229,.22)}
 
   /* Yazdırma */
   @media print{
@@ -653,28 +771,45 @@
       <h2>2) Ders Programı İskele</h2>
       <div class="chips"><span class="pill">JSON Kaydet/Yükle</span></div>
     </div>
-    <div class="row">
-      <label>Günler (virgül ayır)<br/>
-        <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
-      </label>
-      <label>Saat/Slot sayısı<br/>
-        <input type="number" id="slotsInput" value="8" min="1" max="12" />
-      </label>
-      <label>Atama politikası<br/>
-        <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
-          <option value="keep" selected>Koruyabildiğini koru (taşanları at)</option>
-          <option value="reset">Tamamen sıfırla</option>
-        </select>
-      </label>
-      <button class="btn" id="btnBuildGrid">Oluştur/Güncelle</button>
-      <button class="btn ghost" id="btnProgExport">JSON Dışa Aktar</button>
-      <input id="fileProgImport" type="file" accept="application/json" hidden />
-      <button class="btn ghost" id="btnProgImport">JSON İçeri Al</button>
-      <!-- Firebase kaydet/yükle/sil düğmeleri -->
-      <button class="btn ghost" id="btnProgSaveFb">Firebase Kaydet</button>
-      <button class="btn ghost" id="btnProgLoadFb">Firebase Yükle</button>
-      <button class="btn ghost" id="btnProgDeleteFb">Firebase Sil</button>
+    
+    <div class="toolbar">
+      <div class="left">
+        <label>Günler (virgül ayır)<br/>
+          <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
+        </label>
+        <label>Saat/Slot sayısı<br/>
+          <input type="number" id="slotsInput" value="8" min="1" max="12" />
+        </label>
+        <label>Atama politikası<br/>
+          <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
+            <option value="keep" selected>Koruyabildiğini koru (taşanları at)</option>
+            <option value="reset">Tamamen sıfırla</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="right">
+        <div class="btn-group" aria-label="Program işlemleri">
+          <span class="gtitle">Program</span>
+          <button class="btn" id="btnBuildGrid">Oluştur/Güncelle</button>
+        </div>
+
+        <div class="btn-group" aria-label="JSON işlemleri">
+          <span class="gtitle">JSON</span>
+          <button class="btn ghost" id="btnProgExport">Dışa Aktar</button>
+          <input id="fileProgImport" type="file" accept="application/json" hidden />
+          <button class="btn ghost" id="btnProgImport">İçeri Al</button>
+        </div>
+
+        <div class="btn-group" aria-label="Firebase işlemleri">
+          <span class="gtitle">Firebase</span>
+          <button class="btn ghost" id="btnProgSaveFb">Kaydet</button>
+          <button class="btn ghost" id="btnProgLoadFb">Yükle</button>
+          <button class="btn ghost" id="btnProgDeleteFb">Sil</button>
+        </div>
+      </div>
     </div>
+
 
     <!-- Saat etiketleri düzenleyici -->
     <div id="slotLabelsWrap" class="card"></div>
@@ -701,15 +836,27 @@
     </div>
 
     <div id="panelTeach" role="tabpanel">
-      <div class="row no-print">
-        <button class="btn ghost" id="btnAvailExport">JSON Dışa Aktar</button>
-        <input id="fileAvailImport" type="file" accept="application/json" hidden />
-        <button class="btn ghost" id="btnAvailImport">JSON İçeri Al</button>
-        <button class="btn warn" id="btnAvailClear">Tüm Müsaitlikleri Temizle</button>
-        <!-- Firebase kaydet/yükle/sil düğmeleri: öğretmen & grup müsaitliği ortak kullanır -->
-        <button class="btn ghost" id="btnAvailSaveFb">Firebase Kaydet</button>
-        <button class="btn ghost" id="btnAvailLoadFb">Firebase Yükle</button>
-        <button class="btn ghost" id="btnAvailDeleteFb">Firebase Sil</button>
+      <div class="toolbar no-print">
+        <div class="left">
+          <div class="btn-group" aria-label="JSON işlemleri">
+            <span class="gtitle">JSON</span>
+            <button class="btn ghost" id="btnAvailExport">Dışa Aktar</button>
+            <input id="fileAvailImport" type="file" accept="application/json" hidden />
+            <button class="btn ghost" id="btnAvailImport">İçeri Al</button>
+          </div>
+          <div class="btn-group" aria-label="Toplu işlemler">
+            <span class="gtitle">Toplu</span>
+            <button class="btn warn" id="btnAvailClear">Tümünü Temizle</button>
+          </div>
+        </div>
+        <div class="right">
+          <div class="btn-group" aria-label="Firebase işlemleri">
+            <span class="gtitle">Firebase</span>
+            <button class="btn ghost" id="btnAvailSaveFb">Kaydet</button>
+            <button class="btn ghost" id="btnAvailLoadFb">Yükle</button>
+            <button class="btn ghost" id="btnAvailDeleteFb">Sil</button>
+          </div>
+        </div>
       </div>
       <div class="card">
         <h3>Öğretmen Müsaitlikleri</h3>
@@ -718,14 +865,23 @@
     </div>
 
     <div id="panelGroup" role="tabpanel" hidden>
-      <div class="row no-print">
-        <button class="btn ghost" id="btnAvailExport2">JSON Dışa Aktar</button>
-        <input id="fileAvailImport2" type="file" accept="application/json" hidden />
-        <button class="btn ghost" id="btnAvailImport2">JSON İçeri Al</button>
-        <!-- Firebase kaydet/yükle/sil düğmeleri: öğretmen & grup müsaitliği ortak kullanır (ayrı id'ler) -->
-        <button class="btn ghost" id="btnAvailSaveFb2">Firebase Kaydet</button>
-        <button class="btn ghost" id="btnAvailLoadFb2">Firebase Yükle</button>
-        <button class="btn ghost" id="btnAvailDeleteFb2">Firebase Sil</button>
+      <div class="toolbar no-print">
+        <div class="left">
+          <div class="btn-group" aria-label="JSON işlemleri">
+            <span class="gtitle">JSON</span>
+            <button class="btn ghost" id="btnAvailExport2">Dışa Aktar</button>
+            <input id="fileAvailImport2" type="file" accept="application/json" hidden />
+            <button class="btn ghost" id="btnAvailImport2">İçeri Al</button>
+          </div>
+        </div>
+        <div class="right">
+          <div class="btn-group" aria-label="Firebase işlemleri">
+            <span class="gtitle">Firebase</span>
+            <button class="btn ghost" id="btnAvailSaveFb2">Kaydet</button>
+            <button class="btn ghost" id="btnAvailLoadFb2">Yükle</button>
+            <button class="btn ghost" id="btnAvailDeleteFb2">Sil</button>
+          </div>
+        </div>
       </div>
       <div class="card">
         <h3>Grup Müsaitlikleri</h3>
@@ -745,19 +901,33 @@
       <div class="chips" id="branchChips"></div>
     </div>
 
-    <div class="row">
-      <label>Grup Seçin<br/>
-        <select id="reqGroupSelect"></select>
-      </label>
-      <button class="btn ghost" id="btnReqExport">JSON Dışa Aktar</button>
-      <input id="fileReqImport" type="file" accept="application/json" hidden />
-      <button class="btn ghost" id="btnReqImport">JSON İçeri Al</button>
-      <button class="btn warn" id="btnReqClear">Tüm Talepleri Sıfırla</button>
-      <!-- Firebase kaydet/yükle/sil düğmeleri -->
-      <button class="btn ghost" id="btnReqSaveFb">Firebase Kaydet</button>
-      <button class="btn ghost" id="btnReqLoadFb">Firebase Yükle</button>
-      <button class="btn ghost" id="btnReqDeleteFb">Firebase Sil</button>
+    
+    <div class="toolbar">
+      <div class="left">
+        <label>Grup Seçin<br/>
+          <select id="reqGroupSelect"></select>
+        </label>
+      </div>
+      <div class="right">
+        <div class="btn-group" aria-label="JSON işlemleri">
+          <span class="gtitle">JSON</span>
+          <button class="btn ghost" id="btnReqExport">Dışa Aktar</button>
+          <input id="fileReqImport" type="file" accept="application/json" hidden />
+          <button class="btn ghost" id="btnReqImport">İçeri Al</button>
+        </div>
+        <div class="btn-group" aria-label="Toplu işlemler">
+          <span class="gtitle">Toplu</span>
+          <button class="btn warn" id="btnReqClear">Tüm Talepleri Sıfırla</button>
+        </div>
+        <div class="btn-group" aria-label="Firebase işlemleri">
+          <span class="gtitle">Firebase</span>
+          <button class="btn ghost" id="btnReqSaveFb">Kaydet</button>
+          <button class="btn ghost" id="btnReqLoadFb">Yükle</button>
+          <button class="btn ghost" id="btnReqDeleteFb">Sil</button>
+        </div>
+      </div>
     </div>
+
 
     <div id="reqWrap" class="grid"></div>
 
@@ -775,22 +945,40 @@
         <span class="pill">Branşa göre öğretmen yükü dengelenir</span>
       </div>
     </div>
-    <div class="row">
-      <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
-      <label class="pill" style="gap:10px;align-items:center">
-        <input type="checkbox" id="chkRelaxConsecutive" checked style="width:18px;height:18px" />
-        Ardışık aynı branş kuralını <b>çok sıkışınca</b> esnet
-      </label>
-      <button class="btn ghost" id="btnAutoAssignReport" disabled>Son Otomatik Atama Raporu</button>
-      <button class="btn ghost" id="btnAssgnExport">JSON Dışa Aktar</button>
-      <input id="fileAssgnImport" type="file" accept="application/json" hidden />
-      <button class="btn ghost" id="btnAssgnImport">JSON İçeri Al</button>
-      <button class="btn warn" id="btnAssgnClear">Atamaları Temizle</button>
-      <!-- Firebase kaydet/yükle/sil düğmeleri -->
-      <button class="btn ghost" id="btnAssgnSaveFb">Firebase Kaydet</button>
-      <button class="btn ghost" id="btnAssgnLoadFb">Firebase Yükle</button>
-      <button class="btn ghost" id="btnAssgnDeleteFb">Firebase Sil</button>
+    
+    <div class="toolbar">
+      <div class="left">
+        <div class="btn-group" aria-label="Atama">
+          <span class="gtitle">Atama</span>
+          <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
+          <label class="pill" style="gap:10px;align-items:center">
+            <input type="checkbox" id="chkRelaxConsecutive" checked style="width:18px;height:18px" />
+            Ardışık aynı branş kuralını <b>çok sıkışınca</b> esnet
+          </label>
+          <button class="btn ghost" id="btnAutoAssignReport" disabled>Son Rapor</button>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="btn-group" aria-label="JSON işlemleri">
+          <span class="gtitle">JSON</span>
+          <button class="btn ghost" id="btnAssgnExport">Dışa Aktar</button>
+          <input id="fileAssgnImport" type="file" accept="application/json" hidden />
+          <button class="btn ghost" id="btnAssgnImport">İçeri Al</button>
+        </div>
+        <div class="btn-group" aria-label="Toplu işlemler">
+          <span class="gtitle">Toplu</span>
+          <button class="btn warn" id="btnAssgnClear">Atamaları Temizle</button>
+        </div>
+        <div class="btn-group" aria-label="Firebase işlemleri">
+          <span class="gtitle">Firebase</span>
+          <button class="btn ghost" id="btnAssgnSaveFb">Kaydet</button>
+          <button class="btn ghost" id="btnAssgnLoadFb">Yükle</button>
+          <button class="btn ghost" id="btnAssgnDeleteFb">Sil</button>
+        </div>
+      </div>
     </div>
+
     <div id="assignCards" class="cards"></div>
 
     <dialog id="dlgAssign">
