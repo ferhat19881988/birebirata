@@ -1152,411 +1152,58 @@ function reconcileAllToProgram(policy='keep'){
   });
 
   if(policy==='reset') state.assignments = [];
-  else state.assignments = state.assignments.filter(a=> a.day<D && a.slot<S);
-}
-
-/* ===== 3) Müsaitlik ===== */
-function slotHeadCells(container,S){
-  for(let s=0;s<S;s++){
-    const lab = state.program.slotLabels?.[s] || '';
-    const hd = document.createElement('div'); hd.className='kcell busy';
-    hd.innerHTML = `<div>${s+1}</div><div class="mini2">${lab}</div>`;
-    container.appendChild(hd);
-  }
-}
-function renderAvailGrids(){
-  const D=state.program.days.length, S=state.program.slots, days=state.program.days;
-
-  const tWrap=$("#teacherAvailWrap"); tWrap.innerHTML='';
-  if(state.teachers.length===0){
-    tWrap.innerHTML = '<div class="muted">Öğretmen verisi yok. Lütfen "Verileri Oku" ile yükleyin.</div>';
-  }else{
-    state.teachers.forEach(t=>{
-      const card = document.createElement('div'); card.className='card';
-      const head = document.createElement('div'); head.className='flex';
-      head.innerHTML = `<b>👤 ${t.name}</b><span class="tag">${t.branch}</span>`;
-      const right = document.createElement('div'); right.className='right flex';
-      const b1=document.createElement('button'); b1.className='btn xs ghost'; b1.textContent='Tümünü Uygun';
-      const b2=document.createElement('button'); b2.className='btn xs ghost'; b2.textContent='Tümünü Değil';
-      const b3=document.createElement('button'); b3.className='btn xs ghost'; b3.textContent='Tersine';
-      b1.onclick=()=>{ bulkSet(state.availability.teachers[t.id], true); renderAvailGrids(); };
-      b2.onclick=()=>{ bulkSet(state.availability.teachers[t.id], false); renderAvailGrids(); };
-      b3.onclick=()=>{ bulkToggle(state.availability.teachers[t.id]); renderAvailGrids(); };
-      right.append(b1,b2,b3); head.appendChild(right); card.appendChild(head);
-
-      const grid = document.createElement('div'); grid.className='kgrid'; grid.style.setProperty('--cols', S); grid.dataset.cols=S;
-      const headRow = document.createElement('div'); headRow.textContent='Gün / Saat'; headRow.style.fontWeight='700'; grid.appendChild(headRow);
-      slotHeadCells(grid,S);
-      for(let d=0; d<D; d++){
-        const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
-        const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.style.fontWeight='700';
-        dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
-        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.teachers[t.id], d); renderAvailGrids(); } };
-        row.appendChild(dayLbl);
-        for(let s=0;s<S;s++){
-          const val = state.availability.teachers[t.id][d][s];
-          const cell = document.createElement('div'); cell.className='kcell ' + (val?'ok':'bad');
-          cell.textContent = val?'Uygun':'Değil';
-          cell.onclick = ()=>{
-            const cur = state.availability.teachers[t.id][d][s] = !state.availability.teachers[t.id][d][s];
-            cell.className='kcell ' + (cur?'ok':'bad'); cell.textContent = cur ? 'Uygun' : 'Değil';
-          };
-          row.appendChild(cell);
-        }
-        grid.appendChild(row);
-      }
-      card.appendChild(grid); tWrap.appendChild(card);
-    });
-  }
-
-  const gWrap=$("#groupAvailWrap"); gWrap.innerHTML='';
-  const groups = Object.values(state.groups);
-  if(groups.length===0){
-    gWrap.innerHTML = '<div class="muted">Grup verisi yok. Öğrencilerden gruplar türetilir.</div>';
-  }else{
-    groups.sort(groupComparator).forEach(g=>{
-      const card = document.createElement('div'); card.className='card';
-      const head = document.createElement('div'); head.className='flex';
-      head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span>`;
-      const right = document.createElement('div'); right.className='right flex';
-      const b1=document.createElement('button'); b1.className='btn xs ghost'; b1.textContent='Tümünü Uygun';
-      const b2=document.createElement('button'); b2.className='btn xs ghost'; b2.textContent='Tümünü Değil';
-      const b3=document.createElement('button'); b3.className='btn xs ghost'; b3.textContent='Tersine';
-      b1.onclick=()=>{ bulkSet(state.availability.groups[g.id], true); renderAvailGrids(); };
-      b2.onclick=()=>{ bulkSet(state.availability.groups[g.id], false); renderAvailGrids(); };
-      b3.onclick=()=>{ bulkToggle(state.availability.groups[g.id]); renderAvailGrids(); };
-      right.append(b1,b2,b3); head.appendChild(right); card.appendChild(head);
-
-      const grid = document.createElement('div'); grid.className='kgrid'; grid.style.setProperty('--cols', S); grid.dataset.cols=S;
-      const headRow = document.createElement('div'); headRow.textContent='Gün / Saat'; headRow.style.fontWeight='700'; grid.appendChild(headRow);
-      slotHeadCells(grid,S);
-      for(let d=0; d<D; d++){
-        const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
-        const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.style.fontWeight='700';
-        dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
-        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.groups[g.id], d); renderAvailGrids(); } };
-        row.appendChild(dayLbl);
-        for(let s=0;s<S;s++){
-          const val = state.availability.groups[g.id][d][s];
-          const cell = document.createElement('div'); cell.className='kcell ' + (val?'ok':'bad');
-          cell.textContent = val?'Uygun':'Değil';
-          cell.onclick = ()=>{
-            const cur = state.availability.groups[g.id][d][s] = !state.availability.groups[g.id][d][s];
-            cell.className='kcell ' + (cur?'ok':'bad'); cell.textContent = cur ? 'Uygun' : 'Değil';
-          };
-          row.appendChild(cell);
-        }
-        grid.appendChild(row);
-      }
-      card.appendChild(grid); gWrap.appendChild(card);
-    });
-  }
-}
-function bulkSet(matrix, val){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=val; }
-function bulkToggle(matrix){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=!matrix[d][s]; }
-function copyDayPattern(matrix, fromDay){ const row = matrix[fromDay].slice(); for(let d=0; d<matrix.length; d++){ matrix[d] = row.slice(); } }
-
-/* ===== 4) Talepler ===== */
-function ensureRequests(){
-  Object.values(state.groups).forEach(g=>{
-    state.requests[g.id] = state.requests[g.id] || {};
-    state.branches.forEach(b=>{
-      if(typeof state.requests[g.id][b] !== 'number') state.requests[g.id][b] = 0;
-    });
-  });
-}
-function refreshReqFilterOptions(){
-  const sel = $("#reqGroupSelect"); sel.innerHTML='';
-  const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='(Grup seçin)'; sel.appendChild(opt0);
-  Object.values(state.groups).sort(groupComparator).forEach(g=>{
-    const opt=document.createElement('option'); opt.value=g.id; opt.textContent=g.name; sel.appendChild(opt);
-  });
-}
-function totalRequestForGroup(gid){
-  const req = state.requests[gid]||{};
-  return Object.values(req).reduce((a,b)=>a+(+b||0),0);
-}
-
-function renderRequests(){
-  ensureRequests();
-
-  // Neden: Branş toplam/kalan rozetlerini her çizimde güncel tutmak için
-  if (typeof renderBranchChipsSummary === 'function') {
-    renderBranchChipsSummary();
-  } else {
-    // Yedek: helper yoksa en azından branş isimlerini göster
-    const bc = $("#branchChips");
-    if (bc) {
-      bc.innerHTML = '';
-      state.branches.forEach(b=>{
-        const x = document.createElement('span');
-        x.className = 'pill';
-        x.textContent = b;
-        bc.appendChild(x);
-      });
-    }
-  }
-
-  const selVal = $("#reqGroupSelect").value;
-  const wrap = $("#reqWrap");
-  wrap.innerHTML = '';
-
-  if(!selVal){
-    wrap.innerHTML = '<div class="muted">Soldan bir grup seçin. Seçilen gruba ait talepleri düzenleyin.</div>';
-    return;
-  }
-
-  const g = state.groups[selVal];
-  if(!g){
-    wrap.innerHTML = '<div class="muted">Seçilen grup bulunamadı.</div>';
-    return;
-  }
-
-  const card = document.createElement('div');
-  card.className = 'card';
-
-  const total = totalRequestForGroup(g.id);
-  const capacity = state.program.days.length * state.program.slots;
-  const chip = document.createElement('span');
-  chip.className = 'pill' + (total > capacity ? ' bad' : '');
-  chip.textContent = `Toplam: ${total} • Kapasite: ${capacity}`;
-
-  const head = document.createElement('div');
-  head.className = 'flex';
-  head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span>`;
-  head.appendChild(chip);
-  card.appendChild(head);
-
-  const tbl = document.createElement('table');
-  tbl.style.borderSpacing = '0 6px';
-  tbl.innerHTML = `<thead><tr><th>Branş</th><th style="width:240px">Saat</th></tr></thead><tbody></tbody>`;
-
-  state.branches.forEach(b=>{
-    const tr = document.createElement('tr');
-
-    const td1 = document.createElement('td');
-    td1.textContent = b;
-    tr.appendChild(td1);
-
-    const td2 = document.createElement('td');
-    const box = document.createElement('div'); box.className = 'qty';
-
-    const minus = document.createElement('button'); minus.textContent = '–';
-    const inp = document.createElement('input'); inp.type = 'number'; inp.min = '0'; inp.value = state.requests[g.id][b] || 0;
-    const plus = document.createElement('button'); plus.textContent = '+';
-
-    minus.onclick = ()=>{
-      inp.value = Math.max(0, (+inp.value || 0) - 1);
-      inp.dispatchEvent(new Event('input'));
-    };
-    plus.onclick  = ()=>{
-      inp.value = (+inp.value || 0) + 1;
-      inp.dispatchEvent(new Event('input'));
-    };
-
-    inp.oninput = (e)=>{
-      // Neden: istenmeyen değerleri engelle, özetleri canlı güncelle
-      state.requests[g.id][b] = clamp(parseInt(e.target.value || '0'), 0, 999);
-
-      const t = totalRequestForGroup(g.id);
-      chip.className = 'pill' + (t > capacity ? ' bad' : '');
-      chip.textContent = `Toplam: ${t} • Kapasite: ${capacity}`;
-
-      if (typeof renderBranchChipsSummary === 'function') {
-        renderBranchChipsSummary(); // branş kalan/kapasite özetlerini canlı güncelle
-      }
-    };
-
-    box.append(minus, inp, plus);
-    td2.appendChild(box);
-    tr.appendChild(td2);
-
-    tbl.querySelector('tbody').appendChild(tr);
-  });
-
-  card.appendChild(tbl);
-  wrap.appendChild(card);
-}
-const exportReq = ()=>download('grup-talepleri.json', state.requests);
-const importReq = obj=>{
-  if(!obj || typeof obj!=='object') return alert('Geçersiz talepler JSON.');
-  state.requests = obj;
-  refreshReqFilterOptions();
-  renderRequests();
-};
-
-/* ===== 5) Atama ===== */
-function findTeacherOptions(branch){ return state.teachers.filter(t=>t.branch===branch); }
-function isTeacherBusy(teacherId, day, slot){ return state.assignments.some(a=>a.teacherId===teacherId && a.day===day && a.slot===slot); }
-function isGroupBusy(groupId, day, slot){ return state.assignments.some(a=>a.group===groupId && a.day===day && a.slot===slot); }
-function prevGroupSubject(groupId, day, slot){
-  if(slot>0){ const a = state.assignments.find(x=>x.group===groupId && x.day===day && x.slot===slot-1); return a ? a.branch : null; }
-  if(day>0){ const a = state.assignments.find(x=>x.group===groupId && x.day===day-1 && x.slot===state.program.slots-1); return a ? a.branch : null; }
-  return null;
-}
-function hasAssignmentsForGroup(gid){ return state.assignments.some(a=>a.group===gid); }
-/* Branş ismini CSS sınıfına çeviren yardımcı */
-function getBranchClass(branchName) {
-    if (!branchName) return '';
-    const b = branchName.toUpperCase();
-    if (b.includes('MATEMATİK')) return 'mat';
-    if (b.includes('FEN')) return 'fen';
-    if (b.includes('TÜRKÇE')) return 'trk';
-    if (b.includes('SOSYAL')) return 'sos';
-    if (b.includes('İNGİLİZCE')) return 'ing';
-    if (b.includes('DİN')) return 'din';
-    return ''; // Tanımsızsa varsayılan gri kalır
-}
-  
-  function renderAssignCards(){
-  const wrap = $("#assignCards"); wrap.innerHTML='';
-  const days = state.program.days, S=state.program.slots;
-
-  const groups = Object.values(state.groups).slice()
-    .sort((a,b)=> (hasAssignmentsForGroup(b.id)?1:0)-(hasAssignmentsForGroup(a.id)?1:0) || groupComparator(a,b));
-
-  groups.forEach(g=>{
-    const card = document.createElement('div'); card.className='card';
-    const head = document.createElement('div'); head.className='flex';
-    const count = state.assignments.filter(a=>a.group===g.id).length;
-    head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span><span class="pill">${count} atama</span>`;
-    card.appendChild(head);
-
-    const grid = document.createElement('div'); grid.className='kgrid'; grid.style.setProperty('--cols', S); grid.dataset.cols=S;
-    const headRow = document.createElement('div'); headRow.textContent='Gün / Saat'; headRow.style.fontWeight='700'; grid.appendChild(headRow);
-    slotHeadCells(grid,S);
-
-    for(let d=0; d<days.length; d++){
-      const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
-      row.appendChild(Object.assign(document.createElement('div'),{textContent:days[d],style:'font-weight:700'}));
-      for(let s=0; s<S; s++){
-        const cell = document.createElement('div');
-        cell.className = 'kcell';
-        cell.dataset.d = d;
-        cell.dataset.s = s;
-
-        // Duruma göre uygunluk rengini uygula (müsaitse yeşil, değilse kırmızı).
-        // Bu renkler yalnızca boş hücreler için kullanılır; ataması olan hücreler
-        // kendi ders renkleriyle gösterilecektir.
-        const avail = state.availability?.groups?.[g.id]?.[d]?.[s] === true;
-        cell.classList.add(avail ? 'ok' : 'bad');
-
-        // Mevcut bir atama var mı? Varsa hücreyi ders rengine dönüştür.
-        const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s);
-     if (cur) {
-    // 1. Sınıfları temizle ve ders rengini ekle
-    cell.classList.remove('ok', 'bad', 'busy');
-    cell.classList.add('assigned', getBranchClass(cur.branch));
-
-    // 2. Öğretmen ismini veriden bul
-    const teacherObj = state.teachers.find(t => t.id === cur.teacherId);
-    // İsim varsa al, yoksa boş string döndür (icon yanına boşluk gelmemesi için)
-    const teacherName = teacherObj ? teacherObj.name : '';
-
-    // 3. İÇERİK HTML - GÜNCELLENDİ
-    cell.innerHTML = `
-      <div style="
-          display:flex; 
-          flex-direction:column; 
-          justify-content:center; 
-          align-items:center; 
-          height:100%; 
-          width:100%; 
-          pointer-events:none; 
-          padding-bottom: 4px; /* Bu satır içeriği yukarı iter */
-      ">
-        
-        <div style="
-            font-weight:900; 
-            font-size:14px; 
-            line-height:1; 
-            margin-bottom:3px; 
-            text-align:center; 
-            letter-spacing: -0.3px; /* Harfleri hafif sıkıştırarak sığdırır */
-        ">
-            ${cur.branch}
-        </div>
-        
-        <div class="mini2" style="
-            font-size:11px; 
-            font-weight:700; 
-            opacity:0.9; 
-            line-height:1; 
-            white-space:nowrap; 
-            overflow:hidden; 
-            text-overflow:ellipsis; 
-            max-width:98%;
-        ">
-            👤 ${teacherName}
-        </div>
-
-      </div>`;
-}
-        cell.onclick = () => {
-          openAssignDialog(g.id, d, s);
-        };
-        row.appendChild(cell);
-      }
-      grid.appendChild(row);
-    }
-
-    card.appendChild(grid);
-    wrap.appendChild(card);
-  });
-}
-const dlg = $("#dlgAssign"); let dlgCtx = null;
-
-function openAssignDialog(group, day, slot) {
-  dlgCtx = { group, day, slot };
-  $("#dlgGroup").value = group;
-
-  const time = state.program.slotLabels?.[slot] || `${slot + 1}. saat`;
-  $("#dlgWhen").value = `${state.program.days[day]} • ${time}`;
-
-  // Branş seçenekleri
-  const selB = $("#dlgBranch");
-  selB.innerHTML = '';
-  state.branches.forEach(b => {
-    const opt = document.createElement('option');
-    opt.value = b; opt.textContent = b;
-    selB.appendChild(opt);
-  });
-  selB.onchange = fillTeachersForBranch;
-
-  // Mevcut atama var mı?
-  const current = state.assignments.find(a => a.group === group && a.day === day && a.slot === slot);
-
-  // Eğer hücrede atama varsa, o branşı ön-seç
-  if (current) selB.value = current.branch;
-
-  // Öğretmen listesini branşa göre doldur
-  fillTeachersForBranch();
-
-  // Öğretmen ön-seçimi (mevcut atama varsa)
-  if (current) {
-    // Not: Öğretmen başka yerde atanmışsa UI'da "atanmış" olarak görünebilir.
-    // Sil butonunu göstermek asıl hedef; seçim başarısız olsa da sorun değil.
-    const selT = $("#dlgTeacher");
-    selT.value = current.teacherId;
-    $("#dlgDelete").hidden = false;
-  } else {
-    $("#dlgDelete").hidden = true;
-  }
-
-  dlg.showModal();
-}
-$("#dlgDelete").onclick = () => {
-  if (!dlgCtx) return;
-  const { group, day, slot } = dlgCtx;
-  const has = state.assignments.some(a => a.group === group && a.day === day && a.slot === slot);
-  if (!has) { dlg.close(); return; }
-
-  if (confirm("Bu atamayı silmek istiyor musunuz?")) {
-    state.assignments = state.assignments.filter(a => !(a.group === group && a.day === day && a.slot === slot));
+  else state.assignments = state.assignments.filter(a => !(a.group === group && a.day === day && a.slot === slot));
     dlg.close();
-    renderAssignCards(); // why: öğretmen anında tekrar 'müsait' görünsün
+    onAssignmentsChanged();
   }
 };
+
+
+function computeMissingSummaryForGroup(gid){
+  // Eksik dersleri branş bazında çıkarır (talepler - yapılan atamalar).
+  ensureRequests();
+  const req = state.requests?.[gid] || {};
+  const assigned = state.assignments.filter(a=>a.group===gid);
+  const missParts = [];
+  let missTotal = 0;
+  for(const b of state.branches){
+    const need = +req[b] || 0;
+    const got  = assigned.filter(x=>x.branch===b).length;
+    const miss = Math.max(0, need - got);
+    if(miss>0){ missTotal += miss; missParts.push(`${b} ${miss}`); }
+  }
+  if(missTotal===0) return { text: 'Tüm dersler tamam.', missTotal: 0 };
+  return { text: `Eksik: ${missParts.join(', ')}`, missTotal };
+}
+
+function updateAutoAssignReportLive(){
+  // Neden: Manuel değişiklikler, grup-temizleme, import, firebase yükleme vb. sonrası rapor güncel kalsın.
+  const btn = document.getElementById('btnAutoAssignReport');
+  const shouldKeep = !!state.lastAutoAssignReport || (btn && btn.disabled===false);
+  if(!shouldKeep) return;
+  try{
+    state.lastAutoAssignReport = buildAutoAssignReport();
+    if(btn) btn.disabled = false;
+  }catch(e){
+    // sessiz geç: rapor üretimi için gereken veriler eksik olabilir
+  }
+}
+
+function onAssignmentsChanged(){
+  renderAssignCards();
+  updateAutoAssignReportLive();
+
+  const printPanel = document.getElementById('step6');
+  if (printPanel && !printPanel.hasAttribute('hidden')) {
+    refreshPrintFilters();
+    renderPrintPreview();
+  }
+}
+
+function clearAssignmentsForGroup(gid){
+  state.assignments = state.assignments.filter(a=>a.group!==gid);
+  onAssignmentsChanged();
+}
 
 function hasAnyAssignments(){ return Array.isArray(state.assignments) && state.assignments.length > 0; }
 function getTeacherAssignmentsMap(){
@@ -1686,14 +1333,7 @@ $("#dlgOk").onclick = () => {
   state.assignments = state.assignments.filter(a => !(a.group===group && a.day===day && a.slot===slot));
   state.assignments.push({group, day, slot, branch, teacherId});
   dlg.close();
-  renderAssignCards(); // why: UI ve uygunluk anında güncellensin
-
-  // Yazdır sekmesi açıksa anında tazele (why: manuel atama sonrası önizleme güncel kalsın)
-  const printPanel = $('#step6');
-  if (printPanel && !printPanel.hasAttribute('hidden')) {
-    refreshPrintFilters();
-    renderPrintPreview();
-  }
+  onAssignmentsChanged();
 };
 
 /* ===== Otomatik Atama: Ortak Yardımcılar (rapor + elle atama için) ===== */
@@ -2526,7 +2166,7 @@ const importAssgn = obj=>{
   if(!Array.isArray(obj)) return alert('Geçersiz atamalar JSON.');
   state.assignments = obj;
   reconcileAllToProgram(getAssignPolicy());
-  renderAssignCards();
+  onAssignmentsChanged();
 };
 
 /* ===== 6) Yazdır ===== */
@@ -2719,7 +2359,7 @@ $("#btnAssgnClear").onclick = ()=>{
   state.autoAssignMeta = null;
   const b = document.getElementById('btnAutoAssignReport');
   if (b) b.disabled = true;
-  renderAssignCards();
+  onAssignmentsChanged();
 };
 
 $("#printMode").onchange = ()=> { refreshPrintFilters(); renderPrintPreview(); };
@@ -3614,7 +3254,7 @@ if (btnAssgnLoadFb) {
   btnAssgnLoadFb.addEventListener('click', () => {
     loadDataFromFirebase('atamapath', obj => {
       state.assignments = Array.isArray(obj) ? obj : [];
-      renderAssignCards();
+      onAssignmentsChanged();
 
       // Firebase'den yükleyince de "Son Otomatik Atama Raporu" kullanılabilsin
       state.autoAssignMeta = { prevCount: state.assignments.length, lastRunAt: Date.now(), loadedFromFirebase: true };
@@ -3810,7 +3450,7 @@ function renderAssignCards(){
   const days = state.program.days, S=state.program.slots;
 
   const groups = Object.values(state.groups).slice()
-    .sort((a,b)=> (hasAssignmentsForGroup(b.id)?1:0)-(hasAssignmentsForGroup(a.id)?1:0) || groupComparator(a,b));
+    .sort((a,b)=> groupComparator(a,b));
 
   groups.forEach(g=>{
     const card = document.createElement('div'); card.className='card';
@@ -3818,6 +3458,25 @@ function renderAssignCards(){
     head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
     const count = state.assignments.filter(a=>a.group===g.id).length;
     head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span><span class="pill">${count} atama</span>`;
+
+    // Grup bazlı eksik ders özeti + grup-temizleme (yalnız bu grup)
+    const miss = computeMissingSummaryForGroup(g.id);
+    const missEl = document.createElement('span');
+    missEl.className = 'mini2';
+    missEl.style.marginLeft = '10px';
+    missEl.textContent = miss.text;
+    head.appendChild(missEl);
+
+    const btnClearG = document.createElement('button');
+    btnClearG.className = 'btn xs warn right';
+    btnClearG.textContent = 'Bu grubun atamalarını temizle';
+    btnClearG.title = 'Sadece bu grubun tüm atamalarını kaldırır.';
+    btnClearG.onclick = ()=>{
+      if(confirm(`${g.name} için tüm atamalar kaldırılsın mı?`)){
+        clearAssignmentsForGroup(g.id);
+      }
+    };
+    head.appendChild(btnClearG);
     card.appendChild(head);
 
     const scrollWrap = document.createElement('div');
