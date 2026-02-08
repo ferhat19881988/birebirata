@@ -488,6 +488,56 @@
   .qty button{border:0;background:rgba(79,70,229,.10);padding:8px 10px;cursor:pointer;font-weight:900}
   .qty button:hover{background:rgba(79,70,229,.16)}
   .qty button:active{background:rgba(79,70,229,.22)}
+  /* ===========================
+     STEP 4 – TALEPLER (Sade + Hızlı)
+     =========================== */
+  #step4 .reqCard{ padding:14px; }
+  #step4 .reqHead{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    justify-content:space-between;
+    border-bottom:1px solid #f1f5f9;
+    padding-bottom:10px;
+    margin-bottom:10px;
+  }
+  #step4 .reqHeadLeft{display:flex;gap:10px;align-items:flex-start}
+  #step4 .reqHeadRight{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  #step4 .reqTools{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    margin: 0 0 10px 0;
+  }
+  #step4 .reqGrid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap:10px;
+  }
+  #step4 .reqRow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:14px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  }
+  #step4 .reqBranch{
+    font-weight:900;
+    letter-spacing:.2px;
+  }
+  #step4 .reqControls{display:flex;align-items:center;gap:8px}
+  #step4 .reqQty{border-color: rgba(15,23,42,.16)}
+  #step4 .reqQty input{min-width:64px;font-weight:900}
+  #step4 .btn-group select{
+    min-width: 160px;
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+
 
   /* Yazdırma */
   @media print{
@@ -1138,7 +1188,7 @@ function showTopTab(panelId){
 
   if(panelId==='step2'){ buildProgramGrid(true); renderSlotLabels(); }
   if(panelId==='step3'){ reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); }
-  if(panelId==='step4'){ refreshReqFilterOptions(); renderRequests(); }
+  if(panelId==='step4'){ refreshReqFilterOptions(); if(typeof refreshReqCopyFromOptions==='function') refreshReqCopyFromOptions(); renderRequests(); }
   if(panelId==='step5'){ renderAssignCards(); }
   if(panelId==='step6'){ refreshPrintFilters(); renderPrintPreview(); }
 }
@@ -1430,53 +1480,62 @@ function renderAvailGrids(){
           cell.textContent = val?'Uygun':'Değil';
           cell.onclick = ()=>{
             const cur = state.availability.groups[g.id][d][s] = !state.availability.groups[g.id][d][s];
-            cell.className='kcell ' + (cur?'ok':'bad'); cell.textContent = cur ? 'Uygun' : 'Değil';
-          };
-          row.appendChild(cell);
-        }
-        grid.appendChild(row);
-      }
-      card.appendChild(grid); gWrap.appendChild(card);
-    });
-  }
-}
-function bulkSet(matrix, val){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=val; }
-function bulkToggle(matrix){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=!matrix[d][s]; }
-function copyDayPattern(matrix, fromDay){ const row = matrix[fromDay].slice(); for(let d=0; d<matrix.length; d++){ matrix[d] = row.slice(); } }
+            cell.classNam<!-- STEP 4 -->
+  <section class="content grid tabpanel" id="step4" role="tabpanel" hidden>
+    <div class="section-title">
+      <h2>4) Grupların Haftalık Ders Talepleri</h2>
+      <div class="chips" id="branchChips"></div>
+    </div>
 
-/* ===== 4) Talepler ===== */
-function ensureRequests(){
-  Object.values(state.groups).forEach(g=>{
-    state.requests[g.id] = state.requests[g.id] || {};
-    state.branches.forEach(b=>{
-      if(typeof state.requests[g.id][b] !== 'number') state.requests[g.id][b] = 0;
-    });
-  });
-}
-function refreshReqFilterOptions(){
-  const sel = $("#reqGroupSelect"); sel.innerHTML='';
-  const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='(Grup seçin)'; sel.appendChild(opt0);
-  Object.values(state.groups).sort(groupComparator).forEach(g=>{
-    const opt=document.createElement('option'); opt.value=g.id; opt.textContent=g.name; sel.appendChild(opt);
-  });
-}
-function totalRequestForGroup(gid){
-  const req = state.requests[gid]||{};
-  return Object.values(req).reduce((a,b)=>a+(+b||0),0);
-}
+    
+    <div class="toolbar">
+      <div class="left">
+        <label>Grup Seçin<br/>
+          <select id="reqGroupSelect"></select>
+        </label>
+      </div>
+      <div class="right">
+        <div class="btn-group" aria-label="JSON işlemleri">
+          <span class="gtitle">JSON</span>
+          <button class="btn ghost" id="btnReqExport">Dışa Aktar</button>
+          <input id="fileReqImport" type="file" accept="application/json" hidden />
+          <button class="btn ghost" id="btnReqImport">İçeri Al</button>
+        </div>
+        <div class="btn-group" aria-label="Toplu işlemler">
+          <span class="gtitle">Toplu</span>
+          <button class="btn warn" id="btnReqClear">Tüm Talepleri Sıfırla</button>
+        </div>
+        <div class="btn-group" aria-label="Kopyala / Yapıştır">
+          <span class="gtitle">Kopyala</span>
+          <button class="btn ghost" id="btnReqCopy">Bu Grubu Kopyala</button>
+          <button class="btn ghost" id="btnReqPaste" title="En son kopyalanan talepleri bu gruba yapıştırır">Yapıştır</button>
+          <select id="reqCopyFromSelect" title="Başka bir grup seçip bu gruba aktarabilirsiniz" style="min-width:180px"></select>
+          <button class="btn ghost" id="btnReqPasteFrom" title="Seçilen gruptaki talepleri bu gruba aktarır">Aktar</button>
+        </div>
 
-function renderRequests(){
-  ensureRequests();
+        <div class="btn-group" aria-label="Firebase işlemleri">
+          <span class="gtitle">Firebase</span>
+          <button class="btn ghost" id="btnReqSaveFb">Kaydet</button>
+          <button class="btn ghost" id="btnReqLoadFb">Yükle</button>
+          <button class="btn ghost" id="btnReqDeleteFb">Sil</button>
+        </div>
+      </div>
+    </div>
 
-  // Neden: Branş toplam/kalan rozetlerini her çizimde güncel tutmak için
-  if (typeof renderBranchChipsSummary === 'function') {
-    renderBranchChipsSummary();
+
+    <div id="reqWrap" class="grid"></div>
+
+    <div class="row">
+      <button class="btn sec right" id="goto5">Devam → Atama Paneli</button>
+    </div>
+  </section>
+
+  <!-- STEP 5 -->psSummary();
   } else {
-    // Yedek: helper yoksa en azından branş isimlerini göster
     const bc = $("#branchChips");
     if (bc) {
       bc.innerHTML = '';
-      state.branches.forEach(b=>{
+      (state.branches||[]).forEach(b=>{
         const x = document.createElement('span');
         x.className = 'pill';
         x.textContent = b;
@@ -1485,91 +1544,148 @@ function renderRequests(){
     }
   }
 
-  const selVal = $("#reqGroupSelect").value;
+  const gid = $("#reqGroupSelect").value;
   const wrap = $("#reqWrap");
   wrap.innerHTML = '';
 
-  if(!selVal){
-    wrap.innerHTML = '<div class="muted">Soldan bir grup seçin. Seçilen gruba ait talepleri düzenleyin.</div>';
+  if(!gid){
+    wrap.innerHTML = '<div class="muted">Soldan bir grup seçin. Seçilen gruba ait talepleri hızlıca belirleyin. (Kopyala/Yapıştır ile başka gruplara aktarabilirsiniz.)</div>';
     return;
   }
 
-  const g = state.groups[selVal];
+  const g = state.groups[gid];
   if(!g){
     wrap.innerHTML = '<div class="muted">Seçilen grup bulunamadı.</div>';
     return;
   }
 
+  const capacity = (state.program.days?.length||0) * (state.program.slots||0);
+  const req = state.requests[gid] || {};
+  const total = totalRequestForGroup(gid);
+
   const card = document.createElement('div');
-  card.className = 'card';
+  card.className = 'card reqCard';
 
-  const total = totalRequestForGroup(g.id);
-  const capacity = state.program.days.length * state.program.slots;
-  const chip = document.createElement('span');
-  chip.className = 'pill' + (total > capacity ? ' bad' : '');
-  chip.textContent = `Toplam: ${total} • Kapasite: ${capacity}`;
-
+  // Header
   const head = document.createElement('div');
-  head.className = 'flex';
-  head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span>`;
-  head.appendChild(chip);
+  head.className = 'reqHead';
+
+  const left = document.createElement('div');
+  left.className = 'reqHeadLeft';
+  left.innerHTML = `
+    <div class="reqTitle">
+      <div style="font-weight:900;font-size:16px">${escapeHtml(g.name)}</div>
+      <div class="mini2">${g.students?.length||0} öğrenci</div>
+    </div>
+  `;
+
+  const right = document.createElement('div');
+  right.className = 'reqHeadRight';
+
+  const pill = document.createElement('span');
+  pill.className = 'pill' + (total > capacity ? ' bad' : '');
+  pill.textContent = `Toplam: ${total} • Kapasite: ${capacity}`;
+  right.appendChild(pill);
+
+  // Quick tools
+  const tools = document.createElement('div');
+  tools.className = 'reqTools';
+
+  tools.innerHTML = `
+    <button class="btn xs ghost" id="btnReqAll0" title="Tüm branşları 0 yapar">Hepsi 0</button>
+    <button class="btn xs ghost" id="btnReqAll1" title="Tüm branşlara 1 ekler">+1</button>
+    <button class="btn xs ghost" id="btnReqAll2" title="Tüm branşlara 2 ekler">+2</button>
+    <span class="mini2" style="margin-left:6px">İpucu: Sayıya tıklayıp yazabilirsiniz.</span>
+  `;
+
+  head.append(left, right);
   card.appendChild(head);
+  card.appendChild(tools);
 
-  const tbl = document.createElement('table');
-  tbl.style.borderSpacing = '0 6px';
-  tbl.innerHTML = `<thead><tr><th>Branş</th><th style="width:240px">Saat</th></tr></thead><tbody></tbody>`;
+  // Grid rows
+  const grid = document.createElement('div');
+  grid.className = 'reqGrid';
 
-  state.branches.forEach(b=>{
-    const tr = document.createElement('tr');
+  (state.branches||[]).forEach(branch=>{
+    const row = document.createElement('div');
+    row.className = 'reqRow';
 
-    const td1 = document.createElement('td');
-    td1.textContent = b;
-    tr.appendChild(td1);
+    const b = document.createElement('div');
+    b.className = 'reqBranch';
+    b.textContent = branch;
 
-    const td2 = document.createElement('td');
-    const box = document.createElement('div'); box.className = 'qty';
+    const controls = document.createElement('div');
+    controls.className = 'reqControls';
 
-    const minus = document.createElement('button'); minus.textContent = '–';
-    const inp = document.createElement('input'); inp.type = 'number'; inp.min = '0'; inp.value = state.requests[g.id][b] || 0;
-    const plus = document.createElement('button'); plus.textContent = '+';
+    const box = document.createElement('div');
+    box.className = 'qty reqQty';
 
-    minus.onclick = ()=>{
-      inp.value = Math.max(0, (+inp.value || 0) - 1);
-      inp.dispatchEvent(new Event('input'));
+    const minus = document.createElement('button');
+    minus.type='button';
+    minus.textContent = '−';
+
+    const inp = document.createElement('input');
+    inp.type='number';
+    inp.min='0';
+    inp.step='1';
+    inp.value = +req[branch] || 0;
+    inp.inputMode = 'numeric';
+
+    const plus = document.createElement('button');
+    plus.type='button';
+    plus.textContent = '+';
+
+    const sync = ()=>{
+      const v = clamp(parseInt(inp.value||'0'), 0, 999);
+      inp.value = v;
+      state.requests[gid][branch] = v;
+      // toplam rozetini canlı güncelle
+      const t = totalRequestForGroup(gid);
+      pill.className = 'pill' + (t > capacity ? ' bad' : '');
+      pill.textContent = `Toplam: ${t} • Kapasite: ${capacity}`;
+      if (typeof renderBranchChipsSummary === 'function') renderBranchChipsSummary();
     };
-    plus.onclick  = ()=>{
-      inp.value = (+inp.value || 0) + 1;
-      inp.dispatchEvent(new Event('input'));
-    };
 
-    inp.oninput = (e)=>{
-      // Neden: istenmeyen değerleri engelle, özetleri canlı güncelle
-      state.requests[g.id][b] = clamp(parseInt(e.target.value || '0'), 0, 999);
+    minus.onclick = ()=>{ inp.value = Math.max(0, (+inp.value||0)-1); sync(); };
+    plus.onclick = ()=>{ inp.value = (+inp.value||0)+1; sync(); };
+    inp.onchange = sync;
+    inp.oninput = ()=>{ /* hızlı yazımda gecikmesiz */ };
 
-      const t = totalRequestForGroup(g.id);
-      chip.className = 'pill' + (t > capacity ? ' bad' : '');
-      chip.textContent = `Toplam: ${t} • Kapasite: ${capacity}`;
-
-      if (typeof renderBranchChipsSummary === 'function') {
-        renderBranchChipsSummary(); // branş kalan/kapasite özetlerini canlı güncelle
-      }
-    };
+    // Enter ile sync
+    inp.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); sync(); }
+    });
 
     box.append(minus, inp, plus);
-    td2.appendChild(box);
-    tr.appendChild(td2);
+    controls.appendChild(box);
 
-    tbl.querySelector('tbody').appendChild(tr);
+    row.append(b, controls);
+    grid.appendChild(row);
   });
 
-  card.appendChild(tbl);
+  card.appendChild(grid);
   wrap.appendChild(card);
+
+  // Quick buttons handlers
+  $("#btnReqAll0").onclick = ()=>{
+    (state.branches||[]).forEach(br=> state.requests[gid][br]=0);
+    renderRequests();
+  };
+  $("#btnReqAll1").onclick = ()=>{
+    (state.branches||[]).forEach(br=> state.requests[gid][br]=(+state.requests[gid][br]||0)+1);
+    renderRequests();
+  };
+  $("#btnReqAll2").onclick = ()=>{
+    (state.branches||[]).forEach(br=> state.requests[gid][br]=(+state.requests[gid][br]||0)+2);
+    renderRequests();
+  };
 }
 const exportReq = ()=>download('grup-talepleri.json', state.requests);
 const importReq = obj=>{
   if(!obj || typeof obj!=='object') return alert('Geçersiz talepler JSON.');
   state.requests = obj;
   refreshReqFilterOptions();
+  if(typeof refreshReqCopyFromOptions==='function') refreshReqCopyFromOptions();
   renderRequests();
 };
 
@@ -2918,8 +3034,36 @@ $("#goto6").onclick = ()=> showTopTab('step6');
 $("#btnReqExport").onclick = exportReq;
 $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
-$("#reqGroupSelect").onchange = renderRequests;
 
+$("#btnReqCopy").onclick = ()=>{
+  const gid = $("#reqGroupSelect").value;
+  if(!gid) return alert("Önce bir grup seçin.");
+  copyRequestsFromGroup(gid);
+  alert("Bu grubun talepleri kopyalandı. (Yapıştır ile başka gruba aktarabilirsiniz.)");
+};
+$("#btnReqPaste").onclick = ()=>{
+  const gid = $("#reqGroupSelect").value;
+  if(!gid) return alert("Önce bir grup seçin.");
+  if(!__reqCopyBuffer) return alert("Önce 'Bu Grubu Kopyala' ile bir talep seti kopyalayın.");
+  if(confirm("Kopyalanan talepleri bu gruba yapıştırmak istiyor musunuz? Mevcut talepler değişecek.")){
+    pasteRequestsToGroup(gid, __reqCopyBuffer);
+    renderRequests();
+  }
+};
+$("#btnReqPasteFrom").onclick = ()=>{
+  const target = $("#reqGroupSelect").value;
+  if(!target) return alert("Önce hedef grubu seçin.");
+  const from = $("#reqCopyFromSelect").value;
+  if(!from) return alert("Kaynak grup seçin.");
+  if(from===target) return alert("Kaynak ve hedef grup aynı olamaz.");
+  if(confirm("Seçilen grubun taleplerini bu gruba aktarmak istiyor musunuz? Mevcut talepler değişecek.")){
+    const src = copyRequestsFromGroup(from);
+    pasteRequestsToGroup(target, src);
+    renderRequests();
+  }
+};
+
+$("#reqGroupSelect").onchange = renderRequests;
 // Otomatik atama: 45 sn boyunca farklı yerleşimler dener, en iyisini uygular (async)
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
 $("#btnAutoAssignReport").onclick = () => {
