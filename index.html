@@ -1152,10 +1152,7 @@ function reconcileAllToProgram(policy='keep'){
   });
 
   if(policy==='reset') state.assignments = [];
-  else state.assignments = state.assignments.filter(a => !(a.group === group && a.day === day && a.slot === slot));
-    dlg.close();
-    onAssignmentsChanged();
-  }
+  else state.assignments = state.assignments.filter(a=> a.day<D && a.slot<S);
 };
 
 
