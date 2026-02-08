@@ -2188,6 +2188,75 @@ function autoAssign() {
       }
     }
 
+    
+    // ===== Branş Bazlı Uygulanabilirlik (Feasibility) Analizi =====
+    // Not: Bu bir "üst sınır" kapasite hesabıdır (iyimser). Yine de öğretmen yetersizliğini hızlıca gösterir.
+    const demandByBranch = Object.fromEntries(state.branches.map(b => [b, 0]));
+    const assignedByBranch = Object.fromEntries(state.branches.map(b => [b, 0]));
+    const remainingByBranch = Object.fromEntries(state.branches.map(b => [b, 0]));
+
+    for (const g of groups) {
+      const req = state.requests[g.id] || {};
+      for (const b of state.branches) demandByBranch[b] += +(req?.[b] || 0);
+    }
+    for (const a of state.assignments) {
+      if (assignedByBranch[a.branch] != null) assignedByBranch[a.branch] += 1;
+    }
+    for (const g of groups) {
+      for (const b of state.branches) remainingByBranch[b] += +(needsLeft?.[g.id]?.[b] || 0);
+    }
+
+    // Hız için: (teacherId,day,slot) dolu mu?
+    const tBusy = new Set(state.assignments.map(a => `${a.teacherId}|${a.day}|${a.slot}`));
+    const gBusy = new Set(state.assignments.map(a => `${a.group}|${a.day}|${a.slot}`));
+
+    const capacityUpperBound = Object.fromEntries(state.branches.map(b => [b, 0]));
+    const criticalSlots = Object.fromEntries(state.branches.map(b => [b, []])); // [{day,slot,groupsNeed:n}]
+    for (const b of state.branches) {
+      for (let d=0; d<D; d++) for (let s=0; s<S; s++) {
+        // Bu slotta branş b için hâlâ ihtiyacı olan ve müsait olan gruplar
+        let groupsNeed = 0;
+        for (const g of groups) {
+          if ((needsLeft?.[g.id]?.[b] || 0) <= 0) continue;
+          if (state.availability.groups[g.id]?.[d]?.[s] !== true) continue;
+          if (gBusy.has(`${g.id}|${d}|${s}`)) continue;
+          groupsNeed++;
+        }
+        if (groupsNeed === 0) continue;
+
+        // Bu slotta branş b dersini verebilecek, müsait ve o saatte boş öğretmen sayısı
+        const teachers = findTeacherOptions(b)
+          .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true)
+          .filter(t => !tBusy.has(`${t.id}|${d}|${s}`));
+        const tCount = teachers.length;
+
+        if (tCount === 0) {
+          // Kritik: Bu slotta gruplar hazır ama branş için tek bir uygun öğretmen yok
+          const list = criticalSlots[b];
+          if (list.length < MAX_FREE_TEACHER_SUGGESTIONS) list.push({day:d, slot:s, groupsNeed});
+          continue;
+        }
+
+        capacityUpperBound[b] += Math.min(tCount, groupsNeed);
+      }
+    }
+
+    const diagnostics = state.branches.map(b => {
+      const remaining = remainingByBranch[b] || 0;
+      const cap = capacityUpperBound[b] || 0;
+      const deficit = Math.max(0, remaining - cap);
+      return {
+        branch: b,
+        demand: demandByBranch[b] || 0,
+        assigned: assignedByBranch[b] || 0,
+        remaining,
+        capacityUpperBound: cap,
+        deficit,
+        criticalSlots: criticalSlots[b] || []
+      };
+    }).sort((a,b) => (b.deficit - a.deficit) || (b.remaining - a.remaining));
+    // =============================================================
+
     return {
       totals: {
         groups: groups.length,
@@ -2202,7 +2271,8 @@ function autoAssign() {
         emptyAll: emptyCount
       },
       reasons: reasonStats,
-      details: emptyDetails
+      details: emptyDetails,
+      diagnostics
     };
   }
 
@@ -2305,6 +2375,57 @@ function autoAssign() {
           return `<li><b>${escapeHtml(String(x.group))}</b> — ${escapeHtml(fmtSlot(x.day,x.slot))} → <b>${escapeHtml(br.branch)}</b> (${escapeHtml(teacherList)})</li>`;
         }).join('');
 
+      // ===== Branş bazlı teşhis (talep-kapasite) =====
+      const diag = Array.isArray(rep.diagnostics) ? rep.diagnostics : [];
+      const diagRows = diag.map(x => {
+        const warn = x.deficit > 0 ? ' style="background:#fff7ed;border:1px solid #fdba74"' : '';
+        return `
+          <tr${warn}>
+            <td><b>${escapeHtml(x.branch)}</b></td>
+            <td class="nowrap">${x.demand}</td>
+            <td class="nowrap">${x.assigned}</td>
+            <td class="nowrap">${x.remaining}</td>
+            <td class="nowrap">${x.capacityUpperBound}</td>
+            <td class="nowrap">${x.deficit ? `<b style="color:#b45309">${x.deficit}</b>` : '<span class="muted">0</span>'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const diagCritical = diag
+        .filter(x => x.deficit > 0 && Array.isArray(x.criticalSlots) && x.criticalSlots.length)
+        .slice(0, 4)
+        .map(x => {
+          const slots = (x.criticalSlots || []).slice(0, 3)
+            .map(cs => `<li>${escapeHtml(x.branch)} — ${escapeHtml(fmtSlot(cs.day, cs.slot))} (ihtiyaçlı grup: ${cs.groupsNeed})</li>`)
+            .join('');
+          return slots ? `<ul style="margin:6px 0 0 18px">${slots}</ul>` : '';
+        }).join('');
+
+      const diagHtml = diag.length ? `
+        <div class="card">
+          <h3>Branş Bazlı Uygulanabilirlik Analizi (üst sınır)</h3>
+          <div class="muted mini2" style="margin-top:4px">
+            "Kapasite (üst sınır)" = mevcut müsaitliklere göre o branş için teorik olarak yerleştirilebilecek en fazla ders sayısı (iyimser tahmin).
+            Eğer *Açık* &gt; 0 ise, mevcut verilerle tüm isteklerin tamamı matematiksel olarak mümkün olmayabilir.
+          </div>
+          <div style="overflow:auto;margin-top:8px">
+            <table class="print-table tight" style="font-size:12px">
+              <thead>
+                <tr><th>Branş</th><th>Toplam Talep</th><th>Atanan</th><th>Kalan</th><th>Kapasite (ÜS)</th><th>Açık</th></tr>
+              </thead>
+              <tbody>${diagRows || '<tr><td colspan="6" class="muted">Veri yok</td></tr>'}</tbody>
+            </table>
+          </div>
+          ${diagCritical ? `
+            <div class="muted mini2" style="margin-top:8px">
+              Kritik örnekler (grup müsait ama bu slotta o branş için *hiç* uygun öğretmen yok). Bu saatlerde öğretmen müsaitliği açmak çok etkili olur:
+              ${diagCritical}
+            </div>` : ''}
+        </div>
+      ` : '';
+      // ==============================================
+
+
       // Çakışan slotlar için interaktif liste + İHTİYAÇ DERS ADI (yalnız isim)
       const conflictRows = rep.details
         .filter(x => x.reason === 'ogretmen_yok_veya_mecbur_cakisiyor')
@@ -2353,6 +2474,7 @@ function autoAssign() {
 
       el.innerHTML = `
         <div class="grid" style="gap:8px">
+          ${diagHtml}
           <div class="pill">Toplam Atama: <b>${t.totalAssigned}</b> • Bu oturumda yeni: <b>${t.newlyAssigned}</b></div>
           <div class="pill">Etkin Kapasite (grup müsait): <b>${t.effectiveCapacity}</b> • Boş (etkin): <b>${t.emptyOnAvailable}</b></div>
           <div class="pill">Bloklu (grup müsait değil): <b>${t.blockedByGroup}</b> • Tüm Boş: <b>${t.emptyAll}</b></div>
