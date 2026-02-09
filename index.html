@@ -3033,8 +3033,21 @@ const exportAssgn = ()=>download('atamalar.json', state.assignments);
 const importAssgn = obj=>{
   if(!Array.isArray(obj)) return alert('Geçersiz atamalar JSON.');
   state.assignments = obj;
+
+  // JSON'dan yükleyince de "Son Rapor" aktif olsun (otomatik atama çalıştırmadan)
+  state.autoAssignMeta = {
+    prevCount: state.assignments.length,
+    lastRunAt: Date.now(),
+    loadedFromJSON: true
+  };
+  const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
+  state.lastAutoAssignReport = rep;
+  const btnRpt = document.getElementById('btnAutoAssignReport');
+  if (btnRpt) btnRpt.disabled = false;
+
   reconcileAllToProgram(getAssignPolicy());
   renderAssignCards();
+  if (typeof onAssignmentsMutated === 'function') onAssignmentsMutated();
 };
 
 /* ===== 6) Yazdır ===== */
