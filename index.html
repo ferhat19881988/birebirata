@@ -2579,16 +2579,34 @@ async function autoAssign() {
 
   const STRICT_UNTIL_MS = TIME_LIMIT_MS - 15000; // son 15 sn
   let totalNeedCount = 0; // needs hesaplandıktan sonra set edilir
+  const PROBE_WINDOW_MS = 4000; // son 15 sn içinde kısa deneme penceresi
+  let consecutiveDecision = null; // null: karar yok, true: kuralı kaldır, false: kural kalsın
 
+  
   const shouldRelax = () => {
-    // Kural esnetme: sadece son 15 sn ve hâlâ tüm ihtiyaçlar dolmamışsa
+    // Son 15 sn kala: önce kısa bir "probe" denemesi yap.
+    // Eğer ardışık ders kuralını kaldırmak atama sayısını artırıyorsa kalan sürede tamamen kaldır.
+    // Artmıyorsa kural katı şekilde kalsın (boşa deneme harcanmasın).
+
     if (!RELAX_CONSECUTIVE_WHEN_TIGHT) return false;
     if (!totalNeedCount) return false;
+
     const elapsed = performance.now() - startTime;
     if (elapsed < STRICT_UNTIL_MS) return false;
-    // Sadece "katı" modda daha iyi sonuç çıkmazsa esnetmeye anlam var
+
+    // Katı mod tüm ihtiyaçları zaten doldurduysa esnetmeye gerek yok
     if (bestStrictScore >= totalNeedCount) return false;
-    return true;
+
+    // Karar verildiyse aynen uygula
+    if (consecutiveDecision === true) return true;
+    if (consecutiveDecision === false) return false;
+
+    // Karar yoksa: son 15 sn başında kısa bir deneme penceresi aç
+    if (elapsed < (STRICT_UNTIL_MS + PROBE_WINDOW_MS)) return true;
+
+    // Deneme penceresi bitti: gerçekten atama sayısı arttı mı?
+    consecutiveDecision = (bestRelaxScore > bestStrictScore);
+    return consecutiveDecision;
   };
 
   showOverlay();
