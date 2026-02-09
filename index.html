@@ -879,6 +879,15 @@
     color: #1d4ed8;
     font-weight: 800;
   }
+  /* Seçilen satıra kısa bir "odak" animasyonu */
+  #tblStudents tbody tr.pulse td{
+    animation: rowPulse .9s ease;
+  }
+  @keyframes rowPulse{
+    0%{ box-shadow: 0 0 0 0 rgba(79,70,229,.0); }
+    30%{ box-shadow: 0 0 0 4px rgba(79,70,229,.22); }
+    100%{ box-shadow: 0 0 0 0 rgba(79,70,229,.0); }
+  }
 
 </style>
 </head>
@@ -1330,10 +1339,19 @@ function focusGroupStudents(groupId){
   // Grup chip'i aktif yap
   setActiveGroupChip(groupId);
 
-  // Öğrenci kartına kaydır
-  const studentsCard = document.getElementById('tblStudents')?.closest('.card');
-  if(studentsCard){
-    studentsCard.scrollIntoView({behavior:'smooth', block:'start'});
+  // Öğrenci listesinde ilgili ilk satıra kaydır (adın olduğu yere)
+  const firstRow = document.querySelector('#tblStudents tbody tr.hl');
+  if(firstRow){
+    const target = firstRow.querySelector('td:nth-child(2)') || firstRow;
+    target.scrollIntoView({behavior:'smooth', block:'center'});
+    firstRow.classList.add('pulse');
+    setTimeout(()=>firstRow.classList.remove('pulse'), 900);
+  }else{
+    // Yedek: Öğrenci kartına kaydır
+    const studentsCard = document.getElementById('tblStudents')?.closest('.card');
+    if(studentsCard){
+      studentsCard.scrollIntoView({behavior:'smooth', block:'start'});
+    }
   }
 
   // Mini geri bildirim
