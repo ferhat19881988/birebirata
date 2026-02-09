@@ -3094,11 +3094,10 @@ function renderPrintPreview(){
       });
       t.innerHTML = `<thead>${thead}</thead><tbody>${body}</tbody>`; wr.appendChild(t);
 
+      // Bu görünüm (Gruba göre) her grup için tek sayfa üretir.
+      // Not: Önceki sürümde burada tanımlı olmayan `extraPages` değişkeni
+      // kullanıldığı için JS hata veriyor ve önizleme yarıda kesiliyordu.
       page.appendChild(wr); div.appendChild(page);
-      if (typeof extraPages !== 'undefined' && Array.isArray(extraPages) && extraPages.length){ extraPages.forEach(pg=>div.appendChild(pg)); }
-
-      // Ek sayfaları ana sayfanın arkasına ekle
-      (extraPages||[]).forEach(pg=>div.appendChild(pg));
     });
 
   } else {
