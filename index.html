@@ -40,10 +40,45 @@
   h3{font-size:clamp(16px,2vw,18px);font-weight:700}
   /* Uygulama genişliği büyütüldü */
   .app{max-width:1680px;margin:auto;padding:18px}
-  .top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
-  .brand{display:flex;align-items:center;gap:10px}
-  .brand .logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--pri),var(--pri2))}
-  .brand .title small{color:var(--muted)}
+  /* Üst başlık – modern, hizalı, kompakt */
+  .top{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+    padding:12px 14px;
+    border-radius:18px;
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(15,23,42,.10);
+    box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 10px 26px rgba(2,8,23,.06);
+    backdrop-filter: blur(10px);
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand .logo{
+    width:46px;height:46px;border-radius:16px;
+    display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--pri),var(--pri2));
+    box-shadow: 0 1px 0 rgba(255,255,255,.45) inset, 0 10px 22px rgba(2,8,23,.14);
+    border:1px solid rgba(255,255,255,.35);
+    flex:0 0 auto;
+  }
+  .brand .logo svg{width:28px;height:28px;display:block}
+  .brand .title{min-width:0}
+  .brand .title h1{margin:0;line-height:1.08;letter-spacing:-.01em}
+  .brand .title small{color:var(--muted);display:block;margin-top:2px}
+
+  @media (max-width: 720px){
+    .app{padding:14px}
+    .top{flex-wrap:wrap;gap:10px}
+    .top .flex{width:100%;justify-content:flex-end}
+  }
+
+  @media (max-width: 720px){
+    .top{padding:10px 12px}
+    .brand .logo{width:42px;height:42px;border-radius:14px}
+    .brand .logo svg{width:26px;height:26px}
+  }
   .content{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
   .grid{display:grid;gap:12px}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
@@ -811,7 +846,16 @@
 <div class="app">
   <div class="top no-print">
     <div class="brand">
-      <div class="logo"></div>
+      <div class="logo" aria-label="Fenomen Eğitim Kurumları logosu" title="Fenomen Eğitim Kurumları">
+        <!-- Inline SVG logo (harici dosya gerektirmez) -->
+        <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+          <!-- Minimal eğitim/kitap + F monogram -->
+          <path d="M12 3 2.5 7.4 12 11.8 21.5 7.4 12 3Z" fill="rgba(255,255,255,.92)"/>
+          <path d="M4.4 9.3V17c0 .6.3 1.1.8 1.4 1.7 1 4.2 1.8 6.8 1.8s5.1-.8 6.8-1.8c.5-.3.8-.8.8-1.4V9.3L12 13.3 4.4 9.3Z" fill="rgba(255,255,255,.22)"/>
+          <!-- F harfi -->
+          <path d="M10 8.1h5.7c.5 0 .9.4.9.9s-.4.9-.9.9H12v1.5h3.1c.5 0 .9.4.9.9s-.4.9-.9.9H12v2.7c0 .6-.4 1-1 1s-1-.4-1-1V9.1c0-.6.4-1 1-1Z" fill="#ffffff"/>
+        </svg>
+      </div>
       <div class="title">
         <h1>Fenomen Eğitim Kurumları</h1>
         <small>Grup dersleri planlama • Tablı</small>
