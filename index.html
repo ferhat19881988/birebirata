@@ -840,6 +840,46 @@
   #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
 }
 
+
+  /* ===========================
+     GRUP -> ÖĞRENCİ VURGUSU (Step 1)
+     =========================== */
+  #groupSummary .pill.group-chip{
+    appearance:none;
+    border:1px solid transparent;
+    cursor:pointer;
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease, border-color .12s ease, background-color .12s ease;
+  }
+  #groupSummary .pill.group-chip:hover{
+    transform: translateY(-1px);
+    border-color: rgba(79,70,229,.28);
+    box-shadow: 0 8px 18px rgba(2,8,23,.10);
+    filter: brightness(1.02);
+  }
+  #groupSummary .pill.group-chip.active{
+    background: linear-gradient(180deg, var(--pri) 0%, #4338ca 100%);
+    color:#fff;
+    border-color: rgba(255,255,255,.35);
+    box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 10px 22px rgba(2,8,23,.14);
+  }
+  #groupSummary .pill.group-chip.active .mini2{ color: rgba(255,255,255,.85); }
+
+  /* Öğrenci tablosunda seçili grubun öğrencilerini vurgula */
+  #tblStudents tbody tr{ transition: filter .12s ease; }
+  #tblStudents tbody tr.hl td{
+    background: rgba(79,70,229,.08);
+    border-top-color: rgba(79,70,229,.20);
+    border-bottom-color: rgba(79,70,229,.20);
+  }
+  #tblStudents tbody tr.hl td:nth-child(2){
+    color: var(--pri);
+    font-weight: 900;
+  }
+  #tblStudents tbody tr.hl td:nth-child(1){
+    color: #1d4ed8;
+    font-weight: 800;
+  }
+
 </style>
 </head>
 <body>
@@ -1259,6 +1299,52 @@ function toast(msg){
 }
 
 
+
+// ========== Grup -> Öğrenci Odak & Vurgu ==========
+let __activeGroupChipId = null;
+
+function clearStudentHighlights(){
+  $$('#tblStudents tbody tr').forEach(tr=> tr.classList.remove('hl'));
+}
+
+function setActiveGroupChip(groupId){
+  $$('#groupSummary .group-chip').forEach(el=>{
+    const isActive = el.dataset.group === groupId;
+    el.classList.toggle('active', isActive);
+  });
+  __activeGroupChipId = groupId;
+}
+
+function focusGroupStudents(groupId){
+  if(!groupId) return;
+
+  // Öğrenci satırlarını vurgula
+  clearStudentHighlights();
+  const rows = $$('#tblStudents tbody tr');
+  rows.forEach(tr=>{
+    if((tr.dataset.group||'') === groupId){
+      tr.classList.add('hl');
+    }
+  });
+
+  // Grup chip'i aktif yap
+  setActiveGroupChip(groupId);
+
+  // Öğrenci kartına kaydır
+  const studentsCard = document.getElementById('tblStudents')?.closest('.card');
+  if(studentsCard){
+    studentsCard.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  // Mini geri bildirim
+  const g = state?.groups?.[groupId];
+  if(g){
+    toast(`${g.name} seçildi • ${g.students.length} öğrenci vurgulandı`);
+  }else{
+    toast(`Grup seçildi: ${groupId}`);
+  }
+}
+
 // ========== Branch Color Helpers ==========
 // In order to visually distinguish different course assignments in the schedule,
 // we generate pastel colors based off of the branch name. These colors are
@@ -1348,6 +1434,8 @@ function renderStudents(){
   const tb = $("#tblStudents tbody"); tb.innerHTML='';
   state.students.forEach(st=>{
     const tr = document.createElement('tr');
+    tr.dataset.group = st.group || '';
+    tr.dataset.no = st.no || '';
     tr.innerHTML = `<td class="nowrap">${st.no}</td><td>${st.name}</td><td>${st.cls}</td><td><b>${st.group}</b></td>`;
     tb.appendChild(tr);
   });
@@ -1363,10 +1451,22 @@ function buildGroupsFromStudents(){
 function renderGroupSummary(){
   const wrap = $("#groupSummary"); wrap.innerHTML='';
   Object.values(state.groups).sort(groupComparator).forEach(g=>{
-    const el = document.createElement('span'); el.className='pill';
-    el.textContent = `${g.name} • ${g.students.length} öğrenci`;
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'pill group-chip';
+    el.dataset.group = g.id;
+    el.innerHTML = `${g.name} • <span class="mini2">${g.students.length} öğrenci</span>`;
+    el.addEventListener('click', ()=> focusGroupStudents(g.id));
     wrap.appendChild(el);
   });
+
+  // Veri yenilendiyse önceki seçimi korumaya çalış
+  if(__activeGroupChipId && state.groups[__activeGroupChipId]){
+    focusGroupStudents(__activeGroupChipId);
+  }else{
+    // seçim yoksa aktif sınıfı temizle
+    $$('#groupSummary .group-chip').forEach(el=>el.classList.remove('active'));
+  }
 }
 async function fetchAll(){
   const sheetId = $("#sheetId").value.trim();
