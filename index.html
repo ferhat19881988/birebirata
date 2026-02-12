@@ -1466,6 +1466,35 @@ function buildGroupsFromStudents(){
     state.groups[gid].students.push(st.no);
   });
 }
+
+// ===== Grup tabanlı verileri (müsaitlik / talepler / atamalar) mevcut Google Sheet gruplarıyla hizala =====
+// Neden: Google Sheet'ten silinen/eskimiş gruplar, Firebase'de kaldığı için öğretmen çıktılarında ve kapasite
+// hesaplarında görünmeye devam edebiliyor. Bu yardımcı, yalnızca mevcut (Sheet'ten okunan) grupları tutar.
+function getValidGroupIdSet(){
+  try{ return new Set(Object.keys(state.groups || {})); }catch(_){ return new Set(); }
+}
+function pruneGroupBasedState(){
+  const valid = getValidGroupIdSet();
+
+  // Grup müsaitlikleri: fazla/eskimiş anahtarları temizle
+  if(state.availability && state.availability.groups){
+    for(const gid of Object.keys(state.availability.groups)){
+      if(!valid.has(gid)) delete state.availability.groups[gid];
+    }
+  }
+
+  // Grup talepleri: fazla/eskimiş anahtarları temizle
+  if(state.requests){
+    for(const gid of Object.keys(state.requests)){
+      if(!valid.has(gid)) delete state.requests[gid];
+    }
+  }
+
+  // Atamalar: mevcut olmayan grup id'li kayıtları filtrele
+  if(Array.isArray(state.assignments)){
+    state.assignments = state.assignments.filter(a=> a && valid.has(a.group));
+  }
+}
 function renderGroupSummary(){
   const wrap = $("#groupSummary"); wrap.innerHTML='';
   Object.values(state.groups).sort(groupComparator).forEach(g=>{
@@ -1514,6 +1543,8 @@ async function fetchAll(){
     })).filter(x=>x.group);
 
     buildGroupsFromStudents();
+    // Sheet'te olmayan (silinmiş/eski) grupların, önceki Firebase kayıtlarından gelen verilerle tekrar görünmesini engelle
+    pruneGroupBasedState();
     state.branches = Array.from(new Set(state.teachers.map(t=>t.branch))).sort((a,b)=>a.localeCompare(b));
 
     renderTeachers(); renderStudents(); renderGroupSummary();
@@ -1628,6 +1659,9 @@ function buildProgramGrid(fromRestore=false){
 /* Programla uyum */
 function reconcileAllToProgram(policy='keep'){
   const D = state.program.days.length, S = state.program.slots;
+
+  // Her uzlaştırmada, mevcut Sheet gruplarında olmayan eski grup verilerini temizle
+  pruneGroupBasedState();
 
   state.teachers.forEach(t=>{
     const cur = state.availability.teachers[t.id] || [];
@@ -4637,6 +4671,44 @@ async function deleteDataFromFirebase(path) {
   }
 }
 
+// ==== Grup doğrulama & Firebase'e giden veriyi temizleme ==== 
+function _validGroupIds(){
+  try{ return new Set(Object.keys(window.state?.groups || state.groups || {})); }catch(_){ return new Set(); }
+}
+function _ensureGroupsLoadedForSave(){
+  const s = window.state || state;
+  const n = (s && s.groups) ? Object.keys(s.groups).length : 0;
+  if(n === 0){
+    alert('Önce "Verileri Oku" ile Google Sheet gruplarını yükleyin. (Grup verisi yokken Firebase kaydı yapılmaz.)');
+    return false;
+  }
+  return true;
+}
+function _sanitizedAvailability(){
+  const s = window.state || state;
+  const valid = _validGroupIds();
+  const out = { teachers: (s.availability?.teachers || {}), groups: {} };
+  for(const gid of valid){
+    const v = s.availability?.groups?.[gid];
+    if(v) out.groups[gid] = v;
+  }
+  return out;
+}
+function _sanitizedRequests(){
+  const s = window.state || state;
+  const valid = _validGroupIds();
+  const out = {};
+  for(const gid of valid){
+    if(s.requests && s.requests[gid] != null) out[gid] = s.requests[gid];
+  }
+  return out;
+}
+function _sanitizedAssignments(){
+  const s = window.state || state;
+  const valid = _validGroupIds();
+  return Array.isArray(s.assignments) ? s.assignments.filter(a=>a && valid.has(a.group)) : [];
+}
+
 // Program için Firebase düğmeleri
 const btnProgSaveFb = document.getElementById('btnProgSaveFb');
 const btnProgLoadFb = document.getElementById('btnProgLoadFb');
@@ -4695,7 +4767,10 @@ const btnAvailLoadFb = document.getElementById('btnAvailLoadFb');
 const btnAvailDeleteFb = document.getElementById('btnAvailDeleteFb');
 if (btnAvailSaveFb) {
   btnAvailSaveFb.addEventListener('click', () => {
-    saveDataToFirebase('availability', state.availability);
+    if(!_ensureGroupsLoadedForSave()) return;
+    // Mevcut Sheet gruplarıyla hizala (eski/silinmiş gruplar Firebase'e tekrar gitmesin)
+    try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
+    saveDataToFirebase('availability', _sanitizedAvailability());
   });
 }
 if (btnAvailLoadFb) {
@@ -4706,6 +4781,8 @@ if (btnAvailLoadFb) {
         return;
       }
       state.availability = obj;
+      // Firebase'den gelen eski grup anahtarlarını, mevcut Sheet gruplarına göre temizle
+      try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
       reconcileAllToProgram(getAssignPolicy());
       renderAvailGrids();
     });
@@ -4723,7 +4800,9 @@ const btnAvailLoadFb2 = document.getElementById('btnAvailLoadFb2');
 const btnAvailDeleteFb2 = document.getElementById('btnAvailDeleteFb2');
 if (btnAvailSaveFb2) {
   btnAvailSaveFb2.addEventListener('click', () => {
-    saveDataToFirebase('availability', state.availability);
+    if(!_ensureGroupsLoadedForSave()) return;
+    try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
+    saveDataToFirebase('availability', _sanitizedAvailability());
   });
 }
 if (btnAvailLoadFb2) {
@@ -4734,6 +4813,7 @@ if (btnAvailLoadFb2) {
         return;
       }
       state.availability = obj;
+      try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
       reconcileAllToProgram(getAssignPolicy());
       renderAvailGrids();
     });
@@ -4751,13 +4831,16 @@ const btnReqLoadFb = document.getElementById('btnReqLoadFb');
 const btnReqDeleteFb = document.getElementById('btnReqDeleteFb');
 if (btnReqSaveFb) {
   btnReqSaveFb.addEventListener('click', () => {
-    saveDataToFirebase('requests', state.requests);
+    if(!_ensureGroupsLoadedForSave()) return;
+    try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
+    saveDataToFirebase('requests', _sanitizedRequests());
   });
 }
 if (btnReqLoadFb) {
   btnReqLoadFb.addEventListener('click', () => {
     loadDataFromFirebase('requests', obj => {
       state.requests = obj || {};
+      try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
       renderRequests();
     });
   });
@@ -4774,13 +4857,16 @@ const btnAssgnLoadFb = document.getElementById('btnAssgnLoadFb');
 const btnAssgnDeleteFb = document.getElementById('btnAssgnDeleteFb');
 if (btnAssgnSaveFb) {
   btnAssgnSaveFb.addEventListener('click', () => {
-    saveDataToFirebase('atamapath', state.assignments);
+    if(!_ensureGroupsLoadedForSave()) return;
+    try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
+    saveDataToFirebase('atamapath', _sanitizedAssignments());
   });
 }
 if (btnAssgnLoadFb) {
   btnAssgnLoadFb.addEventListener('click', () => {
     loadDataFromFirebase('atamapath', obj => {
       state.assignments = Array.isArray(obj) ? obj : [];
+      try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
       renderAssignCards();
 
       // Firebase'den yükleyince de "Son Otomatik Atama Raporu" kullanılabilsin
