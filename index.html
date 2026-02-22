@@ -2874,10 +2874,25 @@ async function autoAssign() {
   // Deneme sayısı (ihtiyaca göre dinamik)
   // Geliştirilmiş değerler: daha yüksek başlangıç ve ihtiyaç başına deneme sayısı,
   // ayrıca maksimum deneme sayısı artırıldı.
-  const BASE_RESTARTS = 200;
-  const RESTARTS_PER_NEED = 10;
-  const MAX_RESTARTS = 5000;
-  const TARGET_RESTARTS = Math.min(MAX_RESTARTS, BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED);
+  const BASE_RESTARTS = 300;
+  const RESTARTS_PER_NEED = 6;
+  const MAX_RESTARTS = 8000;
+
+  // Zorluk katsayısı: ihtiyaç/uygun hücre oranı yükseldikçe daha fazla restart dene.
+  // (Feasible değilse süre uzatmak ya da restart artırmak çözmez; ama sınırda durumlarda yüzdeleri yükseltir.)
+  const totalGroupAvailCells = groups.reduce((acc,g) => {
+    const mat = state.availability.groups[g.id] || [];
+    let c = 0;
+    for (let d=0; d<D; d++) for (let s=0; s<S; s++) if (mat?.[d]?.[s] === true) c++;
+    return acc + c;
+  }, 0);
+  const tightness = remainingNeedsCount / Math.max(1, totalGroupAvailCells);
+  const difficultyMultiplier = 1 + Math.min(1.5, Math.max(0, tightness * 2)); // 1.0 .. 2.5
+
+  const TARGET_RESTARTS = Math.min(
+    MAX_RESTARTS,
+    Math.round((BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED) * difficultyMultiplier)
+  );
 
   // Hücre sıra paternleri
   const orderings = {
@@ -2938,8 +2953,24 @@ async function autoAssign() {
     const cells = orderings[pattern](D, S);
 
     const groupOrder = groupsAll
-      .map(gid => ({ gid, need: needs[gid]?.length || 0 }))
-      .sort((a,b) => a.need - b.need || (Math.random()-0.5))
+      .map(gid => {
+        const need = needs[gid]?.length || 0;
+        // Grup için gerçekten kullanılabilir hücre sayısı (müsaitlik + sabit derslerle dolu değil)
+        const mat = state.availability.groups[gid] || [];
+        let avail = 0;
+        for (let dd=0; dd<D; dd++) for (let ss=0; ss<S; ss++) {
+          if (mat?.[dd]?.[ss] === true && !(gGridBase[gid]?.[dd]?.[ss])) avail++;
+        }
+        // Sıkışıklık skoru: ihtiyaç/uygun hücre (yüksek -> daha zor -> önce ele al)
+        const scarcity = need > 0 ? (need / Math.max(1, avail)) : -1;
+        return { gid, need, avail, scarcity };
+      })
+      .sort((a,b) =>
+        (b.scarcity - a.scarcity) ||            // en sıkışık önce
+        (b.need - a.need) ||                    // ihtiyaç çok olan önce
+        (a.avail - b.avail) ||                  // uygun hücresi az olan önce
+        (Math.random()-0.5)
+      )
       .map(x => x.gid);
 
     let placedCount = 0;
