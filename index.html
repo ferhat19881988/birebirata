@@ -2731,7 +2731,8 @@ async function autoAssign() {
   const S = state.program.slots;
 
   // --------- Ayarlar ---------
-  const TIME_LIMIT_MS = 45000;
+  // Increase time limit for meta‑heuristic search
+  const TIME_LIMIT_MS = 60000; // previously 45s, now 60s for deeper exploration
   const RELAX_CONSECUTIVE_WHEN_TIGHT = $("#chkRelaxConsecutive")?.checked !== false;
   // ---------------------------
 
@@ -2874,25 +2875,11 @@ async function autoAssign() {
   // Deneme sayısı (ihtiyaca göre dinamik)
   // Geliştirilmiş değerler: daha yüksek başlangıç ve ihtiyaç başına deneme sayısı,
   // ayrıca maksimum deneme sayısı artırıldı.
+  // Increase restart parameters for meta‑heuristic search
   const BASE_RESTARTS = 300;
-  const RESTARTS_PER_NEED = 6;
-  const MAX_RESTARTS = 8000;
-
-  // Zorluk katsayısı: ihtiyaç/uygun hücre oranı yükseldikçe daha fazla restart dene.
-  // (Feasible değilse süre uzatmak ya da restart artırmak çözmez; ama sınırda durumlarda yüzdeleri yükseltir.)
-  const totalGroupAvailCells = groups.reduce((acc,g) => {
-    const mat = state.availability.groups[g.id] || [];
-    let c = 0;
-    for (let d=0; d<D; d++) for (let s=0; s<S; s++) if (mat?.[d]?.[s] === true) c++;
-    return acc + c;
-  }, 0);
-  const tightness = remainingNeedsCount / Math.max(1, totalGroupAvailCells);
-  const difficultyMultiplier = 1 + Math.min(1.5, Math.max(0, tightness * 2)); // 1.0 .. 2.5
-
-  const TARGET_RESTARTS = Math.min(
-    MAX_RESTARTS,
-    Math.round((BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED) * difficultyMultiplier)
-  );
+  const RESTARTS_PER_NEED = 15;
+  const MAX_RESTARTS = 10000;
+  const TARGET_RESTARTS = Math.min(MAX_RESTARTS, BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED);
 
   // Hücre sıra paternleri
   const orderings = {
@@ -2953,24 +2940,8 @@ async function autoAssign() {
     const cells = orderings[pattern](D, S);
 
     const groupOrder = groupsAll
-      .map(gid => {
-        const need = needs[gid]?.length || 0;
-        // Grup için gerçekten kullanılabilir hücre sayısı (müsaitlik + sabit derslerle dolu değil)
-        const mat = state.availability.groups[gid] || [];
-        let avail = 0;
-        for (let dd=0; dd<D; dd++) for (let ss=0; ss<S; ss++) {
-          if (mat?.[dd]?.[ss] === true && !(gGridBase[gid]?.[dd]?.[ss])) avail++;
-        }
-        // Sıkışıklık skoru: ihtiyaç/uygun hücre (yüksek -> daha zor -> önce ele al)
-        const scarcity = need > 0 ? (need / Math.max(1, avail)) : -1;
-        return { gid, need, avail, scarcity };
-      })
-      .sort((a,b) =>
-        (b.scarcity - a.scarcity) ||            // en sıkışık önce
-        (b.need - a.need) ||                    // ihtiyaç çok olan önce
-        (a.avail - b.avail) ||                  // uygun hücresi az olan önce
-        (Math.random()-0.5)
-      )
+      .map(gid => ({ gid, need: needs[gid]?.length || 0 }))
+      .sort((a,b) => a.need - b.need || (Math.random()-0.5))
       .map(x => x.gid);
 
     let placedCount = 0;
@@ -3022,11 +2993,38 @@ async function autoAssign() {
             }
           }
 
-          // Öncelikli olarak henüz kullanılmamış öğretmenleri listele
-          const preferred = allCandidates.filter(t => !usedTeachers.has(t.id));
-          const candidateList = preferred.length > 0 ? preferred : allCandidates;
-
-          shuffle(candidateList);
+        // Öncelikli olarak henüz kullanılmamış öğretmenleri listele
+        const preferred = allCandidates.filter(t => !usedTeachers.has(t.id));
+        let candidateList = preferred.length > 0 ? preferred : allCandidates;
+        // --- Meta‑heuristic iyileştirme: öğretmenleri yüklerine göre sırala ---
+        // En az ataması olan öğretmenleri öne alarak daha dengeli dağılım sağlanır.
+        const teacherLoad = (tid) => {
+          let cnt = 0;
+          const grid = tGrid[tid];
+          if (grid) {
+            for (let dd = 0; dd < D; dd++) {
+              const row = grid[dd] || [];
+              for (let ss = 0; ss < S; ss++) {
+                if (row[ss]) cnt++;
+              }
+            }
+          }
+          return cnt;
+        };
+        candidateList = candidateList.slice().sort((a, b) => teacherLoad(a.id) - teacherLoad(b.id));
+        // Küçük bir rastgelelik eklemek için benzer yükteki öğretmenleri karıştır
+        const buckets = {};
+        candidateList.forEach(t => {
+          const load = teacherLoad(t.id);
+          (buckets[load] ||= []).push(t);
+        });
+        const sortedCandidates = [];
+        Object.keys(buckets).sort((a,b) => a - b).forEach(k => {
+          const arr = buckets[k];
+          shuffle(arr);
+          sortedCandidates.push(...arr);
+        });
+        candidateList = sortedCandidates;
 
           for (const t of candidateList) {
             if (!canUse(gGrid, tGrid, gid, t.id, d, s)) continue;
@@ -3190,8 +3188,18 @@ async function autoAssign() {
         return candidates;
       }
 
-      // Sort tasks by the number of candidate placements (most constrained first)
-      tasks.sort((a, b) => getCandidates(a).length - getCandidates(b).length);
+      // Branch frequency counts: groups/branches with more outstanding needs first
+      const branchCounts = {};
+      tasks.forEach(t => {
+        branchCounts[t.branch] = (branchCounts[t.branch] || 0) + 1;
+      });
+      // Sort tasks by decreasing remaining need for the branch,
+      // then by increasing number of candidate placements (most constrained first)
+      tasks.sort((a, b) => {
+        const diff = (branchCounts[b.branch] || 0) - (branchCounts[a.branch] || 0);
+        if (diff !== 0) return diff;
+        return getCandidates(a).length - getCandidates(b).length;
+      });
 
       const newAssignments = [];
       // Backtracking patlamasın: kısa bir süre limiti (why: sayfa donmasın)
