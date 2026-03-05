@@ -1251,7 +1251,10 @@ window.state = {
   teachers: [], students: [], groups: {}, branches: [],
   program: { days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"], slots:8, slotLabels:[], cells:{} },
   availability: { teachers:{}, groups:{} },
-  requests: {}, assignments: []
+  requests: {}, assignments: [],
+  lastAutoAssignReport: null,
+  lastUnassignedReport: null,
+  autoAssignMeta: null
 };
 
 /* ===== Yardımcılar ===== */
@@ -2079,16 +2082,6 @@ function refreshAutoAssignReportIfOpen(){
     if (typeof window.__autoAssignReportRender === 'function') window.__autoAssignReportRender(rep);
   }catch(_e){ /* ignore */ }
 }
-
-function refreshUnassignedTeachersIfOpen(){
-  try{
-    const dlg = document.getElementById('dlgUnassignedTeachers');
-    if (!dlg || !dlg.open) return;
-    const rep = buildUnassignedTeachersReport();
-    state.lastUnassignedTeachersReport = rep;
-    showUnassignedTeachersReport(rep);
-  }catch(_e){ /* ignore */ }
-}
 function onAssignmentsMutated(){
   // 1) Atama paneli
   if (typeof renderAssignCards === 'function') renderAssignCards();
@@ -2102,7 +2095,6 @@ function onAssignmentsMutated(){
 
   // 3) Otomatik atama raporu açıksa güncelle
   refreshAutoAssignReportIfOpen();
-  refreshUnassignedTeachersIfOpen();
 }
 function clearAssignmentsForGroup(gid){
   state.assignments = (state.assignments || []).filter(a => a.group !== gid);
@@ -2880,6 +2872,7 @@ async function autoAssign() {
     showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
     const btnRpt = document.getElementById('btnAutoAssignReport');
     if (btnRpt) btnRpt.disabled = false;
+    syncReportButtons();
     const btnUn = document.getElementById('btnUnassignedReport');
     if (btnUn) btnUn.disabled = false;
     return;
@@ -3232,6 +3225,7 @@ async function autoAssign() {
     showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
     const btnRpt = document.getElementById('btnAutoAssignReport');
     if (btnRpt) btnRpt.disabled = false;
+    syncReportButtons();
     const btnUn = document.getElementById('btnUnassignedReport');
     if (btnUn) btnUn.disabled = false;
   } finally {
@@ -3256,6 +3250,7 @@ const importAssgn = obj=>{
   state.lastAutoAssignReport = rep;
   const btnRpt = document.getElementById('btnAutoAssignReport');
   if (btnRpt) btnRpt.disabled = false;
+    syncReportButtons();
     const btnUn = document.getElementById('btnUnassignedReport');
     if (btnUn) btnUn.disabled = false;
 
@@ -3263,130 +3258,6 @@ const importAssgn = obj=>{
   renderAssignCards();
   if (typeof onAssignmentsMutated === 'function') onAssignmentsMutated();
 };
-/* ===== 5) Atama — ATAMASIZLAR RAPORU (Öğretmen bazlı boşluklar) =====
-   Amaç: Otomatik atama sonrası hiç ders alamayan öğretmenleri,
-   kendi müsaitliklerine göre (boş ve atanmamış slotlar) listelemek.
-*/
-function buildUnassignedTeachersReport(){
-  const days = state.program?.days || [];
-  const S = state.program?.slots || 0;
-  const labels = state.program?.slotLabels || [];
-  const D = days.length;
-
-  const assignMap = (typeof getTeacherAssignmentsMap === 'function') ? getTeacherAssignmentsMap() : new Map();
-  const items = [];
-
-  (state.teachers || []).forEach(t=>{
-    const assigned = (assignMap.get(t.id) || []);
-    if (assigned.length > 0) return; // "ataması yapılmamış" = hiç ders almamış
-
-    const avail = state.availability?.teachers?.[t.id] || [];
-    const freeByDay = {};
-    let totalFree = 0;
-
-    for(let d=0; d<D; d++){
-      const row = avail[d] || [];
-      for(let s=0; s<S; s++){
-        if (row[s] !== true) continue;
-        if (typeof isTeacherBusy === 'function' && isTeacherBusy(t.id, d, s)) continue;
-        (freeByDay[d] ||= []).push(s);
-        totalFree++;
-      }
-    }
-
-    items.push({
-      id: t.id,
-      name: t.name || '',
-      branch: t.branch || '',
-      totalFree,
-      freeByDay
-    });
-  });
-
-  items.sort((a,b)=>{
-    if (b.totalFree !== a.totalFree) return b.totalFree - a.totalFree;
-    return (a.name||'').localeCompare((b.name||''),'tr');
-  });
-
-  return {
-    generatedAt: Date.now(),
-    teacherCount: items.length,
-    items,
-    meta: { days, slots: S, labels }
-  };
-}
-
-function showUnassignedTeachersReport(report){
-  let dlg = document.getElementById('dlgUnassignedTeachers');
-  if (!dlg) {
-    dlg = document.createElement('dialog');
-    dlg.id = 'dlgUnassignedTeachers';
-    dlg.style.padding = '16px';
-    dlg.style.borderRadius = '14px';
-    dlg.style.maxWidth = '1100px';
-    dlg.style.width = 'min(98vw, 1100px)';
-    dlg.innerHTML = `
-      <header style="font-weight:900;font-size:18px;margin-bottom:8px">🧩 Atamasız Öğretmenler (Müsaitlik Bazlı)</header>
-      <div class="mini muted" style="margin-bottom:10px">
-        Not: Buradaki liste <b>hiç ders almayan</b> öğretmenleri gösterir. Her öğretmenin altında, müsait olduğu fakat atama gelmeyen gün/saatler yer alır.
-      </div>
-      <section id="unassignedBody" style="max-height:60vh;overflow:auto"></section>
-      <footer style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-        <button id="btnUnCopy" class="btn ghost">Metni Kopyala</button>
-        <button id="btnUnClose" class="btn">Kapat</button>
-      </footer>
-    `;
-    document.body.appendChild(dlg);
-    dlg.querySelector('#btnUnClose').onclick = () => dlg.close();
-    dlg.querySelector('#btnUnCopy').onclick = () => {
-      const txt = dlg.querySelector('#unassignedBody').innerText;
-      navigator.clipboard?.writeText(txt);
-    };
-  }
-
-  const days = report?.meta?.days || state.program?.days || [];
-  const labels = report?.meta?.labels || state.program?.slotLabels || [];
-
-  const el = dlg.querySelector('#unassignedBody');
-  const items = report?.items || [];
-
-  if (!items.length) {
-    el.innerHTML = `<div class="pill" style="display:inline-flex">✅ Atamasız öğretmen yok.</div>`;
-  } else {
-    const blocks = items.map(t=>{
-      const dayLines = Object.keys(t.freeByDay || {}).map(k=>{
-        const d = +k;
-        const slots = (t.freeByDay[d] || []);
-        const times = slots.map(s=> escapeHtml(labels[s] || ('Slot ' + (s+1)))).join(', ');
-        const dName = escapeHtml(days[d] || ('Gün ' + (d+1)));
-        return `<div style="margin-top:6px"><span class="pill">${dName}</span> <span class="mini2">${times || '-'}</span></div>`;
-      }).join('') || `<div class="muted">Müsait slot işaretlenmemiş.</div>`;
-
-      return `
-        <details open style="border:1px solid rgba(15,23,42,.10);border-radius:14px;padding:10px 12px;margin:10px 0;background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%)">
-          <summary style="cursor:pointer;font-weight:900">
-            ${escapeHtml(t.name)} <span class="tag">${escapeHtml(t.branch)}</span>
-            <span class="pill" style="margin-left:8px">Boş Slot: ${t.totalFree}</span>
-          </summary>
-          <div style="margin-top:10px">${dayLines}</div>
-        </details>
-      `;
-    }).join('');
-
-    el.innerHTML = `
-      <div class="card" style="box-shadow:none;border:1px solid rgba(15,23,42,.10);background:#fff">
-        <div class="flex" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
-          <div><b>Toplam Atamasız Öğretmen:</b> ${items.length}</div>
-          <div class="mini muted">Oluşturulma: ${new Date(report.generatedAt).toLocaleString('tr-TR')}</div>
-        </div>
-      </div>
-      ${blocks}
-    `;
-  }
-
-  if (!dlg.open) dlg.showModal();
-}
-
 
 /* ===== 6) Yazdır ===== */
 function hasAnyAssignments(){ return state.assignments && state.assignments.length>0; }
@@ -3588,24 +3459,24 @@ $("#btnAutoAssignReport").onclick = () => {
   state.lastAutoAssignReport = rep;
   showAutoAssignReport(rep, state.autoAssignMeta.prevCount||0);
 };
-
 $("#btnUnassignedReport").onclick = () => {
   if (!state.autoAssignMeta) return;
-  const rep = buildUnassignedTeachersReport();
-  state.lastUnassignedTeachersReport = rep;
-  showUnassignedTeachersReport(rep);
+  const rep = buildUnassignedTeacherReport();
+  state.lastUnassignedReport = rep;
+  showUnassignedTeacherReport(rep);
 };
 $("#btnAssgnExport").onclick = exportAssgn;
 $("#btnAssgnImport").onclick = ()=>openFile($("#fileAssgnImport"), importAssgn);
 $("#btnAssgnClear").onclick = ()=>{
   state.assignments=[];
   state.lastAutoAssignReport = null;
-  state.lastUnassignedTeachersReport = null;
+  state.lastUnassignedReport = null;
   state.autoAssignMeta = null;
   const b = document.getElementById('btnAutoAssignReport');
   if (b) b.disabled = true;
   const b2 = document.getElementById('btnUnassignedReport');
   if (b2) b2.disabled = true;
+  syncReportButtons();
   onAssignmentsMutated();
 };
 
@@ -4062,6 +3933,187 @@ function ensurePrintAllGradesDialog(){
   });
 
   return dlg;
+}
+
+
+
+/* ===== Atamasızlar (müsaitti ama ders atanmadı) Raporu ===== */
+function buildUnassignedTeacherReport(){
+  const days = state.program.days || [];
+  const S = state.program.slots || 0;
+  const labels = state.program.slotLabels || [];
+  const teachers = (state.teachers || []).slice();
+
+  const items = [];
+  const assignedSet = new Set((state.assignments||[]).map(a => `${a.teacherId}|${a.day}|${a.slot}`));
+
+  for (const t of teachers) {
+    const grid = state.availability?.teachers?.[t.id];
+    if (!grid) continue; // müsaitlik girilmemişse rapora alma
+    const free = [];
+    for (let d = 0; d < days.length; d++) {
+      for (let s = 0; s < S; s++) {
+        if (grid?.[d]?.[s] !== true) continue; // müsait değil
+        if (assignedSet.has(`${t.id}|${d}|${s}`)) continue; // zaten ders var
+        free.push({ day:d, slot:s });
+      }
+    }
+    if (!free.length) continue;
+
+    const byDay = {};
+    for (const it of free) (byDay[it.day] ||= []).push(it.slot);
+    for (const d of Object.keys(byDay)) byDay[d].sort((a,b)=>a-b);
+
+    items.push({
+      teacherId: t.id,
+      teacherName: t.name,
+      teacherBranch: t.branch,
+      totals: free.length,
+      byDay
+    });
+  }
+
+  items.sort((a,b)=> (b.totals||0) - (a.totals||0) || String(a.teacherName).localeCompare(String(b.teacherName),'tr'));
+
+  const totals = {
+    teachersWithUnassigned: items.length,
+    totalUnassignedSlots: items.reduce((acc,x)=>acc+(x.totals||0),0),
+    days: days.length,
+    slotsPerDay: S
+  };
+
+  return {
+    generatedAt: Date.now(),
+    totals,
+    days,
+    slotLabels: labels,
+    items
+  };
+}
+
+function openPrintWindow(title, html){
+  const w = window.open('', '_blank', 'noopener,noreferrer,width=980,height=720');
+  if(!w){ alert('Tarayıcı yazdırma penceresini engelledi. Lütfen pop-up izni verin.'); return; }
+  const doc = w.document;
+  doc.open();
+  doc.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>${escapeHtml(title)}</title>
+    <style>
+      body{font:12px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:14px;color:#0f172a}
+      h1{font-size:16px;margin:0 0 6px}
+      .sub{color:#475569;margin:0 0 10px}
+      .meta{color:#475569;font-size:11px;margin:0 0 10px}
+      .card{border:1px solid #0f172a;border-radius:12px;padding:10px 12px;margin:10px 0;break-inside:avoid}
+      .head{display:flex;gap:10px;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+      .tname{font-weight:900}
+      .tbranch{color:#475569;font-weight:800}
+      .pill{display:inline-block;border:1px solid #0f172a;border-radius:999px;padding:1px 8px;font-weight:800;font-size:11px}
+      table{width:100%;border-collapse:collapse}
+      th,td{border:1px solid #0f172a;padding:4px 6px;vertical-align:top}
+      th{background:#f1f5f9}
+      @media print{ @page{size:A4;margin:10mm} }
+    </style>
+  </head><body>
+    ${html}
+    <script>window.onload=()=>{ setTimeout(()=>window.print(), 50); }<\/script>
+  </body></html>`);
+  doc.close();
+}
+
+function showUnassignedTeacherReport(report){
+  let dlg = document.getElementById('dlgUnassignedReport');
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'dlgUnassignedReport';
+    dlg.style.padding = '16px';
+    dlg.style.borderRadius = '14px';
+    dlg.style.maxWidth = '1200px';
+    dlg.style.width = 'min(98vw, 1200px)';
+    dlg.innerHTML = `
+      <header style="font-weight:900;font-size:18px;margin-bottom:8px">📋 Atamasızlar (Müsaitti ama ders atanmadı)</header>
+      <section id="unassignedReportBody" style="max-height:60vh;overflow:auto"></section>
+      <footer style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button id="btnUnRptCopy" class="btn ghost">Metni Kopyala</button>
+        <button id="btnUnRptPrint" class="btn sec">Yazdır</button>
+        <button id="btnUnRptClose" class="btn">Kapat</button>
+      </footer>
+    `;
+    document.body.appendChild(dlg);
+    dlg.querySelector('#btnUnRptClose').onclick = () => dlg.close();
+    dlg.querySelector('#btnUnRptCopy').onclick = () => {
+      const txt = dlg.querySelector('#unassignedReportBody').innerText;
+      navigator.clipboard?.writeText(txt);
+      toast('Kopyalandı');
+    };
+    dlg.querySelector('#btnUnRptPrint').onclick = () => {
+      const html = dlg.querySelector('#unassignedReportBody').innerHTML;
+      const title = 'Atamasızlar Raporu';
+      openPrintWindow(title, `<h1>${escapeHtml(title)}</h1><p class="sub">Müsait olduğu halde ders atanamayan öğretmen zamanları</p><div class="meta">${escapeHtml(new Date(report.generatedAt||Date.now()).toLocaleString('tr-TR'))}</div>${html}`);
+    };
+  }
+
+  const body = dlg.querySelector('#unassignedReportBody');
+  const days = report.days || [];
+  const labels = report.slotLabels || [];
+  const items = report.items || [];
+
+  if (!items.length) {
+    body.innerHTML = `<div class="muted">Harika 🎉 Müsait olup da ders atanamayan öğretmen saati bulunamadı.</div>`;
+    dlg.showModal();
+    return;
+  }
+
+  const meta = `
+    <div class="card" style="background:#f8fafc;border:1px solid rgba(15,23,42,.10)">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+        <div><b>Özet</b> <span class="tag">Öğretmen: ${report.totals.teachersWithUnassigned}</span> <span class="tag">Toplam atamasız slot: ${report.totals.totalUnassignedSlots}</span></div>
+        <div class="mini2">Oluşturma: ${new Date(report.generatedAt||Date.now()).toLocaleString('tr-TR')}</div>
+      </div>
+      <div class="mini2" style="margin-top:6px">Not: Bu liste, öğretmenin <b>müsait</b> olduğu (true) ama aynı gün/saatte kendisine <b>ders atanmadığı</b> slotları gösterir.</div>
+    </div>
+  `;
+
+  const renderSlots = (slotIdxs) => slotIdxs.map(s=>{
+    const label = (labels[s] || `${s+1}. Saat`);
+    return `<span class="pill" style="margin:3px 6px 0 0;display:inline-flex;gap:6px;align-items:center">
+      <span>${escapeHtml(label)}</span>
+      <span class="mini2" style="color:#475569">(slot ${s+1})</span>
+    </span>`;
+  }).join('');
+
+  const cards = items.map(it=>{
+    const dayRows = Object.keys(it.byDay||{}).sort((a,b)=>(+a)-(+b)).map(d=>{
+      const dayName = days[+d] || `Gün ${(+d)+1}`;
+      const slots = it.byDay[d] || [];
+      return `<tr><th style="width:160px">${escapeHtml(dayName)}</th><td>${renderSlots(slots)}</td></tr>`;
+    }).join('');
+
+    return `
+      <div class="card">
+        <div style="display:flex;gap:10px;align-items:baseline;justify-content:space-between;flex-wrap:wrap">
+          <div><span style="font-weight:900">${escapeHtml(it.teacherName)}</span> <span class="tag">${escapeHtml(it.teacherBranch||'')}</span></div>
+          <div class="pill" title="Müsaitti ama ders atanmadı">Toplam: ${it.totals}</div>
+        </div>
+        <div style="margin-top:8px">
+          <table class="print-table tight" style="border-collapse:collapse;width:100%">
+            <tbody>${dayRows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  body.innerHTML = meta + cards;
+  dlg.showModal();
+}
+
+/* Son rapor gibi aktif/pasif: meta varsa açılabilsin */
+function syncReportButtons(){
+  const enabled = !!state.autoAssignMeta;
+  const b1 = document.getElementById('btnAutoAssignReport');
+  const b2 = document.getElementById('btnUnassignedReport');
+  if (b1) b1.disabled = !enabled;
+  if (b2) b2.disabled = !enabled;
 }
 
 function getAvailableGradesFromGroups(){
@@ -5027,6 +5079,7 @@ if (btnAssgnLoadFb) {
       state.lastAutoAssignReport = rep;
       const btnRpt = document.getElementById('btnAutoAssignReport');
       if (btnRpt) btnRpt.disabled = false;
+    syncReportButtons();
     const btnUn = document.getElementById('btnUnassignedReport');
     if (btnUn) btnUn.disabled = false;
     });
