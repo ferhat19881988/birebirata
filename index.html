@@ -889,6 +889,64 @@
     100%{ box-shadow: 0 0 0 0 rgba(79,70,229,.0); }
   }
 
+
+  /* ===== Modern Alerts / Confirm (UI) ===== */
+  .ui-toast-stack{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:10px;z-index:10050;max-width:min(92vw,460px)}
+  .ui-toast{
+    display:flex;gap:10px;align-items:flex-start;
+    padding:12px 12px;border-radius:14px;
+    border:1px solid rgba(15,23,42,.12);
+    background:rgba(255,255,255,.92);
+    box-shadow:0 16px 40px rgba(2,8,23,.18);
+    backdrop-filter: blur(10px);
+  }
+  .ui-toast .ic{width:22px;height:22px;border-radius:8px;display:grid;place-items:center;font-weight:900}
+  .ui-toast .tx{min-width:0}
+  .ui-toast .t{font-weight:900;margin:0 0 2px}
+  .ui-toast .m{margin:0;color:var(--muted);font-size:13px;line-height:1.35}
+  .ui-toast .x{margin-left:auto}
+  .ui-toast .x button{border:0;background:transparent;font-weight:900;cursor:pointer;color:rgba(15,23,42,.65)}
+  .ui-toast.info .ic{background:rgba(79,70,229,.14);color:#3730a3}
+  .ui-toast.warn .ic{background:rgba(245,158,11,.18);color:#92400e}
+  .ui-toast.danger .ic{background:rgba(239,68,68,.16);color:#991b1b}
+  .ui-toast.success .ic{background:rgba(20,184,166,.18);color:#115e59}
+
+  /* Confirm dialog */
+  #dlgUiConfirm{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    box-shadow:0 30px 70px rgba(2,8,23,.35);
+    padding:14px;
+    width:min(520px,92vw);
+  }
+  #dlgUiConfirm::backdrop{ background:rgba(15,23,42,.35); backdrop-filter: blur(2px); }
+  #dlgUiConfirm .h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+  #dlgUiConfirm .h .ttl{font-weight:900;font-size:16px}
+  #dlgUiConfirm .h .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  #dlgUiConfirm .msg{margin:10px 0 0;color:var(--ink);white-space:pre-wrap}
+  #dlgUiConfirm .ft{margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+  /* Temporary print area (unassigned summary) */
+  #tempPrintArea{display:none}
+  body.print-unassigned .app{display:none !important}
+  body.print-unassigned #tempPrintArea{display:block !important}
+  @media print{
+    body.print-unassigned #tempPrintArea{display:block !important}
+    body.print-unassigned .no-print{display:none !important}
+    #tempPrintArea .p-title{font-weight:900;text-align:center;margin:0 0 6px}
+    #tempPrintArea .p-sub{color:#475569;text-align:center;margin:0 0 10px}
+    #tempPrintArea .p-meta{color:#475569;text-align:center;font-size:11px;margin:0 0 10px}
+    #tempPrintArea .p-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    #tempPrintArea .p-card{border:1px solid #000;border-radius:12px;padding:10px 12px;break-inside:avoid;page-break-inside:avoid}
+    #tempPrintArea .p-head{display:flex;gap:10px;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+    #tempPrintArea .p-name{font-weight:900}
+    #tempPrintArea .p-branch{color:#475569;font-weight:800}
+    #tempPrintArea .p-row{display:flex;gap:8px;align-items:flex-start;margin:6px 0}
+    #tempPrintArea .p-day{min-width:92px;font-weight:800}
+    #tempPrintArea .p-slots{display:flex;flex-wrap:wrap;gap:6px}
+    #tempPrintArea .p-chip{border:1px solid #000;border-radius:999px;padding:2px 8px;font-weight:800;font-size:11px}
+  }
+
 </style>
 </head>
 <body>
@@ -1231,6 +1289,8 @@
   </section>
 </div>
 
+  <div id="tempPrintArea" class="printable"></div>
+
   <!-- Otomatik atama sırasında donma hissini azaltmak için küçük bir işlem katmanı -->
   <div id="autoAssignOverlay" class="aa-overlay" hidden>
     <div class="aa-box">
@@ -1271,9 +1331,9 @@ const openFile = (inputEl, cb) => { inputEl.onchange = e=>{
   try{
     const f = e.target.files[0]; if(!f) return;
     const r = new FileReader();
-    r.onload = () => { try{ cb(JSON.parse(r.result)); }catch(err){ alert('Geçersiz JSON: '+err.message); } };
+    r.onload = () => { try{ cb(JSON.parse(r.result)); }catch(err){ uiAlert('Geçersiz JSON: '+err.message); } };
     r.readAsText(f); inputEl.value='';
-  }catch(err){ alert('Dosya okunamadı: '+err.message); }
+  }catch(err){ uiAlert('Dosya okunamadı: '+err.message); }
 }; inputEl.click(); };
 const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
 
@@ -1309,6 +1369,99 @@ function toast(msg){
     clearTimeout(t._tm);
     t._tm = setTimeout(()=>{ t.style.opacity='0'; }, 1200);
   }catch(_){ /* no-op */ }
+}
+
+
+/* ===== Modern UI Alert/Confirm ===== */
+function __ensureToastStack(){
+  let host = document.querySelector('.ui-toast-stack');
+  if(host) return host;
+  host = document.createElement('div');
+  host.className = 'ui-toast-stack';
+  document.body.appendChild(host);
+  return host;
+}
+function uiToast(message, type='info', title=''){
+  const host = __ensureToastStack();
+  const el = document.createElement('div');
+  el.className = `ui-toast ${type}`;
+  const icon = ({info:'i', warn:'!', danger:'!', success:'✓'})[type] || 'i';
+  el.innerHTML = `
+    <div class="ic">${icon}</div>
+    <div class="tx">
+      ${title ? `<div class="t">${escapeHtml(title)}</div>` : ''}
+      <div class="m">${escapeHtml(String(message||''))}</div>
+    </div>
+    <div class="x"><button type="button" aria-label="Kapat">✕</button></div>
+  `;
+  el.querySelector('button').onclick = ()=> el.remove();
+  host.appendChild(el);
+  clearTimeout(el._tm);
+  el._tm = setTimeout(()=>{ try{ el.remove(); }catch(_){ } }, 2600);
+}
+function uiAlert(message, type='warn', title='Uyarı'){
+  uiToast(message, type, title);
+}
+function __ensureConfirmDialog(){
+  let dlg = document.getElementById('dlgUiConfirm');
+  if(dlg) return dlg;
+  dlg = document.createElement('dialog');
+  dlg.id = 'dlgUiConfirm';
+  dlg.innerHTML = `
+    <div class="h">
+      <div>
+        <div class="ttl" id="uiConfirmTitle">Onay</div>
+        <div class="sub" id="uiConfirmSub">Lütfen seçiminizi yapın.</div>
+      </div>
+      <form method="dialog"><button class="btn ghost sm" value="cancel" aria-label="Kapat">Kapat</button></form>
+    </div>
+    <div class="msg" id="uiConfirmMsg"></div>
+    <div class="ft">
+      <button class="btn ghost" id="uiConfirmNo" type="button">Vazgeç</button>
+      <button class="btn" id="uiConfirmYes" type="button">Onayla</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
+  return dlg;
+}
+function uiConfirm(message, opts={}){
+  const { title='Onay', okText='Onayla', cancelText='Vazgeç', tone='warn' } = opts || {};
+  const dlg = __ensureConfirmDialog();
+  dlg.querySelector('#uiConfirmTitle').textContent = title;
+  dlg.querySelector('#uiConfirmSub').textContent = tone==='danger' ? 'Bu işlem geri alınamaz.' : 'Devam etmek istiyor musunuz?';
+  dlg.querySelector('#uiConfirmMsg').textContent = String(message||'');
+  const btnYes = dlg.querySelector('#uiConfirmYes');
+  const btnNo  = dlg.querySelector('#uiConfirmNo');
+  btnYes.textContent = okText;
+  btnNo.textContent  = cancelText;
+  btnYes.className = 'btn' + (tone==='danger' ? ' danger' : '');
+  return new Promise(resolve=>{
+    const cleanup = ()=>{
+      btnYes.onclick = null;
+      btnNo.onclick = null;
+      dlg.oncancel = null;
+    };
+    btnYes.onclick = ()=>{ cleanup(); dlg.close(); resolve(true); };
+    btnNo.onclick  = ()=>{ cleanup(); dlg.close(); resolve(false); };
+    dlg.oncancel   = ()=>{ cleanup(); resolve(false); };
+    dlg.showModal();
+  });
+}
+
+/* Yazdır: Sayfa içi geçici alanla (popup yok) */
+function printTempArea(html){
+  const host = document.getElementById('tempPrintArea');
+  if(!host) return;
+  host.innerHTML = html;
+  document.body.classList.add('print-unassigned');
+  const cleanup = ()=>{
+    document.body.classList.remove('print-unassigned');
+    host.innerHTML = '';
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  // küçük gecikme: DOM güncellensin
+  setTimeout(()=>{ window.print(); }, 50);
 }
 
 
@@ -1718,7 +1871,7 @@ function renderAvailGrids(){
         const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
         const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.style.fontWeight='700';
         dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
-        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.teachers[t.id], d); renderAvailGrids(); } };
+        dayLbl.ondblclick=async()=>{ if(await uiConfirm(`"${days[d]}" gününü kopyala?`, {title:'Gün kopyala', okText:'Kopyala', cancelText:'Vazgeç'})){ copyDayPattern(state.availability.teachers[t.id], d); renderAvailGrids(); } };
         row.appendChild(dayLbl);
         for(let s=0;s<S;s++){
           const val = state.availability.teachers[t.id][d][s];
@@ -1761,7 +1914,7 @@ function renderAvailGrids(){
         const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
         const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.style.fontWeight='700';
         dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
-        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.groups[g.id], d); renderAvailGrids(); } };
+        dayLbl.ondblclick=async()=>{ if(await uiConfirm(`"${days[d]}" gününü kopyala?`, {title:'Gün kopyala', okText:'Kopyala', cancelText:'Vazgeç'})){ copyDayPattern(state.availability.groups[g.id], d); renderAvailGrids(); } };
         row.appendChild(dayLbl);
         for(let s=0;s<S;s++){
           const val = state.availability.groups[g.id][d][s];
@@ -1901,15 +2054,15 @@ function renderRequests(){
 
   btnPaste.onclick = ()=>{
     const src = window.reqClipboard || (()=>{ try{return JSON.parse(localStorage.getItem('reqClipboard')||'null');}catch(_){return null;} })();
-    if(!src) return alert('Önce bir grupta "Kopyala" yapın.');
+    if(!src) return uiAlert('Önce bir grupta "Kopyala" yapın.');
     state.requests[g.id] = state.requests[g.id] || {};
     state.branches.forEach(b=>{ state.requests[g.id][b] = clamp(parseInt(src[b]||0),0,999); });
     renderRequests();
     toast(`Yapıştırıldı: ${g.name}`);
   };
 
-  btnZero.onclick = ()=>{
-    if(!confirm(`${g.name} talepleri sıfırlansın mı?`)) return;
+  btnZero.onclick = async()=>{
+    if(!(await uiConfirm(`${g.name} talepleri sıfırlansın mı?`, {title:'Talepleri sıfırla', okText:'Sıfırla', cancelText:'Vazgeç', tone:'danger'}))) return;
     state.branches.forEach(b=> state.requests[g.id][b]=0);
     renderRequests();
   };
@@ -2040,7 +2193,7 @@ function renderRequests(){
 }
 const exportReq = ()=>download('grup-talepleri.json', state.requests);
 const importReq = obj=>{
-  if(!obj || typeof obj!=='object') return alert('Geçersiz talepler JSON.');
+  if(!obj || typeof obj!=='object') return uiAlert('Geçersiz talepler JSON.');
   state.requests = obj;
   refreshReqFilterOptions();
   renderRequests();
@@ -2255,7 +2408,7 @@ $("#dlgDelete").onclick = () => {
   const has = state.assignments.some(a => a.group === group && a.day === day && a.slot === slot);
   if (!has) { dlg.close(); return; }
 
-  if (confirm("Bu atamayı silmek istiyor musunuz?")) {
+  if (await uiConfirm("Bu atamayı silmek istiyor musunuz?", {title:'Atamayı sil', okText:'Sil', cancelText:'Vazgeç', tone:'danger'})) {
     state.assignments = state.assignments.filter(a => !(a.group === group && a.day === day && a.slot === slot));
     dlg.close();
     renderAssignCards(); // why: öğretmen anında tekrar 'müsait' görünsün
@@ -2370,21 +2523,21 @@ $("#dlgOk").onclick = () => {
 
   // 1) Öğretmen uygunluk kontrolü
   if (state.availability.teachers[teacherId]?.[day]?.[slot] !== true){
-    alert("Seçilen öğretmen bu gün/saati için müsait değil. Lütfen uygun bir öğretmen seçin.");
+    uiAlert("Seçilen öğretmen bu gün/saati için müsait değil. Lütfen uygun bir öğretmen seçin.");
     return;
   }
 
   // 2) Grup uygunluk kontrolü (isteğe bağlı)
   if (state.availability.groups[group]?.[day]?.[slot] !== true){
-    alert("Bu grup bu gün/saati için müsait değil.");
+    uiAlert("Bu grup bu gün/saati için müsait değil.");
     return;
   }
 
   // 3) Çakışma uyarıları (yalnız aynı saat)
   if (isTeacherBusy(teacherId, day, slot))
-    if(!confirm("Öğretmen bu saatte başka derste. Yine de ata?")) return;
+    if(!(await uiConfirm("Öğretmen bu saatte başka derste. Yine de ata?", {title:'Çakışma uyarısı', okText:'Yine de ata', cancelText:'Vazgeç'}))) return;
   if (isGroupBusy(group, day, slot))
-    if(!confirm("Bu gruba bu saatte başka atama var. Üzerine yazılsın mı?")) return;
+    if(!(await uiConfirm("Bu gruba bu saatte başka atama var. Üzerine yazılsın mı?", {title:'Çakışma uyarısı', okText:'Üzerine yaz', cancelText:'Vazgeç', tone:'danger'}))) return;
 
   // 4) Atamayı yaz
   state.assignments = state.assignments.filter(a => !(a.group===group && a.day===day && a.slot===slot));
@@ -2432,10 +2585,10 @@ function listFreeTeachersAt(day, slot, max=5){
   return res.slice(0, max);
 }
 function performManualAssignFromReport(gid, day, slot, teacherId, branch){
-  if (state.availability.groups[gid]?.[day]?.[slot] !== true) { alert('Grup bu saatte müsait değil.'); return false; }
-  if (state.availability.teachers[teacherId]?.[day]?.[slot] !== true) { alert('Öğretmen bu saatte müsait değil.'); return false; }
-  if (state.assignments.some(a=>a.group===gid && a.day===day && a.slot===slot)) { alert('Bu slot dolu.'); return false; }
-  if (state.assignments.some(a=>a.teacherId===teacherId && a.day===day && a.slot===slot)) { alert('Öğretmen bu saatte başka derste.'); return false; }
+  if (state.availability.groups[gid]?.[day]?.[slot] !== true) { uiAlert('Grup bu saatte müsait değil.'); return false; }
+  if (state.availability.teachers[teacherId]?.[day]?.[slot] !== true) { uiAlert('Öğretmen bu saatte müsait değil.'); return false; }
+  if (state.assignments.some(a=>a.group===gid && a.day===day && a.slot===slot)) { uiAlert('Bu slot dolu.'); return false; }
+  if (state.assignments.some(a=>a.teacherId===teacherId && a.day===day && a.slot===slot)) { uiAlert('Öğretmen bu saatte başka derste.'); return false; }
 
   if (!branch) {
     const tBranches = teacherBranchesById(teacherId);
@@ -2605,7 +2758,7 @@ function showAutoAssignReport(report, prevCount){
       const selB = row.querySelector('select.sel-branch');
       const tid = selT?.value;
       let branch = selB?.value || '';
-      if (!tid) { alert('Lütfen öğretmen seçiniz.'); return; }
+      if (!tid) { uiAlert('Lütfen öğretmen seçiniz.'); return; }
       if (!branch) {
         const tBranches = (selT.selectedOptions?.[0]?.dataset.branches || '').split('|').filter(Boolean);
         const needed = (row.dataset.needed || '').split('|').filter(Boolean);
@@ -3237,7 +3390,7 @@ async function autoAssign() {
 }
 const exportAssgn = ()=>download('atamalar.json', state.assignments);
 const importAssgn = obj=>{
-  if(!Array.isArray(obj)) return alert('Geçersiz atamalar JSON.');
+  if(!Array.isArray(obj)) return uiAlert('Geçersiz atamalar JSON.');
   state.assignments = obj;
 
   // JSON'dan yükleyince de "Son Rapor" aktif olsun (otomatik atama çalıştırmadan)
@@ -3420,7 +3573,7 @@ $("#btnClear").onclick = ()=>{
 $("#btnBuildGrid").onclick = ()=>{ buildProgramGrid(false); renderSlotLabels(); };
 $("#btnProgExport").onclick = ()=>download('ders-programi.json', state.program);
 $("#btnProgImport").onclick = ()=>openFile($("#fileProgImport"), obj=>{
-  if(!obj || !Array.isArray(obj.days) || typeof obj.slots!=='number') return alert('Geçersiz program JSON.');
+  if(!obj || !Array.isArray(obj.days) || typeof obj.slots!=='number') return uiAlert('Geçersiz program JSON.');
   state.program = obj; if(!Array.isArray(state.program.slotLabels)) state.program.slotLabels=[];
   $("#daysInput").value = obj.days.join(','); $("#slotsInput").value = obj.slots;
   buildProgramGrid(true); renderSlotLabels();
@@ -3430,13 +3583,13 @@ $("#btnProgImport").onclick = ()=>openFile($("#fileProgImport"), obj=>{
 
 $("#btnAvailExport").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
-  if(!obj || !obj.teachers || !obj.groups) return alert('Geçersiz müsaitlik JSON.');
+  if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
 $("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
 $("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
-  if(!obj || !obj.teachers || !obj.groups) return alert('Geçersiz müsaitlik JSON.');
+  if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
 
@@ -3926,7 +4079,7 @@ function ensurePrintAllGradesDialog(){
     const grades = checks.filter(c=>c.checked).map(c=>+c.dataset.grade).filter(n=>!Number.isNaN(n));
     dlg.close();
     if(!grades.length){
-      alert('Lütfen en az 1 sınıf seçin.');
+      uiAlert('Lütfen en az 1 sınıf seçin.');
       return;
     }
     printAllGradesSelected(grades);
@@ -3993,7 +4146,7 @@ function buildUnassignedTeacherReport(){
 
 function openPrintWindow(title, html){
   const w = window.open('', '_blank', 'noopener,noreferrer,width=980,height=720');
-  if(!w){ alert('Tarayıcı yazdırma penceresini engelledi. Lütfen pop-up izni verin.'); return; }
+  if(!w){ uiAlert('Tarayıcı yazdırma penceresini engelledi. Lütfen pop-up izni verin.'); return; }
   const doc = w.document;
   doc.open();
   doc.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -4045,10 +4198,38 @@ function showUnassignedTeacherReport(report){
       navigator.clipboard?.writeText(txt);
       toast('Kopyalandı');
     };
-    dlg.querySelector('#btnUnRptPrint').onclick = () => {
-      const html = dlg.querySelector('#unassignedReportBody').innerHTML;
-      const title = 'Atamasızlar Raporu';
-      openPrintWindow(title, `<h1>${escapeHtml(title)}</h1><p class="sub">Müsait olduğu halde ders atanamayan öğretmen zamanları</p><div class="meta">${escapeHtml(new Date(report.generatedAt||Date.now()).toLocaleString('tr-TR'))}</div>${html}`);
+    dlg.querySelector('#btnUnRptPrint').onclick = ()=>{
+      // Özet, kartlı yazdırma (popup yok) — öğretmen + gün + boş saat chip'leri
+      const days = report.days || state.program.days || [];
+      const labels = report.slotLabels || state.program.slotLabels || [];
+      const items = report.items || [];
+      const genAt = new Date(report.generatedAt||Date.now()).toLocaleString('tr-TR');
+
+      const cards = items.map(it=>{
+        const byDay = it.byDay || {};
+        const dayKeys = Object.keys(byDay).sort((a,b)=>(+a)-(+b));
+        const rows = dayKeys.map(d=>{
+          const dn = days[+d] || `Gün ${(+d)+1}`;
+          const slots = (byDay[d]||[]).slice().sort((a,b)=>a-b);
+          const chips = slots.map(s=>`<span class="p-chip">${escapeHtml(labels[s] || `${s+1}. Saat`)}</span>`).join('');
+          return `<div class="p-row"><div class="p-day">${escapeHtml(dn)}</div><div class="p-slots">${chips}</div></div>`;
+        }).join('');
+        return `<div class="p-card">
+          <div class="p-head">
+            <div><div class="p-name">${escapeHtml(it.teacherName||'')}</div><div class="p-branch">${escapeHtml(it.teacherBranch||'')}</div></div>
+            <div class="p-chip">Toplam: ${it.totals||0}</div>
+          </div>
+          ${rows || '<div class="muted">Boş slot yok.</div>'}
+        </div>`;
+      }).join('');
+
+      const html = `
+        <div class="p-title">Atamasızlar Raporu</div>
+        <div class="p-sub">Müsait olduğu halde ders atanamayan öğretmen zamanları</div>
+        <div class="p-meta">Oluşturma: ${escapeHtml(genAt)}</div>
+        <div class="p-grid">${cards}</div>
+      `;
+      printTempArea(html);
     };
   }
 
@@ -4131,7 +4312,7 @@ function getAvailableGradesFromGroups(){
 
 function openPrintAllGradesDialog(){
   const hasAny = Array.isArray(state.assignments) && state.assignments.length > 0;
-  if(!hasAny){ alert('Atama yok. Önce atama yapın.'); return; }
+  if(!hasAny){ uiAlert('Atama yok. Önce atama yapın.'); return; }
 
   const dlg = ensurePrintAllGradesDialog();
   const host = dlg.querySelector('#printAllGradesChecks');
@@ -4149,7 +4330,7 @@ function openPrintAllGradesDialog(){
     <div class="muted mini" style="margin-top:8px">Not: Seçili sınıflar ayrı ayrı sayfalara bölünür.</div>
   `;
 
-  try{ dlg.showModal(); }catch(_){ alert('Tarayıcı bu pencereleri (dialog) desteklemiyor.'); printAllGradesSelected([5,6,7,8]); }
+  try{ dlg.showModal(); }catch(_){ uiAlert('Tarayıcı bu pencereleri (dialog) desteklemiyor.'); printAllGradesSelected([5,6,7,8]); }
 }
 
 /**
@@ -4158,7 +4339,7 @@ function openPrintAllGradesDialog(){
  */
 function printAllGradesSelected(selectedGrades) {
   const hasAny = Array.isArray(state.assignments) && state.assignments.length > 0;
-  if (!hasAny) { alert('Atama yok. Önce atama yapın.'); return; }
+  if (!hasAny) { uiAlert('Atama yok. Önce atama yapın.'); return; }
 
   const grades = (Array.isArray(selectedGrades) ? selectedGrades : [5,6,7,8])
     .map(n=>+n).filter(n=>!Number.isNaN(n));
@@ -4632,7 +4813,7 @@ function renderAttendanceChunk(groupsChunk, pageIndex, total){
 function printTeachersV2(){
   const asgByTeacher = getTeacherAssignmentsMap();
   if(!asgByTeacher.size){
-    alert('Atama yok. Önce atama yapın.');
+    uiAlert('Atama yok. Önce atama yapın.');
     return;
   }
 
@@ -4844,9 +5025,9 @@ const db = getDatabase(firebaseApp);
 async function saveDataToFirebase(path, data) {
   try {
     await set(ref(db, path), data);
-    alert('Firebase kaydedildi.');
+    uiAlert('Firebase kaydedildi.');
   } catch (err) {
-    alert('Firebase kayıt hatası: ' + err.message);
+    uiAlert('Firebase kayıt hatası: ' + err.message);
   }
 }
 
@@ -4856,12 +5037,12 @@ async function loadDataFromFirebase(path, callback) {
     const snapshot = await get(ref(db, path));
     if (snapshot.exists()) {
       callback(snapshot.val());
-      alert('Firebase yüklendi.');
+      uiAlert('Firebase yüklendi.');
     } else {
-      alert('Firebase kayıt bulunamadı.');
+      uiAlert('Firebase kayıt bulunamadı.');
     }
   } catch (err) {
-    alert('Firebase yükleme hatası: ' + err.message);
+    uiAlert('Firebase yükleme hatası: ' + err.message);
   }
 }
 
@@ -4869,9 +5050,9 @@ async function loadDataFromFirebase(path, callback) {
 async function deleteDataFromFirebase(path) {
   try {
     await remove(ref(db, path));
-    alert('Firebase silindi.');
+    uiAlert('Firebase silindi.');
   } catch (err) {
-    alert('Firebase silme hatası: ' + err.message);
+    uiAlert('Firebase silme hatası: ' + err.message);
   }
 }
 
@@ -4883,7 +5064,7 @@ function _ensureGroupsLoadedForSave(){
   const s = window.state || state;
   const n = (s && s.groups) ? Object.keys(s.groups).length : 0;
   if(n === 0){
-    alert('Önce "Verileri Oku" ile Google Sheet gruplarını yükleyin. (Grup verisi yokken Firebase kaydı yapılmaz.)');
+    uiAlert('Önce "Verileri Oku" ile Google Sheet gruplarını yükleyin. (Grup verisi yokken Firebase kaydı yapılmaz.)');
     return false;
   }
   return true;
@@ -4927,7 +5108,7 @@ if (btnProgLoadFb) {
     loadDataFromFirebase('program', obj => {
       // 1. Veri kontrolü
       if (!obj || !Array.isArray(obj.days) || typeof obj.slots !== 'number') {
-        alert('Geçersiz program verisi veya kayıt yok.');
+        uiAlert('Geçersiz program verisi veya kayıt yok.');
         return;
       }
 
@@ -4981,7 +5162,7 @@ if (btnAvailLoadFb) {
   btnAvailLoadFb.addEventListener('click', () => {
     loadDataFromFirebase('availability', obj => {
       if (!obj || !obj.teachers || !obj.groups) {
-        alert('Geçersiz müsaitlik verisi.');
+        uiAlert('Geçersiz müsaitlik verisi.');
         return;
       }
       state.availability = obj;
@@ -5013,7 +5194,7 @@ if (btnAvailLoadFb2) {
   btnAvailLoadFb2.addEventListener('click', () => {
     loadDataFromFirebase('availability', obj => {
       if (!obj || !obj.teachers || !obj.groups) {
-        alert('Geçersiz müsaitlik verisi.');
+        uiAlert('Geçersiz müsaitlik verisi.');
         return;
       }
       state.availability = obj;
@@ -5191,7 +5372,7 @@ function renderAvailGrids(){
         const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
         const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.className='head-cell';
         dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
-        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.teachers[t.id], d); renderAvailGrids(); } };
+        dayLbl.ondblclick=async()=>{ if(await uiConfirm(`"${days[d]}" gününü kopyala?`, {title:"Gün kopyala", okText:"Kopyala", cancelText:"Vazgeç"})){ copyDayPattern(state.availability.teachers[t.id], d); renderAvailGrids(); } };
         row.appendChild(dayLbl);
         for(let s=0;s<S;s++){
           const val = state.availability.teachers[t.id][d][s];
@@ -5246,7 +5427,7 @@ function renderAvailGrids(){
         const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
         const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.className='head-cell';
         dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
-        dayLbl.ondblclick=()=>{ if(confirm(`"${days[d]}" gününü kopyala?`)){ copyDayPattern(state.availability.groups[g.id], d); renderAvailGrids(); } };
+        dayLbl.ondblclick=async()=>{ if(await uiConfirm(`"${days[d]}" gününü kopyala?`, {title:"Gün kopyala", okText:"Kopyala", cancelText:"Vazgeç"})){ copyDayPattern(state.availability.groups[g.id], d); renderAvailGrids(); } };
         row.appendChild(dayLbl);
         for(let s=0;s<S;s++){
           const val = state.availability.groups[g.id][d][s];
@@ -5291,9 +5472,9 @@ function renderAssignCards(){
     btnClearG.className = 'btn xs warn';
     btnClearG.textContent = 'Bu Grubun Atamalarını Temizle';
     btnClearG.title = 'Sadece bu grubun atamalarını siler';
-    btnClearG.onclick = () => {
+    btnClearG.onclick = async()=>{
       if (count === 0) return;
-      if (confirm(`${g.name} grubunun tüm atamalarını silmek istiyor musunuz?`)) {
+      if (await uiConfirm(`${g.name} grubunun tüm atamalarını silmek istiyor musunuz?`, {title:'Grup atamalarını sil', okText:'Sil', cancelText:'Vazgeç', tone:'danger'})) {
         clearAssignmentsForGroup(g.id);
       }
     };
