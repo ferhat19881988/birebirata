@@ -4207,8 +4207,6 @@ function showUnassignedTeacherReport(report){
       const days = report.days || state.program.days || [];
       const labels = report.slotLabels || state.program.slotLabels || [];
       const items = report.items || [];
-      const genAt = new Date(report.generatedAt||Date.now()).toLocaleString('tr-TR');
-
       const cards = items.map(it=>{
         const byDay = it.byDay || {};
         const dayKeys = Object.keys(byDay).sort((a,b)=>(+a)-(+b));
@@ -4230,8 +4228,7 @@ function showUnassignedTeacherReport(report){
       const html = `
         <div class="p-title">Atanmamışlar Raporu</div>
         <div class="p-sub">Müsait olduğu halde ders atanamayan öğretmen zamanları</div>
-        <div class="p-meta">Oluşturma: ${escapeHtml(genAt)}</div>
-        <div class="p-grid">${cards}</div>
+                <div class="p-grid">${cards}</div>
       `;
       printTempArea(html);
     };
