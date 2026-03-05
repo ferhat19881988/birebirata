@@ -1153,6 +1153,7 @@
             Ardışık aynı branş kuralını <b>çok sıkışınca</b> esnet
           </label>
           <button class="btn ghost" id="btnAutoAssignReport" disabled>Son Rapor</button>
+          <button class="btn ghost" id="btnUnassignedReport" disabled>Atamasızlar</button>
         </div>
       </div>
 
@@ -2078,6 +2079,16 @@ function refreshAutoAssignReportIfOpen(){
     if (typeof window.__autoAssignReportRender === 'function') window.__autoAssignReportRender(rep);
   }catch(_e){ /* ignore */ }
 }
+
+function refreshUnassignedTeachersIfOpen(){
+  try{
+    const dlg = document.getElementById('dlgUnassignedTeachers');
+    if (!dlg || !dlg.open) return;
+    const rep = buildUnassignedTeachersReport();
+    state.lastUnassignedTeachersReport = rep;
+    showUnassignedTeachersReport(rep);
+  }catch(_e){ /* ignore */ }
+}
 function onAssignmentsMutated(){
   // 1) Atama paneli
   if (typeof renderAssignCards === 'function') renderAssignCards();
@@ -2091,6 +2102,7 @@ function onAssignmentsMutated(){
 
   // 3) Otomatik atama raporu açıksa güncelle
   refreshAutoAssignReportIfOpen();
+  refreshUnassignedTeachersIfOpen();
 }
 function clearAssignmentsForGroup(gid){
   state.assignments = (state.assignments || []).filter(a => a.group !== gid);
@@ -2868,6 +2880,8 @@ async function autoAssign() {
     showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
     const btnRpt = document.getElementById('btnAutoAssignReport');
     if (btnRpt) btnRpt.disabled = false;
+    const btnUn = document.getElementById('btnUnassignedReport');
+    if (btnUn) btnUn.disabled = false;
     return;
   }
 
@@ -3218,6 +3232,8 @@ async function autoAssign() {
     showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
     const btnRpt = document.getElementById('btnAutoAssignReport');
     if (btnRpt) btnRpt.disabled = false;
+    const btnUn = document.getElementById('btnUnassignedReport');
+    if (btnUn) btnUn.disabled = false;
   } finally {
     // UI temizle
     updateOverlay('Bitti. En iyi sonuç uygulanıyor…');
@@ -3240,11 +3256,137 @@ const importAssgn = obj=>{
   state.lastAutoAssignReport = rep;
   const btnRpt = document.getElementById('btnAutoAssignReport');
   if (btnRpt) btnRpt.disabled = false;
+    const btnUn = document.getElementById('btnUnassignedReport');
+    if (btnUn) btnUn.disabled = false;
 
   reconcileAllToProgram(getAssignPolicy());
   renderAssignCards();
   if (typeof onAssignmentsMutated === 'function') onAssignmentsMutated();
 };
+/* ===== 5) Atama — ATAMASIZLAR RAPORU (Öğretmen bazlı boşluklar) =====
+   Amaç: Otomatik atama sonrası hiç ders alamayan öğretmenleri,
+   kendi müsaitliklerine göre (boş ve atanmamış slotlar) listelemek.
+*/
+function buildUnassignedTeachersReport(){
+  const days = state.program?.days || [];
+  const S = state.program?.slots || 0;
+  const labels = state.program?.slotLabels || [];
+  const D = days.length;
+
+  const assignMap = (typeof getTeacherAssignmentsMap === 'function') ? getTeacherAssignmentsMap() : new Map();
+  const items = [];
+
+  (state.teachers || []).forEach(t=>{
+    const assigned = (assignMap.get(t.id) || []);
+    if (assigned.length > 0) return; // "ataması yapılmamış" = hiç ders almamış
+
+    const avail = state.availability?.teachers?.[t.id] || [];
+    const freeByDay = {};
+    let totalFree = 0;
+
+    for(let d=0; d<D; d++){
+      const row = avail[d] || [];
+      for(let s=0; s<S; s++){
+        if (row[s] !== true) continue;
+        if (typeof isTeacherBusy === 'function' && isTeacherBusy(t.id, d, s)) continue;
+        (freeByDay[d] ||= []).push(s);
+        totalFree++;
+      }
+    }
+
+    items.push({
+      id: t.id,
+      name: t.name || '',
+      branch: t.branch || '',
+      totalFree,
+      freeByDay
+    });
+  });
+
+  items.sort((a,b)=>{
+    if (b.totalFree !== a.totalFree) return b.totalFree - a.totalFree;
+    return (a.name||'').localeCompare((b.name||''),'tr');
+  });
+
+  return {
+    generatedAt: Date.now(),
+    teacherCount: items.length,
+    items,
+    meta: { days, slots: S, labels }
+  };
+}
+
+function showUnassignedTeachersReport(report){
+  let dlg = document.getElementById('dlgUnassignedTeachers');
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'dlgUnassignedTeachers';
+    dlg.style.padding = '16px';
+    dlg.style.borderRadius = '14px';
+    dlg.style.maxWidth = '1100px';
+    dlg.style.width = 'min(98vw, 1100px)';
+    dlg.innerHTML = `
+      <header style="font-weight:900;font-size:18px;margin-bottom:8px">🧩 Atamasız Öğretmenler (Müsaitlik Bazlı)</header>
+      <div class="mini muted" style="margin-bottom:10px">
+        Not: Buradaki liste <b>hiç ders almayan</b> öğretmenleri gösterir. Her öğretmenin altında, müsait olduğu fakat atama gelmeyen gün/saatler yer alır.
+      </div>
+      <section id="unassignedBody" style="max-height:60vh;overflow:auto"></section>
+      <footer style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button id="btnUnCopy" class="btn ghost">Metni Kopyala</button>
+        <button id="btnUnClose" class="btn">Kapat</button>
+      </footer>
+    `;
+    document.body.appendChild(dlg);
+    dlg.querySelector('#btnUnClose').onclick = () => dlg.close();
+    dlg.querySelector('#btnUnCopy').onclick = () => {
+      const txt = dlg.querySelector('#unassignedBody').innerText;
+      navigator.clipboard?.writeText(txt);
+    };
+  }
+
+  const days = report?.meta?.days || state.program?.days || [];
+  const labels = report?.meta?.labels || state.program?.slotLabels || [];
+
+  const el = dlg.querySelector('#unassignedBody');
+  const items = report?.items || [];
+
+  if (!items.length) {
+    el.innerHTML = `<div class="pill" style="display:inline-flex">✅ Atamasız öğretmen yok.</div>`;
+  } else {
+    const blocks = items.map(t=>{
+      const dayLines = Object.keys(t.freeByDay || {}).map(k=>{
+        const d = +k;
+        const slots = (t.freeByDay[d] || []);
+        const times = slots.map(s=> escapeHtml(labels[s] || ('Slot ' + (s+1)))).join(', ');
+        const dName = escapeHtml(days[d] || ('Gün ' + (d+1)));
+        return `<div style="margin-top:6px"><span class="pill">${dName}</span> <span class="mini2">${times || '-'}</span></div>`;
+      }).join('') || `<div class="muted">Müsait slot işaretlenmemiş.</div>`;
+
+      return `
+        <details open style="border:1px solid rgba(15,23,42,.10);border-radius:14px;padding:10px 12px;margin:10px 0;background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%)">
+          <summary style="cursor:pointer;font-weight:900">
+            ${escapeHtml(t.name)} <span class="tag">${escapeHtml(t.branch)}</span>
+            <span class="pill" style="margin-left:8px">Boş Slot: ${t.totalFree}</span>
+          </summary>
+          <div style="margin-top:10px">${dayLines}</div>
+        </details>
+      `;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="card" style="box-shadow:none;border:1px solid rgba(15,23,42,.10);background:#fff">
+        <div class="flex" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div><b>Toplam Atamasız Öğretmen:</b> ${items.length}</div>
+          <div class="mini muted">Oluşturulma: ${new Date(report.generatedAt).toLocaleString('tr-TR')}</div>
+        </div>
+      </div>
+      ${blocks}
+    `;
+  }
+
+  if (!dlg.open) dlg.showModal();
+}
+
 
 /* ===== 6) Yazdır ===== */
 function hasAnyAssignments(){ return state.assignments && state.assignments.length>0; }
@@ -3446,14 +3588,24 @@ $("#btnAutoAssignReport").onclick = () => {
   state.lastAutoAssignReport = rep;
   showAutoAssignReport(rep, state.autoAssignMeta.prevCount||0);
 };
+
+$("#btnUnassignedReport").onclick = () => {
+  if (!state.autoAssignMeta) return;
+  const rep = buildUnassignedTeachersReport();
+  state.lastUnassignedTeachersReport = rep;
+  showUnassignedTeachersReport(rep);
+};
 $("#btnAssgnExport").onclick = exportAssgn;
 $("#btnAssgnImport").onclick = ()=>openFile($("#fileAssgnImport"), importAssgn);
 $("#btnAssgnClear").onclick = ()=>{
   state.assignments=[];
   state.lastAutoAssignReport = null;
+  state.lastUnassignedTeachersReport = null;
   state.autoAssignMeta = null;
   const b = document.getElementById('btnAutoAssignReport');
   if (b) b.disabled = true;
+  const b2 = document.getElementById('btnUnassignedReport');
+  if (b2) b2.disabled = true;
   onAssignmentsMutated();
 };
 
@@ -4875,6 +5027,8 @@ if (btnAssgnLoadFb) {
       state.lastAutoAssignReport = rep;
       const btnRpt = document.getElementById('btnAutoAssignReport');
       if (btnRpt) btnRpt.disabled = false;
+    const btnUn = document.getElementById('btnUnassignedReport');
+    if (btnUn) btnUn.disabled = false;
     });
   });
 }
