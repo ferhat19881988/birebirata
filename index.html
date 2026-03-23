@@ -757,28 +757,6 @@
     margin-top: 4px;
   }
 
-  .kcell.waiting-teacher{position:relative !important; padding-bottom:20px !important;}
-  .kcell.waiting-teacher .waiting-badge{
-    position:absolute;
-    left:50%;
-    bottom:4px;
-    transform:translateX(-50%);
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding:2px 8px;
-    border-radius:999px;
-    background:#fef3c7;
-    color:#92400e;
-    border:1px solid #f59e0b;
-    font-size:10px;
-    font-weight:900;
-    line-height:1;
-    white-space:nowrap;
-    z-index:2;
-    box-shadow:0 1px 3px rgba(0,0,0,.08);
-  }
-
 
 /* ===========================
    STEP 4 – TALEPLER (Sade & Hızlı)
@@ -2264,20 +2242,6 @@ function refreshAutoAssignReportIfOpen(){
     if (typeof window.__autoAssignReportRender === 'function') window.__autoAssignReportRender(rep);
   }catch(_e){ /* ignore */ }
 }
-function isTeacherStillAvailableForAssignment(a){
-  if(!a || !a.teacherId) return false;
-  const teacherExists = Array.isArray(state.teachers) && state.teachers.some(t => String(t.id) === String(a.teacherId));
-  if(!teacherExists) return false;
-  return state.availability?.teachers?.[a.teacherId]?.[a.day]?.[a.slot] === true;
-}
-function normalizeAssignmentsAgainstAvailability(list){
-  if(!Array.isArray(list)) return [];
-  return list.map(a => {
-    if(!a || typeof a !== 'object') return a;
-    if(isTeacherStillAvailableForAssignment(a)) return a;
-    return { ...a, teacherId: '' };
-  });
-}
 function onAssignmentsMutated(){
   // 1) Atama paneli
   if (typeof renderAssignCards === 'function') renderAssignCards();
@@ -2345,17 +2309,13 @@ function getBranchClass(branchName) {
         const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s);
      if (cur) {
     // 1. Sınıfları temizle ve ders rengini ekle
-    cell.classList.remove('ok', 'bad', 'busy', 'waiting-teacher');
+    cell.classList.remove('ok', 'bad', 'busy');
     cell.classList.add('assigned', getBranchClass(cur.branch));
 
     // 2. Öğretmen ismini veriden bul
     const teacherObj = state.teachers.find(t => t.id === cur.teacherId);
+    // İsim varsa al, yoksa boş string döndür (icon yanına boşluk gelmemesi için)
     const teacherName = teacherObj ? teacherObj.name : '';
-    const waitingForTeacher = !teacherName;
-    if (waitingForTeacher) cell.classList.add('waiting-teacher');
-    const teacherLineHtml = waitingForTeacher
-      ? `<div class="waiting-badge">Öğretmen bekleniyor</div>`
-      : `<div class="mini2" style="font-size:11px; font-weight:700; opacity:0.9; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:98%;">👤 ${teacherName}</div>`;
 
     // 3. İÇERİK HTML - GÜNCELLENDİ
     cell.innerHTML = `
@@ -2367,21 +2327,32 @@ function getBranchClass(branchName) {
           height:100%; 
           width:100%; 
           pointer-events:none; 
-          padding: 2px 2px ${'${waitingForTeacher ? 18 : 4}'}px 2px;
+          padding-bottom: 4px; /* Bu satır içeriği yukarı iter */
       ">
         
         <div style="
             font-weight:900; 
-            font-size:13px; 
-            line-height:1.05; 
+            font-size:14px; 
+            line-height:1; 
             margin-bottom:3px; 
             text-align:center; 
-            letter-spacing: -0.2px;
+            letter-spacing: -0.3px; /* Harfleri hafif sıkıştırarak sığdırır */
         ">
             ${cur.branch}
         </div>
         
-        ${teacherLineHtml}
+        <div class="mini2" style="
+            font-size:11px; 
+            font-weight:700; 
+            opacity:0.9; 
+            line-height:1; 
+            white-space:nowrap; 
+            overflow:hidden; 
+            text-overflow:ellipsis; 
+            max-width:98%;
+        ">
+            👤 ${teacherName}
+        </div>
 
       </div>`;
 }
@@ -5280,7 +5251,7 @@ if (btnAssgnSaveFb) {
 if (btnAssgnLoadFb) {
   btnAssgnLoadFb.addEventListener('click', () => {
     loadDataFromFirebase('atamapath', obj => {
-      state.assignments = normalizeAssignmentsAgainstAvailability(Array.isArray(obj) ? obj : []);
+      state.assignments = Array.isArray(obj) ? obj : [];
       try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
       renderAssignCards();
 
@@ -5487,7 +5458,7 @@ function renderAssignCards(){
     const head = document.createElement('div'); head.className='flex';
     head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
 
-    const count = state.assignments.filter(a=>a.group===g.id && isTeacherStillAvailableForAssignment(a)).length;
+    const count = state.assignments.filter(a=>a.group===g.id).length;
 
     const left = document.createElement('div');
     left.style.display = 'flex';
@@ -5548,21 +5519,15 @@ function renderAssignCards(){
           cell.className = 'kcell assigned' + (brClass ? ' ' + brClass : '');
           cell.style.opacity = '1';
 
-          const teacherOk = isTeacherStillAvailableForAssignment(cur);
-          const teacherObj = teacherOk ? state.teachers.find(t => t.id === cur.teacherId) : null;
+          const teacherObj = state.teachers.find(t => t.id === cur.teacherId);
           const teacherName = teacherObj ? teacherObj.name : '';
 
-          cell.innerHTML = teacherOk
-            ? `
+          cell.innerHTML = `
             <div style="font-size:14px; font-weight:800; line-height:1.2; text-shadow:0 1px 2px rgba(0,0,0,0.1)">
                 ${cur.branch}
             </div>
             <div class="mini2" style="font-size:11px; margin-top:4px; opacity:0.95">
                 👤 ${teacherName}
-            </div>`
-            : `
-            <div style="font-size:14px; font-weight:800; line-height:1.2; text-shadow:0 1px 2px rgba(0,0,0,0.1)">
-                ${cur.branch}
             </div>`;
         } else {
           cell.innerHTML = avail ? '<span style="color:#cbd5e1;font-size:20px">+</span>' : '';
