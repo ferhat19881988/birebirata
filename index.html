@@ -643,11 +643,6 @@
     color: #581c87 !important;
 }
 
-/* Atama yapılmış ama branşı belirsiz olanlar */
-.kcell.assigned {
-    font-weight: 700;
-}
-
   /*
    * Slot boyutlarının tutarlı kalması ve içeriklerin hücre genişliğini zorlayıp
    * ızgarayı bozmasını önlemek için aşağıdaki ayarlar eklendi. Bazı uzun branş
@@ -2260,6 +2255,40 @@ function clearAssignmentsForGroup(gid){
   state.assignments = (state.assignments || []).filter(a => a.group !== gid);
   onAssignmentsMutated();
 }
+function isTeacherStillAvailableForAssignment(a){
+  if(!a || typeof a !== 'object') return false;
+  const day = Number(a.day), slot = Number(a.slot);
+  if(!a.teacherId || !Number.isInteger(day) || !Number.isInteger(slot)) return false;
+  return state.availability?.teachers?.[a.teacherId]?.[day]?.[slot] === true;
+}
+function normalizeAssignmentsAgainstAvailability(list, source='unknown'){
+  const kept = [];
+  const removed = [];
+  for (const raw of (Array.isArray(list) ? list : [])) {
+    if(!raw || typeof raw !== 'object'){
+      removed.push({ assignment: raw, reason: 'gecersiz-kayit' });
+      continue;
+    }
+    const a = { ...raw, day: Number(raw.day), slot: Number(raw.slot) };
+    if (!a.group || !a.branch || !a.teacherId || !Number.isInteger(a.day) || !Number.isInteger(a.slot)) {
+      removed.push({ assignment: raw, reason: 'gecersiz-kayit' });
+      continue;
+    }
+    if (!isTeacherStillAvailableForAssignment(a)) {
+      removed.push({ assignment: a, reason: 'ogretmen-musait-degil' });
+      continue;
+    }
+    kept.push(a);
+  }
+  state.lastAvailabilityNormalization = {
+    source,
+    keptCount: kept.length,
+    removedCount: removed.length,
+    removed,
+    at: Date.now()
+  };
+  return { assignments: kept, removed };
+}
 /* Branş ismini CSS sınıfına çeviren yardımcı */
 function getBranchClass(branchName) {
     if (!branchName) return '';
@@ -2271,102 +2300,6 @@ function getBranchClass(branchName) {
     if (b.includes('İNGİLİZCE')) return 'ing';
     if (b.includes('DİN')) return 'din';
     return ''; // Tanımsızsa varsayılan gri kalır
-}
-  
-  function renderAssignCards(){
-  const wrap = $("#assignCards"); wrap.innerHTML='';
-  const days = state.program.days, S=state.program.slots;
-
-  const groups = Object.values(state.groups).slice().sort(groupComparator);
-
-  groups.forEach(g=>{
-    const card = document.createElement('div'); card.className='card';
-    const head = document.createElement('div'); head.className='flex';
-    const count = state.assignments.filter(a=>a.group===g.id).length;
-    head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span><span class="pill">${count} atama</span>`;
-    card.appendChild(head);
-
-    const grid = document.createElement('div'); grid.className='kgrid'; grid.style.setProperty('--cols', S); grid.dataset.cols=S;
-    const headRow = document.createElement('div'); headRow.textContent='Gün / Saat'; headRow.style.fontWeight='700'; grid.appendChild(headRow);
-    slotHeadCells(grid,S);
-
-    for(let d=0; d<days.length; d++){
-      const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S);
-      row.appendChild(Object.assign(document.createElement('div'),{textContent:days[d],style:'font-weight:700'}));
-      for(let s=0; s<S; s++){
-        const cell = document.createElement('div');
-        cell.className = 'kcell';
-        cell.dataset.d = d;
-        cell.dataset.s = s;
-
-        // Duruma göre uygunluk rengini uygula (müsaitse yeşil, değilse kırmızı).
-        // Bu renkler yalnızca boş hücreler için kullanılır; ataması olan hücreler
-        // kendi ders renkleriyle gösterilecektir.
-        const avail = state.availability?.groups?.[g.id]?.[d]?.[s] === true;
-        cell.classList.add(avail ? 'ok' : 'bad');
-
-        // Mevcut bir atama var mı? Varsa hücreyi ders rengine dönüştür.
-        const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s);
-     if (cur) {
-    // 1. Sınıfları temizle ve ders rengini ekle
-    cell.classList.remove('ok', 'bad', 'busy');
-    cell.classList.add('assigned', getBranchClass(cur.branch));
-
-    // 2. Öğretmen ismini veriden bul
-    const teacherObj = state.teachers.find(t => t.id === cur.teacherId);
-    // İsim varsa al, yoksa boş string döndür (icon yanına boşluk gelmemesi için)
-    const teacherName = teacherObj ? teacherObj.name : '';
-
-    // 3. İÇERİK HTML - GÜNCELLENDİ
-    cell.innerHTML = `
-      <div style="
-          display:flex; 
-          flex-direction:column; 
-          justify-content:center; 
-          align-items:center; 
-          height:100%; 
-          width:100%; 
-          pointer-events:none; 
-          padding-bottom: 4px; /* Bu satır içeriği yukarı iter */
-      ">
-        
-        <div style="
-            font-weight:900; 
-            font-size:14px; 
-            line-height:1; 
-            margin-bottom:3px; 
-            text-align:center; 
-            letter-spacing: -0.3px; /* Harfleri hafif sıkıştırarak sığdırır */
-        ">
-            ${cur.branch}
-        </div>
-        
-        <div class="mini2" style="
-            font-size:11px; 
-            font-weight:700; 
-            opacity:0.9; 
-            line-height:1; 
-            white-space:nowrap; 
-            overflow:hidden; 
-            text-overflow:ellipsis; 
-            max-width:98%;
-        ">
-            👤 ${teacherName}
-        </div>
-
-      </div>`;
-}
-        cell.onclick = () => {
-          openAssignDialog(g.id, d, s);
-        };
-        row.appendChild(cell);
-      }
-      grid.appendChild(row);
-    }
-
-    card.appendChild(grid);
-    wrap.appendChild(card);
-  });
 }
 const dlg = $("#dlgAssign"); let dlgCtx = null;
 
@@ -2696,6 +2629,10 @@ function buildAutoAssignReport(prevCount){
     }
   }
 
+  const removedOnLoad = Array.isArray(state.lastAvailabilityNormalization?.removed)
+    ? state.lastAvailabilityNormalization.removed.slice()
+    : [];
+
   return {
     totals: {
       groups: groups.length,
@@ -2706,10 +2643,14 @@ function buildAutoAssignReport(prevCount){
       blockedByGroup,
       totalAssigned,
       newlyAssigned,
-      remainingNeedTotal
+      remainingNeedTotal,
+      hiddenByTeacherAvailabilityOnLoad: removedOnLoad.filter(x => x.reason === 'ogretmen-musait-degil').length,
+      invalidRemovedOnLoad: removedOnLoad.filter(x => x.reason === 'gecersiz-kayit').length
     },
     needsLeft,
-    details
+    details,
+    removedOnLoad,
+    normalizationSource: state.lastAvailabilityNormalization?.source || null
   };
 }
 
@@ -2868,10 +2809,28 @@ function showAutoAssignReport(report, prevCount){
         <div class="pill">Toplam atama: <b>${t.totalAssigned}</b> • Bu çalıştırmada yeni: <b>${t.newlyAssigned}</b></div>
         <div class="pill">Grup müsait kapasite: <b>${t.availableCells}</b> • Grup müsait değil: <b>${t.blockedByGroup}</b></div>
         <div class="pill">Kalan toplam ihtiyaç (ders): <b>${t.remainingNeedTotal}</b></div>
+        <div class="pill">Yüklemede boş sayılan kayıt: <b>${t.hiddenByTeacherAvailabilityOnLoad}</b> • Geçersiz kayıt: <b>${t.invalidRemovedOnLoad}</b></div>
 
         <div class="card">
           <h3>Kalan İhtiyaçlar (talep - atanan)</h3>
           ${needList.length ? `<ul style="margin:6px 0 0 18px">${needList.join('')}</ul>` : `<div class="muted">Tüm talepler karşılanmış görünüyor ✅</div>`}
+        </div>
+
+        <div class="card">
+          <h3>Yükleme sırasında boş sayılan atamalar</h3>
+          ${rep.removedOnLoad?.length ? `
+            <div class="mini2" style="margin-bottom:8px">Kaynak: ${escapeHtml(rep.normalizationSource || 'bilinmiyor')}</div>
+            <ul style="margin:6px 0 0 18px">
+              ${rep.removedOnLoad.slice(0,50).map(item => {
+                const a = item.assignment || {};
+                const when = (Number.isInteger(a.day) && Number.isInteger(a.slot)) ? fmtSlot(a.day, a.slot) : 'Zaman bilgisi yok';
+                const teacher = teacherNameById(a.teacherId) || a.teacherId || 'Öğretmen yok';
+                const reason = item.reason === 'ogretmen-musait-degil' ? 'öğretmen müsait değil' : 'geçersiz kayıt';
+                return `<li><b>${escapeHtml(String(a.group || '-'))}</b> — ${escapeHtml(String(a.branch || '-'))} — ${escapeHtml(when)} — ${escapeHtml(String(teacher))} <span class="mini2">(${escapeHtml(reason)})</span></li>`;
+              }).join('')}
+            </ul>
+            ${rep.removedOnLoad.length > 50 ? `<div class="mini2" style="margin-top:8px">İlk 50 kayıt gösterildi.</div>` : ''}
+          ` : `<div class="muted">Yükleme sırasında boş sayılan atama yok.</div>`}
         </div>
 
         <div class="card">
@@ -3398,13 +3357,15 @@ async function autoAssign() {
 const exportAssgn = ()=>download('atamalar.json', state.assignments);
 const importAssgn = obj=>{
   if(!Array.isArray(obj)) return uiAlert('Geçersiz atamalar JSON.');
-  state.assignments = obj;
+  const normalized = normalizeAssignmentsAgainstAvailability(obj, 'json-iceri-al');
+  state.assignments = normalized.assignments;
 
   // JSON'dan yükleyince de "Son Rapor" aktif olsun (otomatik atama çalıştırmadan)
   state.autoAssignMeta = {
     prevCount: state.assignments.length,
     lastRunAt: Date.now(),
-    loadedFromJSON: true
+    loadedFromJSON: true,
+    removedDueToTeacherAvailability: normalized.removed.length
   };
   const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
   state.lastAutoAssignReport = rep;
@@ -3415,8 +3376,10 @@ const importAssgn = obj=>{
     if (btnUn) btnUn.disabled = false;
 
   reconcileAllToProgram(getAssignPolicy());
-  renderAssignCards();
   if (typeof onAssignmentsMutated === 'function') onAssignmentsMutated();
+  if (normalized.removed.length) {
+    uiToast(`${normalized.removed.length} atama öğretmen müsait olmadığı için boş sayıldı.`, { tone:'warn', title:'İçeri alma filtrelendi' });
+  }
 };
 
 /* ===== 6) Yazdır ===== */
@@ -5251,19 +5214,28 @@ if (btnAssgnSaveFb) {
 if (btnAssgnLoadFb) {
   btnAssgnLoadFb.addEventListener('click', () => {
     loadDataFromFirebase('atamapath', obj => {
-      state.assignments = Array.isArray(obj) ? obj : [];
+      const normalized = normalizeAssignmentsAgainstAvailability(Array.isArray(obj) ? obj : [], 'firebase-yukle');
+      state.assignments = normalized.assignments;
       try{ (window.pruneGroupBasedState || pruneGroupBasedState)(); }catch(_){ }
-      renderAssignCards();
 
       // Firebase'den yükleyince de "Son Otomatik Atama Raporu" kullanılabilsin
-      state.autoAssignMeta = { prevCount: state.assignments.length, lastRunAt: Date.now(), loadedFromFirebase: true };
+      state.autoAssignMeta = {
+        prevCount: state.assignments.length,
+        lastRunAt: Date.now(),
+        loadedFromFirebase: true,
+        removedDueToTeacherAvailability: normalized.removed.length
+      };
       const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
       state.lastAutoAssignReport = rep;
       const btnRpt = document.getElementById('btnAutoAssignReport');
       if (btnRpt) btnRpt.disabled = false;
-    syncReportButtons();
-    const btnUn = document.getElementById('btnUnassignedReport');
-    if (btnUn) btnUn.disabled = false;
+      syncReportButtons();
+      const btnUn = document.getElementById('btnUnassignedReport');
+      if (btnUn) btnUn.disabled = false;
+      if (typeof onAssignmentsMutated === 'function') onAssignmentsMutated();
+      if (normalized.removed.length) {
+        uiToast(`${normalized.removed.length} atama öğretmen müsait olmadığı için boş sayıldı.`, { tone:'warn', title:'Firebase yükleme filtrelendi' });
+      }
     });
   });
 }
@@ -5458,7 +5430,7 @@ function renderAssignCards(){
     const head = document.createElement('div'); head.className='flex';
     head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
 
-    const count = state.assignments.filter(a=>a.group===g.id).length;
+    const count = state.assignments.filter(a=>a.group===g.id && isTeacherStillAvailableForAssignment(a)).length;
 
     const left = document.createElement('div');
     left.style.display = 'flex';
@@ -5513,7 +5485,7 @@ function renderAssignCards(){
         if(!avail) cell.style.opacity = '0.5';
 
         // Atama var mı?
-        const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s);
+        const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s && isTeacherStillAvailableForAssignment(a));
         if (cur) {
           const brClass = getBranchClass(cur.branch);
           cell.className = 'kcell assigned' + (brClass ? ' ' + brClass : '');
