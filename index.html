@@ -762,8 +762,171 @@
 
 
 /* ===========================
+   STEP 2 – MODERN & KOMPAKT YERLEŞİM
+   =========================== */
+#step2 .step2-shell{
+  display:grid;
+  gap:14px;
+}
+#step2 .step2-topbar{
+  display:grid;
+  grid-template-columns:minmax(0,1.6fr) minmax(360px,1fr);
+  gap:14px;
+  align-items:start;
+}
+#step2 .step2-form,
+#step2 .step2-actions{
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:18px;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 10px 24px rgba(2,8,23,.06);
+}
+#step2 .step2-form{
+  display:grid;
+  grid-template-columns:minmax(260px,1.8fr) minmax(140px,.65fr) minmax(240px,1fr) auto;
+  gap:12px;
+  align-items:end;
+  padding:14px;
+}
+#step2 .step2-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+}
+#step2 .step2-field input,
+#step2 .step2-field select{
+  min-width:0;
+  width:100%;
+}
+#step2 .step2-primary{
+  min-height:44px;
+  white-space:nowrap;
+}
+#step2 .step2-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:stretch;
+  justify-content:flex-end;
+  padding:14px;
+}
+#step2 .step2-actions .btn-group{
+  height:100%;
+}
+#step2 .step2-card{
+  border-radius:18px;
+}
+#step2 .step2-grid-card{
+  padding:12px;
+}
+#step2 #slotLabelsWrap .row{
+  align-items:center;
+}
+#step2 #slotLabelsWrap .qty{
+  background:#f8fafc;
+}
+@media (max-width: 1180px){
+  #step2 .step2-topbar{grid-template-columns:1fr;}
+  #step2 .step2-form{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #step2 .step2-primary{width:100%;}
+}
+@media (max-width: 760px){
+  #step2 .step2-form{grid-template-columns:1fr;}
+  #step2 .step2-actions{justify-content:stretch;}
+  #step2 .step2-actions .btn-group{width:100%;justify-content:flex-start;}
+}
+
+/* ===========================
    STEP 5 – KOMPAKT ATAMA KARTLARI
    =========================== */
+#step5 .step5-toolbar{
+  display:grid;
+  gap:12px;
+}
+#step5 .step5-toolbar-main,
+#step5 .step5-toolbar-actions{
+  display:grid;
+  gap:12px;
+  align-items:stretch;
+}
+#step5 .step5-toolbar-main{
+  grid-template-columns:minmax(0,1.4fr) minmax(280px,.95fr) minmax(220px,.7fr);
+}
+#step5 .step5-toolbar-actions{
+  grid-template-columns:repeat(3,max-content);
+  justify-content:space-between;
+}
+#step5 .step5-group,
+#step5 .step5-toggle-card,
+#step5 .step5-filter-card{
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:16px;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 8px 20px rgba(2,8,23,.06);
+}
+#step5 .step5-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  padding:10px;
+}
+#step5 .step5-group-primary{
+  align-content:flex-start;
+}
+#step5 .step5-toggle-card,
+#step5 .step5-filter-card{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:12px 14px;
+}
+#step5 .step5-toggle-title,
+#step5 .step5-filter-title{
+  font-size:12px;
+  font-weight:900;
+  color:var(--muted);
+}
+#step5 .step5-toggle-line{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  line-height:1.35;
+  font-weight:700;
+}
+#step5 .step5-filter-card select{
+  min-width:0;
+  width:100%;
+}
+#step5 .cards{gap:12px;}
+#step5 .card{padding:10px 12px;border-radius:14px;}
+#step5 .card .flex{gap:8px;align-items:center;flex-wrap:wrap;}
+#step5 .card .tag{padding:2px 8px;font-size:11px;}
+#step5 .card .pill{padding:4px 8px;font-size:12px;}
+#step5 .card .mini2{font-size:10px;line-height:1.2;}
+#step5 .grid-scroll-wrapper{margin:0 -6px;padding-left:6px;padding-right:6px;padding-bottom:4px;}
+#step5 .kgrid[data-cols]{grid-template-columns:120px repeat(var(--cols), minmax(66px,1fr));gap:6px;padding:6px 0;}
+#step5 .head-cell{min-height:42px;padding:4px 6px;font-size:13px;border-radius:10px;}
+#step5 .header-row .head-cell,
+#step5 .header-row .kcell{min-height:42px;}
+#step5 .kcell{min-height:46px !important;padding:4px !important;border-radius:10px;font-size:16px;}
+#step5 .kcell.assigned > div:first-child{font-size:11px !important;line-height:1.1;}
+#step5 .kcell.assigned .mini2{font-size:10px !important;margin-top:2px !important;}
+#step5 .btn.xs.warn{padding:6px 10px;font-size:11px;border-radius:10px;}
+@media (max-width: 1240px){
+  #step5 .step5-toolbar-main{grid-template-columns:1fr;}
+  #step5 .step5-toolbar-actions{grid-template-columns:1fr;justify-content:stretch;}
+}
+@media (max-width: 920px){
+  #step5 .kgrid[data-cols]{grid-template-columns:100px repeat(var(--cols), minmax(56px,1fr));}
+  #step5 .head-cell{font-size:12px;min-height:38px;}
+  #step5 .kcell{min-height:40px !important;font-size:14px;}
+  #step5 .step5-group{width:100%;}
+}
+
 #step5 .cards{gap:12px;}
 #step5 .card{padding:10px 12px;border-radius:14px;}
 #step5 .card .flex{gap:8px;align-items:center;flex-wrap:wrap;}
@@ -1060,50 +1223,47 @@
       <h2>2) Ders Programı İskele</h2>
       <div class="chips"><span class="pill">JSON Kaydet/Yükle</span></div>
     </div>
-    
-    <div class="toolbar">
-      <div class="left">
-        <label>Günler (virgül ayır)<br/>
-          <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
-        </label>
-        <label>Saat/Slot sayısı<br/>
-          <input type="number" id="slotsInput" value="8" min="1" max="12" />
-        </label>
-        <label>Atama politikası<br/>
-          <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
-            <option value="keep" selected>Koruyabildiğini koru (taşanları at)</option>
-            <option value="reset">Tamamen sıfırla</option>
-          </select>
-        </label>
-      </div>
 
-      <div class="right">
-        <div class="btn-group" aria-label="Program işlemleri">
-          <span class="gtitle">Program</span>
-          <button class="btn" id="btnBuildGrid">Oluştur/Güncelle</button>
+    <div class="step2-shell">
+      <div class="step2-topbar">
+        <div class="step2-form">
+          <label class="step2-field step2-field-days">Günler (virgül ayır)
+            <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
+          </label>
+          <label class="step2-field step2-field-slots">Saat/Slot sayısı
+            <input type="number" id="slotsInput" value="8" min="1" max="12" />
+          </label>
+          <label class="step2-field step2-field-policy">Atama politikası
+            <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
+              <option value="keep" selected>Koruyabildiğini koru (taşanları at)</option>
+              <option value="reset">Tamamen sıfırla</option>
+            </select>
+          </label>
+          <button class="btn step2-primary" id="btnBuildGrid">Oluştur / Güncelle</button>
         </div>
 
-        <div class="btn-group" aria-label="JSON işlemleri">
-          <span class="gtitle">JSON</span>
-          <button class="btn ghost" id="btnProgExport">Dışa Aktar</button>
-          <input id="fileProgImport" type="file" accept="application/json" hidden />
-          <button class="btn ghost" id="btnProgImport">İçeri Al</button>
-        </div>
+        <div class="step2-actions">
+          <div class="btn-group" aria-label="JSON işlemleri">
+            <span class="gtitle">JSON</span>
+            <button class="btn ghost" id="btnProgExport">Dışa Aktar</button>
+            <input id="fileProgImport" type="file" accept="application/json" hidden />
+            <button class="btn ghost" id="btnProgImport">İçeri Al</button>
+          </div>
 
-        <div class="btn-group" aria-label="Firebase işlemleri">
-          <span class="gtitle">Firebase</span>
-          <button class="btn ghost" id="btnProgSaveFb">Kaydet</button>
-          <button class="btn ghost" id="btnProgLoadFb">Yükle</button>
-          <button class="btn ghost" id="btnProgDeleteFb">Sil</button>
+          <div class="btn-group" aria-label="Firebase işlemleri">
+            <span class="gtitle">Firebase</span>
+            <button class="btn ghost" id="btnProgSaveFb">Kaydet</button>
+            <button class="btn ghost" id="btnProgLoadFb">Yükle</button>
+            <button class="btn ghost" id="btnProgDeleteFb">Sil</button>
+          </div>
         </div>
       </div>
+
+      <!-- Saat etiketleri düzenleyici -->
+      <div id="slotLabelsWrap" class="card step2-card"></div>
+      <div id="progGridWrap" class="card step2-card step2-grid-card"></div>
     </div>
 
-
-    <!-- Saat etiketleri düzenleyici -->
-    <div id="slotLabelsWrap" class="card"></div>
-
-    <div id="progGridWrap" class="card"></div>
     <div class="row">
       <button class="btn sec right" id="goto3">Devam → Müsaitlikler</button>
     </div>
@@ -1169,6 +1329,10 @@
             <button class="btn ghost" id="btnAvailExport2">Dışa Aktar</button>
             <input id="fileAvailImport2" type="file" accept="application/json" hidden />
             <button class="btn ghost" id="btnAvailImport2">İçeri Al</button>
+          </div>
+          <div class="btn-group" aria-label="Toplu işlemler">
+            <span class="gtitle">Toplu</span>
+            <button class="btn warn" id="btnAvailClear2">Tümünü Temizle</button>
           </div>
         </div>
         <div class="right">
@@ -1251,38 +1415,43 @@
       </div>
     </div>
     
-    <div class="toolbar">
-      <div class="left">
-        <div class="btn-group" aria-label="Atama">
+    <div class="step5-toolbar">
+      <div class="step5-toolbar-main">
+        <div class="btn-group step5-group step5-group-primary" aria-label="Atama işlemleri">
           <span class="gtitle">Atama</span>
           <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
-          <label class="pill" style="gap:10px;align-items:center">
-            <input type="checkbox" id="chkRelaxConsecutive" checked style="width:18px;height:18px" />
-            Ardışık aynı branş kuralını <b>çok sıkışınca</b> esnet
-          </label>
           <button class="btn ghost" id="btnAutoAssignReport" disabled>Son Rapor</button>
           <button class="btn ghost" id="btnUnassignedReport" disabled>Atamasızlar</button>
-          <label class="mini" style="display:flex;flex-direction:column;gap:6px;min-width:260px; margin-left:6px;">
-            <span>Filtre</span>
-            <select id="assignGroupFilter" disabled>
-              <option value="">Tümü</option>
-            </select>
-          </label>
         </div>
+
+        <label class="step5-toggle-card">
+          <span class="step5-toggle-title">Kural Ayarı</span>
+          <span class="step5-toggle-line">
+            <input type="checkbox" id="chkRelaxConsecutive" checked style="width:18px;height:18px" />
+            <span>Ardışık aynı branş kuralını <b>çok sıkışınca</b> esnet</span>
+          </span>
+        </label>
+
+        <label class="step5-filter-card">
+          <span class="step5-filter-title">Grup Filtresi</span>
+          <select id="assignGroupFilter" disabled>
+            <option value="">Tümü</option>
+          </select>
+        </label>
       </div>
 
-      <div class="right">
-        <div class="btn-group" aria-label="JSON işlemleri">
+      <div class="step5-toolbar-actions">
+        <div class="btn-group step5-group" aria-label="JSON işlemleri">
           <span class="gtitle">JSON</span>
           <button class="btn ghost" id="btnAssgnExport">Dışa Aktar</button>
           <input id="fileAssgnImport" type="file" accept="application/json" hidden />
           <button class="btn ghost" id="btnAssgnImport">İçeri Al</button>
         </div>
-        <div class="btn-group" aria-label="Toplu işlemler">
+        <div class="btn-group step5-group" aria-label="Toplu işlemler">
           <span class="gtitle">Toplu</span>
           <button class="btn warn" id="btnAssgnClear">Atamaları Temizle</button>
         </div>
-        <div class="btn-group" aria-label="Firebase işlemleri">
+        <div class="btn-group step5-group" aria-label="Firebase işlemleri">
           <span class="gtitle">Firebase</span>
           <button class="btn ghost" id="btnAssgnSaveFb">Kaydet</button>
           <button class="btn ghost" id="btnAssgnLoadFb">Yükle</button>
@@ -3615,6 +3784,7 @@ $("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
 $("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
+$("#btnAvailClear2").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
 $("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
