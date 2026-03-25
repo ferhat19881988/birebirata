@@ -5495,7 +5495,11 @@ function renderAvailGrids(){
   if(state.teachers.length===0){
     tWrap.innerHTML = '<div class="muted">Öğretmen verisi yok.</div>';
   }else{
-    state.teachers.forEach(t=>{
+    const filteredTeachers = state.teachers.filter(t => !selectedTeacherId || t.id === selectedTeacherId);
+    if(filteredTeachers.length===0){
+      tWrap.innerHTML = '<div class="muted">Seçilen filtreye uygun öğretmen bulunamadı.</div>';
+    }
+    filteredTeachers.forEach(t=>{
       const card = document.createElement('div'); card.className='card';
 
       const head = document.createElement('div'); head.className='flex';
@@ -5551,7 +5555,11 @@ function renderAvailGrids(){
   if(groups.length===0){
     gWrap.innerHTML = '<div class="muted">Grup verisi yok.</div>';
   }else{
-    groups.sort(groupComparator).forEach(g=>{
+    const filteredGroups = groups.slice().sort(groupComparator).filter(g => !selectedGroupId || g.id === selectedGroupId);
+    if(filteredGroups.length===0){
+      gWrap.innerHTML = '<div class="muted">Seçilen filtreye uygun grup bulunamadı.</div>';
+    }
+    filteredGroups.forEach(g=>{
       const card = document.createElement('div'); card.className='card';
       const head = document.createElement('div'); head.className='flex';
       head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
