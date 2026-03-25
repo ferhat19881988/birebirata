@@ -2260,23 +2260,12 @@ const importReq = obj=>{
 };
 
 /* ===== 5) Atama ===== */
-function normalizeBranchName(branch){
-  return String(branch || '')
-    .normalize('NFKC')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLocaleUpperCase('tr-TR');
-}
-function branchesMatch(a, b){
-  return normalizeBranchName(a) === normalizeBranchName(b);
-}
-function findTeacherOptions(branch){
-  return (state.teachers || []).filter(t => branchesMatch(t?.branch, branch));
-}
+function findTeacherOptions(branch){ return state.teachers.filter(t=>t.branch===branch); }
 function isTeacherBusy(teacherId, day, slot){ return state.assignments.some(a=>a.teacherId===teacherId && a.day===day && a.slot===slot); }
 function isGroupBusy(groupId, day, slot){ return state.assignments.some(a=>a.group===groupId && a.day===day && a.slot===slot); }
 function prevGroupSubject(groupId, day, slot){
   if(slot>0){ const a = state.assignments.find(x=>x.group===groupId && x.day===day && x.slot===slot-1); return a ? a.branch : null; }
+  if(day>0){ const a = state.assignments.find(x=>x.group===groupId && x.day===day-1 && x.slot===state.program.slots-1); return a ? a.branch : null; }
   return null;
 }
 function hasAssignmentsForGroup(gid){ return state.assignments.some(a=>a.group===gid); }
@@ -2333,78 +2322,22 @@ function isTeacherStillAvailableForAssignment(a){
 function normalizeAssignmentsAgainstAvailability(list, source='unknown'){
   const kept = [];
   const removed = [];
-  const D = state.program?.days?.length || 0;
-  const S = state.program?.slots || 0;
-  const teacherMap = new Map((state.teachers || []).map(t => [String(t.id), t]));
-  const groupIds = new Set(Object.keys(state.groups || {}));
-  for (const g of Object.values(state.groups || {})) {
-    if (g?.id) groupIds.add(String(g.id));
-  }
-  const usedGroupCells = new Set();
-  const usedTeacherCells = new Set();
-
   for (const raw of (Array.isArray(list) ? list : [])) {
     if(!raw || typeof raw !== 'object'){
       removed.push({ assignment: raw, reason: 'gecersiz-kayit' });
       continue;
     }
-
-    const a = {
-      ...raw,
-      group: String(raw.group || '').trim(),
-      branch: String(raw.branch || '').trim(),
-      teacherId: String(raw.teacherId || '').trim(),
-      day: Number(raw.day),
-      slot: Number(raw.slot)
-    };
-
+    const a = { ...raw, day: Number(raw.day), slot: Number(raw.slot) };
     if (!a.group || !a.branch || !a.teacherId || !Number.isInteger(a.day) || !Number.isInteger(a.slot)) {
       removed.push({ assignment: raw, reason: 'gecersiz-kayit' });
-      continue;
-    }
-    if (a.day < 0 || a.day >= D || a.slot < 0 || a.slot >= S) {
-      removed.push({ assignment: a, reason: 'zaman-araligi-disinda' });
-      continue;
-    }
-    if (!groupIds.has(a.group)) {
-      removed.push({ assignment: a, reason: 'grup-bulunamadi' });
-      continue;
-    }
-
-    const teacher = teacherMap.get(a.teacherId);
-    if (!teacher) {
-      removed.push({ assignment: a, reason: 'ogretmen-bulunamadi' });
-      continue;
-    }
-    if (!branchesMatch(a.branch, teacher.branch)) {
-      removed.push({ assignment: a, reason: 'brans-eslesmiyor' });
-      continue;
-    }
-    if (state.availability?.groups?.[a.group]?.[a.day]?.[a.slot] !== true) {
-      removed.push({ assignment: a, reason: 'grup-musait-degil' });
       continue;
     }
     if (!isTeacherStillAvailableForAssignment(a)) {
       removed.push({ assignment: a, reason: 'ogretmen-musait-degil' });
       continue;
     }
-
-    const gKey = `${a.group}|${a.day}|${a.slot}`;
-    const tKey = `${a.teacherId}|${a.day}|${a.slot}`;
-    if (usedGroupCells.has(gKey)) {
-      removed.push({ assignment: a, reason: 'grup-cakismasi' });
-      continue;
-    }
-    if (usedTeacherCells.has(tKey)) {
-      removed.push({ assignment: a, reason: 'ogretmen-cakismasi' });
-      continue;
-    }
-
-    usedGroupCells.add(gKey);
-    usedTeacherCells.add(tKey);
     kept.push(a);
   }
-
   state.lastAvailabilityNormalization = {
     source,
     keptCount: kept.length,
@@ -2968,11 +2901,11 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-// index.html — Auto Assign (V5.0): Kısıt Odaklı, Denge Destekli ve Kısmi Kurtarmalı
+// index.html — Auto Assign (V4.1): Maks Yerleşim Odaklı, Yük Dengesi YOK
 
 /**
- * Amaç: Sabit atamaları güvenle koruyup, kısıtlı grupları öne alarak
- * mümkün olan en yüksek yerleşimi daha dengeli öğretmen dağılımıyla bulmak.
+ * Amaç: Öğretmen yük dengesini tamamen devre dışı bırakarak,
+ * mümkün olan EN ÇOK derse atama yapan varyasyonu bulup uygulamak.
  */
 async function autoAssign() {
   const D = state.program.days.length;
@@ -3022,22 +2955,33 @@ async function autoAssign() {
   };
 
   const STRICT_UNTIL_MS = TIME_LIMIT_MS - 15000; // son 15 sn
-  let totalNeedCount = 0;
-  const PROBE_WINDOW_MS = 4000;
-  let consecutiveDecision = null;
+  let totalNeedCount = 0; // needs hesaplandıktan sonra set edilir
+  const PROBE_WINDOW_MS = 4000; // son 15 sn içinde kısa deneme penceresi
+  let consecutiveDecision = null; // null: karar yok, true: kuralı kaldır, false: kural kalsın
 
+  
   const shouldRelax = () => {
+    // Son 15 sn kala: önce kısa bir "probe" denemesi yap.
+    // Eğer ardışık ders kuralını kaldırmak atama sayısını artırıyorsa kalan sürede tamamen kaldır.
+    // Artmıyorsa kural katı şekilde kalsın (boşa deneme harcanmasın).
+
     if (!RELAX_CONSECUTIVE_WHEN_TIGHT) return false;
     if (!totalNeedCount) return false;
 
     const elapsed = performance.now() - startTime;
     if (elapsed < STRICT_UNTIL_MS) return false;
+
+    // Katı mod tüm ihtiyaçları zaten doldurduysa esnetmeye gerek yok
     if (bestStrictScore >= totalNeedCount) return false;
 
+    // Karar verildiyse aynen uygula
     if (consecutiveDecision === true) return true;
     if (consecutiveDecision === false) return false;
+
+    // Karar yoksa: son 15 sn başında kısa bir deneme penceresi aç
     if (elapsed < (STRICT_UNTIL_MS + PROBE_WINDOW_MS)) return true;
 
+    // Deneme penceresi bitti: gerçekten atama sayısı arttı mı?
     consecutiveDecision = (bestRelaxScore > bestStrictScore);
     return consecutiveDecision;
   };
@@ -3046,18 +2990,14 @@ async function autoAssign() {
   if (btnAuto) btnAuto.disabled = true;
   updateOverlay('Farklı yerleşimler deneniyor…');
 
+  // --- Yardımcılar ---
   const makeGrid = (rows, cols, fill=null) => Array.from({length:rows}, () => Array(cols).fill(fill));
   const keyCell = (g,d,s) => `${g}|${d}|${s}`;
-  const rndInt = (n) => Math.floor(Math.random() * n);
-  const shuffle = (arr) => {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = rndInt(i + 1);
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  };
+  const rndInt = (n) => Math.floor(Math.random()*n);
+  const shuffle = (arr) => { for (let i=arr.length-1;i>0;i--){ const j=rndInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; };
   const prevBranchOf = (gGrid, gid, d, s) => {
     if (s > 0) return gGrid[gid]?.[d]?.[s-1]?.branch || null;
+    if (d > 0) return gGrid[gid]?.[d-1]?.[S-1]?.branch || null;
     return null;
   };
   const canUse = (gGrid, tGrid, gid, tid, d, s) => {
@@ -3067,309 +3007,255 @@ async function autoAssign() {
     if (tGrid[tid]?.[d]?.[s]) return false;
     return true;
   };
-  const ensureGrid = (mat, id) => (mat[id] ||= makeGrid(D, S));
-  const cloneGridMap = (src) => {
-    const out = {};
-    for (const id of Object.keys(src || {})) out[id] = src[id].map(row => row.slice());
-    return out;
+
+  // NOTE: Rapor/elle atama yardımcıları global olarak tanımlı (teacherNameById, teacherBranchesById, listFreeTeachersAt, performManualAssignFromReport)
+
+  try {
+  // --- Sabit atamalar (korunur) ---
+  const fixed = state.assignments.map(a => ({...a}));
+
+  // Hızlı erişim ızgaraları (yalnız sabitler)
+  const gGridBase = {};
+  const tGridBase = {};
+  const ensure = (mat, id, rows, cols) => (mat[id] ||= makeGrid(rows, cols));
+  const placeBase = a => {
+    ensure(gGridBase, a.group, D, S)[a.day][a.slot] = a;
+    ensure(tGridBase, a.teacherId, D, S)[a.day][a.slot] = a;
   };
-  const ensureTeacherSet = (store, gid, branch) => {
-    const key = normalizeBranchName(branch);
-    ((store[gid] ||= {})[key] ||= new Set());
-    return store[gid][key];
-  };
-  const cloneTeacherSets = (src) => {
-    const out = {};
-    for (const gid of Object.keys(src || {})) {
-      out[gid] = {};
-      for (const key of Object.keys(src[gid] || {})) out[gid][key] = new Set(src[gid][key]);
+  fixed.forEach(placeBase);
+
+  // İhtiyaç listeleri (group -> [branch, ...])
+  const needsByGroup = {};
+  for (const g of Object.values(state.groups)) {
+    const req = state.requests[g.id] || {};
+    const have = {};
+    fixed.forEach(a => { if (a.group === g.id) have[a.branch] = (have[a.branch]||0) + 1; });
+    const list = [];
+    for (const [b, cnt] of Object.entries(req)) {
+      const need = Math.max(0, (cnt|0) - (have[b]||0));
+      for (let i=0;i<need;i++) list.push(b);
     }
-    return out;
+    needsByGroup[g.id] = list;
+  }
+
+  // İhtiyaç yoksa sadece yeniden çiz ve rapor
+  const remainingNeedsCount = Object.values(needsByGroup).reduce((acc, arr) => acc + (arr?.length || 0), 0);
+  totalNeedCount = remainingNeedsCount;
+  if (remainingNeedsCount === 0) {
+    renderAssignCards();
+    state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now() };
+    const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
+    state.lastAutoAssignReport = rep;
+    showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
+    const btnRpt = document.getElementById('btnAutoAssignReport');
+    if (btnRpt) btnRpt.disabled = false;
+    syncReportButtons();
+    const btnUn = document.getElementById('btnUnassignedReport');
+    if (btnUn) btnUn.disabled = false;
+    return;
+  }
+
+  // Deneme sayısı (ihtiyaca göre dinamik)
+  // Geliştirilmiş değerler: daha yüksek başlangıç ve ihtiyaç başına deneme sayısı,
+  // ayrıca maksimum deneme sayısı artırıldı.
+  const BASE_RESTARTS = 200;
+  const RESTARTS_PER_NEED = 10;
+  const MAX_RESTARTS = 5000;
+  const TARGET_RESTARTS = Math.min(MAX_RESTARTS, BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED);
+
+  // Hücre sıra paternleri
+  const orderings = {
+    randomAll(D,S) { const cells = []; for (let d=0; d<D; d++) for (let s=0; s<S; s++) cells.push([d,s]); return shuffle(cells); },
+    dayMajorRandom(D,S) {
+      const days = shuffle([...Array(D).keys()]); const slots = shuffle([...Array(S).keys()]);
+      const cells = []; for (const d of days) for (const s of slots) cells.push([d,s]); return cells;
+    },
+    slotMajorRandom(D,S) {
+      const days = shuffle([...Array(D).keys()]); const slots = shuffle([...Array(S).keys()]);
+      const cells = []; for (const s of slots) for (const d of days) cells.push([d,s]); return cells;
+    },
+    serpentine(D,S) {
+      const days = shuffle([...Array(D).keys()]); const cells = [];
+      for (let i=0;i<days.length;i++){ const d = days[i];
+        if (i%2===0) for (let s=0;s<S;s++) cells.push([d,s]); else for (let s=S-1;s>=0;s--) cells.push([d,s]);
+      } return cells;
+    }
   };
-  const removeNeedOnce = (needArr, branch) => {
-    const idx = (needArr || []).findIndex(b => branchesMatch(b, branch));
-    if (idx > -1) needArr.splice(idx, 1);
-    return idx;
-  };
-  const countBranchDemand = (needArr, branch) => (needArr || []).reduce((n, b) => n + (branchesMatch(b, branch) ? 1 : 0), 0);
-  const teacherAvailabilityCaps = Object.fromEntries((state.teachers || []).map(t => [t.id, Math.max(1, teacherAvailabilityCount(t.id) || 0)]));
-  const teacherUtilization = (teacherLoads, tid) => (teacherLoads[tid] || 0) / Math.max(1, teacherAvailabilityCaps[tid] || 1);
-  const sortTeacherCandidates = (teachers, teacherLoads, usedSet) => {
-    return shuffle(teachers.slice()).sort((a, b) => {
-      const reuseA = usedSet.has(a.id) ? 1 : 0;
-      const reuseB = usedSet.has(b.id) ? 1 : 0;
-      if (reuseA !== reuseB) return reuseA - reuseB;
-      const utilA = teacherUtilization(teacherLoads, a.id);
-      const utilB = teacherUtilization(teacherLoads, b.id);
-      if (utilA !== utilB) return utilA - utilB;
-      const loadA = teacherLoads[a.id] || 0;
-      const loadB = teacherLoads[b.id] || 0;
-      if (loadA !== loadB) return loadA - loadB;
-      const capA = teacherAvailabilityCaps[a.id] || 1;
-      const capB = teacherAvailabilityCaps[b.id] || 1;
-      if (capA !== capB) return capB - capA;
-      return String(a.id).localeCompare(String(b.id), 'tr');
-    });
-  };
-  const countConsecutiveViolations = (gGrid, groupIds) => {
+  const orderingKeys = Object.keys(orderings);
+
+  // Çoklu denemeler
+  const groupsAll = Object.values(state.groups).map(x => x.id);
+
+  const countConsecutiveViolations = (gGrid) => {
     let vio = 0;
-    for (const gid of groupIds) {
+    for (const gid of groupsAll) {
+      let prev = null;
       const mat = gGrid[gid] || [];
-      for (let d = 0; d < D; d++) {
-        let prev = null;
-        for (let s = 0; s < S; s++) {
-          const cur = mat?.[d]?.[s]?.branch || null;
-          if (cur && prev && branchesMatch(cur, prev)) vio++;
+      for (let d=0; d<D; d++) {
+        for (let s=0; s<S; s++) {
+          const a = mat?.[d]?.[s];
+          const cur = a?.branch || null;
+          if (cur && prev && cur === prev) vio++;
           prev = cur;
         }
       }
     }
     return vio;
   };
-  const collectSolutionFromGrid = (fixedAssignments, gGrid, gGridBase) => {
-    const solution = fixedAssignments.map(a => ({ ...a }));
+
+  while ((performance.now() - startTime) < TIME_LIMIT_MS) {
+    restartsDone++;
+
+    const allowConsecutive = shouldRelax();
+    if (restartsDone > TARGET_RESTARTS && (performance.now()-startTime) < TIME_LIMIT_MS*0.85) {
+      // Hedef restart sayısı bittiyse, kalan sürede daha hızlı küçük denemeler (why: süreyi tam kullan)
+      // Burada yine devam ediyoruz; amaç tie-break iyileştirmek.
+    }
+
+    const gGrid = {};
+    const tGrid = {};
+    for (const gid of Object.keys(gGridBase)) gGrid[gid] = gGridBase[gid].map(row => row.slice());
+    for (const tid of Object.keys(tGridBase)) tGrid[tid] = tGridBase[tid].map(row => row.slice());
+    const needs = JSON.parse(JSON.stringify(needsByGroup));
+
+    const pattern = orderingKeys[rndInt(orderingKeys.length)];
+    const cells = orderings[pattern](D, S);
+
+    const groupOrder = groupsAll
+      .map(gid => ({ gid, need: needs[gid]?.length || 0 }))
+      .sort((a,b) => a.need - b.need || (Math.random()-0.5))
+      .map(x => x.gid);
+
+    let placedCount = 0;
+
+    for (const [d,s] of cells) {
+      // UI'yi kilitlememek için küçük yield'ler (why: 45sn boyunca sayfa donmasın)
+      const nowY = performance.now();
+      if (nowY - lastYield > 40) {
+        updateOverlay();
+        lastYield = nowY;
+        await sleep0();
+      }
+      if ((performance.now() - startTime) >= TIME_LIMIT_MS) break;
+      const localGroups = groupOrder.slice();
+      if (Math.random() < 0.5) shuffle(localGroups);
+
+      for (const gid of localGroups) {
+        const needArr = needs[gid];
+        if (!needArr || needArr.length === 0) continue;
+        if (state.availability.groups[gid]?.[d]?.[s] !== true) continue;
+        if (gGrid[gid]?.[d]?.[s]) continue;
+
+        const lastB = prevBranchOf(gGrid, gid, d, s);
+        const uniqBranches = Array.from(new Set(needArr));
+        shuffle(uniqBranches);
+        if (lastB && !allowConsecutive) {
+          // normalde ardışık aynı branşı sona it (soft)
+          const ix = uniqBranches.indexOf(lastB);
+          if (ix > -1) { uniqBranches.splice(ix,1); uniqBranches.push(lastB); }
+        }
+
+        let placedHere = false;
+
+        for (const branch of uniqBranches) {
+          if (!allowConsecutive && lastB && branch === lastB) continue; // ardışık aynı branşı katı modda engelle
+          // Tüm aday öğretmenleri filtrele (uygunluk ve boşluk kontrolü)
+          const allCandidates = findTeacherOptions(branch)
+            .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true && !(tGrid[t.id] || [])[d]?.[s]);
+          if (allCandidates.length === 0) continue;
+
+          // Daha önce bu gruba aynı branş için atanmış öğretmenleri belirle
+          const usedTeachers = new Set();
+          const gRows = gGrid[gid] || [];
+          for (let dd = 0; dd < D; dd++) {
+            const row = gRows[dd] || [];
+            for (let ss = 0; ss < S; ss++) {
+              const a2 = row[ss];
+              if (a2 && a2.branch === branch) usedTeachers.add(a2.teacherId);
+            }
+          }
+
+          // Öncelikli olarak henüz kullanılmamış öğretmenleri listele
+          const preferred = allCandidates.filter(t => !usedTeachers.has(t.id));
+          const candidateList = preferred.length > 0 ? preferred : allCandidates;
+
+          shuffle(candidateList);
+
+          for (const t of candidateList) {
+            if (!canUse(gGrid, tGrid, gid, t.id, d, s)) continue;
+
+            const a = { group: gid, day: d, slot: s, branch, teacherId: t.id };
+            (gGrid[gid] ||= makeGrid(D, S))[d][s] = a;
+            (tGrid[t.id] ||= makeGrid(D, S))[d][s] = a;
+
+            const idx = needArr.indexOf(branch);
+            if (idx > -1) needArr.splice(idx, 1);
+
+            placedCount++;
+            placedHere = true;
+            break;
+          }
+          if (placedHere) break;
+        }
+      }
+
+      if ((performance.now() - startTime) >= TIME_LIMIT_MS) break;
+    }
+
+    const solution = [];
+    for (const a of fixed) solution.push({...a});
     for (const gid of Object.keys(gGrid)) {
-      for (let d = 0; d < D; d++) {
-        for (let s = 0; s < S; s++) {
-          const a = gGrid[gid]?.[d]?.[s];
+      for (let d=0; d<D; d++) {
+        for (let s=0; s<S; s++) {
+          const a = gGrid[gid][d][s];
           if (!a) continue;
           if (!gGridBase[gid]?.[d]?.[s]) solution.push(a);
         }
       }
     }
-    return solution;
-  };
 
-  try {
-    const fixed = state.assignments.map(a => ({ ...a }));
+    const vio = countConsecutiveViolations(gGrid);
 
-    const gGridBase = {};
-    const tGridBase = {};
-    const teacherLoadsBase = {};
-    const groupBranchTeachersBase = {};
-    const ensureBase = (mat, id) => (mat[id] ||= makeGrid(D, S));
-    for (const a of fixed) {
-      ensureBase(gGridBase, a.group)[a.day][a.slot] = a;
-      ensureBase(tGridBase, a.teacherId)[a.day][a.slot] = a;
-      teacherLoadsBase[a.teacherId] = (teacherLoadsBase[a.teacherId] || 0) + 1;
-      ensureTeacherSet(groupBranchTeachersBase, a.group, a.branch).add(a.teacherId);
-    }
-
-    const groupsAll = Object.values(state.groups).map(x => x.id);
-    const baseFreeSlotsByGroup = {};
-    for (const gid of groupsAll) {
-      let free = 0;
-      for (let d = 0; d < D; d++) {
-        for (let s = 0; s < S; s++) {
-          if (state.availability.groups[gid]?.[d]?.[s] === true && !gGridBase[gid]?.[d]?.[s]) free++;
-        }
+    // === En iyi çözümü ayrı ayrı tut: katı mod vs. esnetilmiş mod ===
+    if (!allowConsecutive) {
+      if (placedCount > bestStrictScore || (placedCount === bestStrictScore && vio < bestStrictVio)) {
+        bestStrictScore = placedCount;
+        bestStrictVio = vio;
+        bestStrictSolution = solution;
       }
-      baseFreeSlotsByGroup[gid] = free;
-    }
-
-    const needsByGroup = {};
-    for (const g of Object.values(state.groups)) {
-      const req = state.requests[g.id] || {};
-      const have = {};
-      fixed.forEach(a => {
-        if (a.group === g.id) {
-          const key = normalizeBranchName(a.branch);
-          have[key] = (have[key] || 0) + 1;
-        }
-      });
-      const list = [];
-      for (const [b, cnt] of Object.entries(req)) {
-        const need = Math.max(0, (cnt | 0) - (have[normalizeBranchName(b)] || 0));
-        for (let i = 0; i < need; i++) list.push(b);
-      }
-      needsByGroup[g.id] = list;
-    }
-
-    const remainingNeedsCount = Object.values(needsByGroup).reduce((acc, arr) => acc + (arr?.length || 0), 0);
-    totalNeedCount = remainingNeedsCount;
-    if (remainingNeedsCount === 0) {
-      renderAssignCards();
-      state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now() };
-      const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
-      state.lastAutoAssignReport = rep;
-      showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
-      const btnRpt = document.getElementById('btnAutoAssignReport');
-      if (btnRpt) btnRpt.disabled = false;
-      syncReportButtons();
-      const btnUn = document.getElementById('btnUnassignedReport');
-      if (btnUn) btnUn.disabled = false;
-      return;
-    }
-
-    const BASE_RESTARTS = 200;
-    const RESTARTS_PER_NEED = 10;
-    const MAX_RESTARTS = 5000;
-    const TARGET_RESTARTS = Math.min(MAX_RESTARTS, BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED);
-
-    const orderings = {
-      randomAll(D,S) { const cells = []; for (let d=0; d<D; d++) for (let s=0; s<S; s++) cells.push([d,s]); return shuffle(cells); },
-      dayMajorRandom(D,S) {
-        const days = shuffle([...Array(D).keys()]); const slots = shuffle([...Array(S).keys()]);
-        const cells = []; for (const d of days) for (const s of slots) cells.push([d,s]); return cells;
-      },
-      slotMajorRandom(D,S) {
-        const days = shuffle([...Array(D).keys()]); const slots = shuffle([...Array(S).keys()]);
-        const cells = []; for (const s of slots) for (const d of days) cells.push([d,s]); return cells;
-      },
-      serpentine(D,S) {
-        const days = shuffle([...Array(D).keys()]); const cells = [];
-        for (let i=0; i<days.length; i++) {
-          const d = days[i];
-          if (i % 2 === 0) for (let s=0; s<S; s++) cells.push([d,s]);
-          else for (let s=S-1; s>=0; s--) cells.push([d,s]);
-        }
-        return cells;
-      }
-    };
-    const orderingKeys = Object.keys(orderings);
-
-    while ((performance.now() - startTime) < TIME_LIMIT_MS) {
-      restartsDone++;
-
-      const allowConsecutive = shouldRelax();
-      if (restartsDone > TARGET_RESTARTS && (performance.now() - startTime) < TIME_LIMIT_MS * 0.85) {
-        // Kalan süre tie-break iyileştirmesi için kullanılır.
-      }
-
-      const gGrid = cloneGridMap(gGridBase);
-      const tGrid = cloneGridMap(tGridBase);
-      const needs = JSON.parse(JSON.stringify(needsByGroup));
-      const teacherLoads = { ...teacherLoadsBase };
-      const groupBranchTeachers = cloneTeacherSets(groupBranchTeachersBase);
-
-      const pattern = orderingKeys[rndInt(orderingKeys.length)];
-      const cells = orderings[pattern](D, S);
-
-      const groupOrder = groupsAll
-        .map(gid => ({
-          gid,
-          need: needs[gid]?.length || 0,
-          freeSlots: baseFreeSlotsByGroup[gid] || 0,
-          uniqueNeedCount: new Set((needs[gid] || []).map(normalizeBranchName)).size
-        }))
-        .sort((a, b) => b.need - a.need || a.freeSlots - b.freeSlots || a.uniqueNeedCount - b.uniqueNeedCount || (Math.random() - 0.5))
-        .map(x => x.gid);
-
-      let placedCount = 0;
-
-      for (const [d, s] of cells) {
-        const nowY = performance.now();
-        if (nowY - lastYield > 40) {
-          updateOverlay();
-          lastYield = nowY;
-          await sleep0();
-        }
-        if ((performance.now() - startTime) >= TIME_LIMIT_MS) break;
-
-        const localGroups = groupOrder.slice();
-        if (Math.random() < 0.35) shuffle(localGroups);
-
-        for (const gid of localGroups) {
-          const needArr = needs[gid];
-          if (!needArr || needArr.length === 0) continue;
-          if (state.availability.groups[gid]?.[d]?.[s] !== true) continue;
-          if (gGrid[gid]?.[d]?.[s]) continue;
-
-          const lastB = prevBranchOf(gGrid, gid, d, s);
-          const uniqBranches = Array.from(new Map((needArr || []).map(b => [normalizeBranchName(b), b])).values());
-          const branchPlans = [];
-
-          for (const branch of uniqBranches) {
-            const sameAsPrev = !!(lastB && branchesMatch(branch, lastB));
-            if (!allowConsecutive && sameAsPrev) continue;
-
-            const rawCandidates = findTeacherOptions(branch).filter(t => canUse(gGrid, tGrid, gid, t.id, d, s));
-            if (rawCandidates.length === 0) continue;
-
-            const usedSet = ensureTeacherSet(groupBranchTeachers, gid, branch);
-            const candidateList = sortTeacherCandidates(rawCandidates, teacherLoads, usedSet);
-            branchPlans.push({
-              branch,
-              candidateList,
-              candidateCount: rawCandidates.length,
-              demand: countBranchDemand(needArr, branch),
-              sameAsPrev,
-              bestTeacherUtil: candidateList.length ? teacherUtilization(teacherLoads, candidateList[0].id) : Infinity
-            });
-          }
-
-          if (!branchPlans.length) continue;
-          branchPlans.sort((a, b) => {
-            if (a.sameAsPrev !== b.sameAsPrev) return Number(a.sameAsPrev) - Number(b.sameAsPrev);
-            if (a.candidateCount !== b.candidateCount) return a.candidateCount - b.candidateCount;
-            if (a.demand !== b.demand) return b.demand - a.demand;
-            if (a.bestTeacherUtil !== b.bestTeacherUtil) return a.bestTeacherUtil - b.bestTeacherUtil;
-            return normalizeBranchName(a.branch).localeCompare(normalizeBranchName(b.branch), 'tr');
-          });
-
-          let placedHere = false;
-          for (const plan of branchPlans) {
-            for (const t of plan.candidateList) {
-              if (!canUse(gGrid, tGrid, gid, t.id, d, s)) continue;
-
-              const a = { group: gid, day: d, slot: s, branch: plan.branch, teacherId: t.id };
-              ensureGrid(gGrid, gid)[d][s] = a;
-              ensureGrid(tGrid, t.id)[d][s] = a;
-              teacherLoads[t.id] = (teacherLoads[t.id] || 0) + 1;
-              ensureTeacherSet(groupBranchTeachers, gid, plan.branch).add(t.id);
-              removeNeedOnce(needArr, plan.branch);
-
-              placedCount++;
-              placedHere = true;
-              break;
-            }
-            if (placedHere) break;
-          }
-        }
-
-        if ((performance.now() - startTime) >= TIME_LIMIT_MS) break;
-      }
-
-      const solution = collectSolutionFromGrid(fixed, gGrid, gGridBase);
-      const vio = countConsecutiveViolations(gGrid, groupsAll);
-
-      if (!allowConsecutive) {
-        if (placedCount > bestStrictScore || (placedCount === bestStrictScore && vio < bestStrictVio)) {
-          bestStrictScore = placedCount;
-          bestStrictVio = vio;
-          bestStrictSolution = solution;
-        }
-      } else {
-        if (placedCount > bestRelaxScore || (placedCount === bestRelaxScore && vio < bestRelaxVio)) {
-          bestRelaxScore = placedCount;
-          bestRelaxVio = vio;
-          bestRelaxSolution = solution;
-        }
-      }
-
-      const candBestScore = Math.max(bestStrictScore, bestRelaxScore);
-      const candBestVio = (candBestScore === bestRelaxScore && bestRelaxScore > bestStrictScore)
-        ? bestRelaxVio
-        : bestStrictVio;
-
-      if (candBestScore > bestScore || (candBestScore === bestScore && candBestVio < bestVio)) {
-        bestScore = candBestScore;
-        bestVio = candBestVio;
-        bestSolution = (bestRelaxScore > bestStrictScore) ? bestRelaxSolution : bestStrictSolution;
-        updateOverlay(`Yeni en iyi çözüm: ${bestScore} atama${bestVio < Infinity ? ` • ardışık ihlal: ${bestVio}` : ''}${bestRelaxScore > bestStrictScore ? ' • (esnetme ile)' : ''}`);
-      }
-    }
-
-    if (bestRelaxScore > bestStrictScore) {
-      bestSolution = bestRelaxSolution;
-      bestScore = bestRelaxScore;
-      bestVio = bestRelaxVio;
     } else {
-      bestSolution = bestStrictSolution;
-      bestScore = bestStrictScore;
-      bestVio = bestStrictVio;
+      if (placedCount > bestRelaxScore || (placedCount === bestRelaxScore && vio < bestRelaxVio)) {
+        bestRelaxScore = placedCount;
+        bestRelaxVio = vio;
+        bestRelaxSolution = solution;
+      }
     }
 
+    // UI'da göstermek için genel en iyi
+    const candBestScore = Math.max(bestStrictScore, bestRelaxScore);
+    const candBestVio = (candBestScore === bestRelaxScore && bestRelaxScore > bestStrictScore)
+      ? bestRelaxVio
+      : bestStrictVio;
+
+    if (candBestScore > bestScore || (candBestScore === bestScore && candBestVio < bestVio)) {
+      bestScore = candBestScore;
+      bestVio = candBestVio;
+      bestSolution = (bestRelaxScore > bestStrictScore) ? bestRelaxSolution : bestStrictSolution;
+      updateOverlay(`Yeni en iyi çözüm: ${bestScore} atama${bestVio<Infinity ? ` • ardışık ihlal: ${bestVio}` : ''}${bestRelaxScore > bestStrictScore ? ' • (esnetme ile)' : ''}`);
+    }
+  }
+
+  // En iyi sonucu uygula
+  // Not: Esnetme ancak gerçekten daha fazla atama getiriyorsa seçilir.
+  if (bestRelaxScore > bestStrictScore) {
+    bestSolution = bestRelaxSolution;
+    bestScore = bestRelaxScore;
+    bestVio = bestRelaxVio;
+  } else {
+    bestSolution = bestStrictSolution;
+    bestScore = bestStrictScore;
+    bestVio = bestStrictVio;
+  }
     if (bestSolution) {
       const seen = new Set();
       const merged = [];
@@ -3377,163 +3263,142 @@ async function autoAssign() {
         const k = keyCell(a.group, a.day, a.slot);
         if (seen.has(k)) continue;
         seen.add(k);
-        merged.push({ group: a.group, day: a.day, slot: a.slot, branch: a.branch, teacherId: a.teacherId });
+        merged.push({group:a.group, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId});
       }
       state.assignments = merged;
     }
 
+    /**
+     * Fill any remaining unassigned course requests using a backtracking search.
+     *
+     * After the greedy/random phase above, there may still be unmet requests
+     * for some group/branch combinations. This helper builds the current
+     * assignment grids and then attempts to place the remaining requests
+     * deterministically. It explores available time slots and candidate
+     * teachers for each outstanding (group, branch) pair in a depth‑first
+     * manner. If a complete placement is found, the new assignments are
+     * appended to state.assignments. Otherwise, the existing assignments are
+     * left untouched.
+     */
     function fillRemainingAssignments() {
+      // Build grids based off the current assignments
       const gGrid = {};
       const tGrid = {};
-      const teacherLoads = {};
-      const groupBranchTeachers = {};
-      const ensureLocalGrid = (mat, id) => (mat[id] ||= Array.from({ length: D }, () => Array(S).fill(null)));
-
+      const ensureGrid = (mat, id) => (mat[id] ||= Array.from({ length: D }, () => Array(S).fill(null)));
       for (const a of state.assignments) {
-        ensureLocalGrid(gGrid, a.group)[a.day][a.slot] = a;
-        ensureLocalGrid(tGrid, a.teacherId)[a.day][a.slot] = a;
-        teacherLoads[a.teacherId] = (teacherLoads[a.teacherId] || 0) + 1;
-        ensureTeacherSet(groupBranchTeachers, a.group, a.branch).add(a.teacherId);
+        ensureGrid(gGrid, a.group)[a.day][a.slot] = a;
+        ensureGrid(tGrid, a.teacherId)[a.day][a.slot] = a;
       }
 
+      // Build a list of outstanding tasks: one entry for each unmet request
       const tasks = [];
       for (const g of Object.values(state.groups)) {
         const req = state.requests[g.id] || {};
+        // Count existing assignments per branch for this group
         const have = {};
         for (const a of state.assignments) {
-          if (a.group === g.id) {
-            const key = normalizeBranchName(a.branch);
-            have[key] = (have[key] || 0) + 1;
-          }
+          if (a.group === g.id) have[a.branch] = (have[a.branch] || 0) + 1;
         }
         for (const [b, cnt] of Object.entries(req)) {
-          const needed = Math.max(0, (cnt | 0) - (have[normalizeBranchName(b)] || 0));
+          const needed = Math.max(0, (cnt | 0) - (have[b] || 0));
           for (let i = 0; i < needed; i++) tasks.push({ group: g.id, branch: b });
         }
       }
-      if (!tasks.length) return;
+      if (tasks.length === 0) return; // nothing to place
 
+      // Helper to compute candidate placements for a task
       function getCandidates(task) {
         const { group: gid, branch } = task;
         const candidates = [];
-        const usedSet = ensureTeacherSet(groupBranchTeachers, gid, branch);
-
         for (let d = 0; d < D; d++) {
           for (let s = 0; s < S; s++) {
+            // group availability and no assignment in this slot
             if (state.availability.groups[gid]?.[d]?.[s] !== true) continue;
             if (gGrid[gid]?.[d]?.[s]) continue;
+            // Ardışık aynı branş: normalde kaçın, çok sıkışınca izin ver
             const lastB = prevBranchOf(gGrid, gid, d, s);
-            if (lastB && branchesMatch(lastB, branch) && !shouldRelax()) continue;
-
-            const teachers = findTeacherOptions(branch).filter(t => canUse(gGrid, tGrid, gid, t.id, d, s));
-            if (!teachers.length) continue;
-
-            const rankedTeachers = sortTeacherCandidates(teachers, teacherLoads, usedSet);
-            for (const t of rankedTeachers) {
-              candidates.push({
-                day: d,
-                slot: s,
-                teacherId: t.id,
-                utilization: teacherUtilization(teacherLoads, t.id),
-                teacherLoad: teacherLoads[t.id] || 0
-              });
+            if (lastB && lastB === branch && !shouldRelax()) continue;
+            // list candidate teachers for this branch at (d,s)
+            const teachers = findTeacherOptions(branch)
+              .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true)
+              .filter(t => !tGrid[t.id]?.[d]?.[s]);
+            if (teachers.length === 0) continue;
+            // prefer teachers not already teaching this branch to this group
+            const used = new Set();
+            const gRows = gGrid[gid] || [];
+            for (let dd = 0; dd < D; dd++) {
+              const row = gRows[dd] || [];
+              for (let ss = 0; ss < S; ss++) {
+                const a2 = row[ss];
+                if (a2 && a2.branch === branch) used.add(a2.teacherId);
+              }
+            }
+            const pref = teachers.filter(t => !used.has(t.id));
+            const finalList = pref.length ? pref : teachers;
+            for (const t of finalList) {
+              candidates.push({ day: d, slot: s, teacherId: t.id });
             }
           }
         }
-
-        candidates.sort((a, b) => {
-          if (a.utilization !== b.utilization) return a.utilization - b.utilization;
-          if (a.teacherLoad !== b.teacherLoad) return a.teacherLoad - b.teacherLoad;
-          if (a.day !== b.day) return a.day - b.day;
-          if (a.slot !== b.slot) return a.slot - b.slot;
-          return String(a.teacherId).localeCompare(String(b.teacherId), 'tr');
-        });
         return candidates;
       }
 
-      tasks.sort((a, b) => {
-        const aCount = getCandidates(a).length;
-        const bCount = getCandidates(b).length;
-        if (aCount !== bCount) return aCount - bCount;
-        return normalizeBranchName(a.branch).localeCompare(normalizeBranchName(b.branch), 'tr');
-      });
+      // Sort tasks by the number of candidate placements (most constrained first)
+      tasks.sort((a, b) => getCandidates(a).length - getCandidates(b).length);
 
       const newAssignments = [];
-      let bestPartial = [];
-      const fillDeadline = performance.now() + Math.min(1800, Math.max(350, TIME_LIMIT_MS - (performance.now() - startTime) - 250));
-
-      const snapshotBest = () => {
-        if (newAssignments.length > bestPartial.length) bestPartial = newAssignments.map(a => ({ ...a }));
-      };
+      // Backtracking patlamasın: kısa bir süre limiti (why: sayfa donmasın)
+      const fillDeadline = performance.now() + Math.min(1500, Math.max(300, TIME_LIMIT_MS - (performance.now() - startTime) - 250));
 
       function backtrack(index) {
-        if (performance.now() > fillDeadline) {
-          snapshotBest();
-          return false;
-        }
-        snapshotBest();
+        if (performance.now() > fillDeadline) return false;
         if (index === tasks.length) return true;
-
-        let bestIdx = -1;
-        let bestCand = null;
-        for (let i = index; i < tasks.length; i++) {
-          const cand = getCandidates(tasks[i]);
-          if (bestIdx === -1 || cand.length < bestCand.length) {
-            bestIdx = i;
-            bestCand = cand;
-            if (cand.length === 0) break;
-          }
-        }
-
-        if (bestIdx !== index) [tasks[index], tasks[bestIdx]] = [tasks[bestIdx], tasks[index]];
         const task = tasks[index];
-        const cand = (bestIdx === index) ? (bestCand || getCandidates(task)) : getCandidates(task);
-        if (!cand.length) return false;
-
+        const cand = getCandidates(task);
+        // If no placements possible, fail
+        if (cand.length === 0) return false;
+        // Heuristic: sort candidate placements to use least busy teachers first
+        cand.sort((c1, c2) => {
+          // count existing classes for teacher in final assignments
+          const t1Count = state.assignments.concat(newAssignments).filter(a => a.teacherId === c1.teacherId).length;
+          const t2Count = state.assignments.concat(newAssignments).filter(a => a.teacherId === c2.teacherId).length;
+          return t1Count - t2Count;
+        });
         for (const { day: d, slot: s, teacherId: tid } of cand) {
+          // tentative assign
           const assignment = { group: task.group, day: d, slot: s, branch: task.branch, teacherId: tid };
-          ensureLocalGrid(gGrid, task.group)[d][s] = assignment;
-          ensureLocalGrid(tGrid, tid)[d][s] = assignment;
-          teacherLoads[tid] = (teacherLoads[tid] || 0) + 1;
-          ensureTeacherSet(groupBranchTeachers, task.group, task.branch).add(tid);
+          // mark in grids
+          ensureGrid(gGrid, task.group)[d][s] = assignment;
+          ensureGrid(tGrid, tid)[d][s] = assignment;
           newAssignments.push(assignment);
-
+          // recurse
           if (backtrack(index + 1)) return true;
-
+          // backtrack: remove
           newAssignments.pop();
           gGrid[task.group][d][s] = null;
           tGrid[tid][d][s] = null;
-          teacherLoads[tid] = Math.max(0, (teacherLoads[tid] || 1) - 1);
-          const usedSet = ensureTeacherSet(groupBranchTeachers, task.group, task.branch);
-          let stillUsed = false;
-          const rows = gGrid[task.group] || [];
-          for (let dd = 0; dd < D && !stillUsed; dd++) {
-            const row = rows[dd] || [];
-            for (let ss = 0; ss < S; ss++) {
-              const a2 = row[ss];
-              if (a2 && branchesMatch(a2.branch, task.branch) && a2.teacherId === tid) {
-                stillUsed = true;
-                break;
-              }
-            }
-          }
-          if (!stillUsed) usedSet.delete(tid);
         }
         return false;
       }
 
       backtrack(0);
-      if (bestPartial.length > 0) state.assignments = state.assignments.concat(bestPartial);
+      // append found assignments
+      if (newAssignments.length > 0) {
+        state.assignments = state.assignments.concat(newAssignments);
+      }
     }
 
+    // Attempt to fill any remaining unassigned needs deterministically
     fillRemainingAssignments();
 
     renderAssignCards();
 
+    // meta: son otomatik atama
     state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now() };
     const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
     state.lastAutoAssignReport = rep;
 
+    // --- Raporu göster ---
     showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
     const btnRpt = document.getElementById('btnAutoAssignReport');
     if (btnRpt) btnRpt.disabled = false;
@@ -3541,6 +3406,7 @@ async function autoAssign() {
     const btnUn = document.getElementById('btnUnassignedReport');
     if (btnUn) btnUn.disabled = false;
   } finally {
+    // UI temizle
     updateOverlay('Bitti. En iyi sonuç uygulanıyor…');
     hideOverlay();
     if (btnAuto) btnAuto.disabled = false;
