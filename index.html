@@ -1148,7 +1148,15 @@
         </div>
       </div>
       <div class="card">
-        <h3>Öğretmen Müsaitlikleri</h3>
+        <div class="row" style="justify-content:space-between;align-items:end;margin-bottom:10px;gap:10px;">
+          <h3 style="margin:0;">Öğretmen Müsaitlikleri</h3>
+          <label class="mini" style="display:flex;flex-direction:column;gap:6px;min-width:260px;">
+            <span>Filtre</span>
+            <select id="teacherAvailFilter" disabled>
+              <option value="">Tümü</option>
+            </select>
+          </label>
+        </div>
         <div id="teacherAvailWrap" class="avGrid"></div>
       </div>
     </div>
@@ -1173,7 +1181,15 @@
         </div>
       </div>
       <div class="card">
-        <h3>Grup Müsaitlikleri</h3>
+        <div class="row" style="justify-content:space-between;align-items:end;margin-bottom:10px;gap:10px;">
+          <h3 style="margin:0;">Grup Müsaitlikleri</h3>
+          <label class="mini" style="display:flex;flex-direction:column;gap:6px;min-width:260px;">
+            <span>Filtre</span>
+            <select id="groupAvailFilter" disabled>
+              <option value="">Tümü</option>
+            </select>
+          </label>
+        </div>
         <div id="groupAvailWrap" class="avGrid"></div>
       </div>
     </div>
@@ -1246,6 +1262,12 @@
           </label>
           <button class="btn ghost" id="btnAutoAssignReport" disabled>Son Rapor</button>
           <button class="btn ghost" id="btnUnassignedReport" disabled>Atamasızlar</button>
+          <label class="mini" style="display:flex;flex-direction:column;gap:6px;min-width:260px; margin-left:6px;">
+            <span>Filtre</span>
+            <select id="assignGroupFilter" disabled>
+              <option value="">Tümü</option>
+            </select>
+          </label>
         </div>
       </div>
 
@@ -1885,7 +1907,9 @@ function renderAvailGrids(){
   if(state.teachers.length===0){
     tWrap.innerHTML = '<div class="muted">Öğretmen verisi yok. Lütfen "Verileri Oku" ile yükleyin.</div>';
   }else{
-    state.teachers.forEach(t=>{
+    const filteredTeachers = state.teachers.filter(t => !selectedTeacherId || t.id === selectedTeacherId);
+    if(filteredTeachers.length===0){ tWrap.innerHTML = '<div class="muted">Seçilen filtreye uygun öğretmen bulunamadı.</div>'; }
+    filteredTeachers.forEach(t=>{
       const card = document.createElement('div'); card.className='card';
       const head = document.createElement('div'); head.className='flex';
       head.innerHTML = `<b>👤 ${t.name}</b><span class="tag">${t.branch}</span>`;
@@ -1928,7 +1952,9 @@ function renderAvailGrids(){
   if(groups.length===0){
     gWrap.innerHTML = '<div class="muted">Grup verisi yok. Öğrencilerden gruplar türetilir.</div>';
   }else{
-    groups.sort(groupComparator).forEach(g=>{
+    const filteredGroups = groups.sort(groupComparator).filter(g => !selectedGroupId || g.id === selectedGroupId);
+    if(filteredGroups.length===0){ gWrap.innerHTML = '<div class="muted">Seçilen filtreye uygun grup bulunamadı.</div>'; }
+    filteredGroups.forEach(g=>{
       const card = document.createElement('div'); card.className='card';
       const head = document.createElement('div'); head.className='flex';
       head.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span>`;
@@ -3655,6 +3681,8 @@ $("#tabGroup").addEventListener('click', ()=>showAvailTab('group'));
 bindTopTabs();
 buildProgramGrid(true);
 renderSlotLabels();
+bindPanelFilters();
+populatePanelFilters();
 showTopTab('step1');
 </script>
 <style>
@@ -5409,8 +5437,58 @@ function buildProgramGrid(fromRestore=false){
   reconcileAllToProgram(getAssignPolicy());
 }
 
+function populatePanelFilters(){
+  const teacherSel = $("#teacherAvailFilter");
+  const groupSel = $("#groupAvailFilter");
+  const assignSel = $("#assignGroupFilter");
+
+  const prevTeacher = teacherSel?.value || '';
+  const prevGroup = groupSel?.value || '';
+  const prevAssign = assignSel?.value || '';
+
+  const teachers = (state.teachers || []).slice().sort((a,b)=> String(a.name||'').localeCompare(String(b.name||''), 'tr'));
+  const groups = Object.values(state.groups || {}).slice().sort(groupComparator);
+
+  if (teacherSel) {
+    teacherSel.innerHTML = '<option value="">Tümü</option>' + teachers.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)} • ${escapeHtml(t.branch || '')}</option>`).join('');
+    teacherSel.disabled = teachers.length === 0;
+    teacherSel.value = teachers.some(t => t.id === prevTeacher) ? prevTeacher : '';
+  }
+  if (groupSel) {
+    groupSel.innerHTML = '<option value="">Tümü</option>' + groups.map(g => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.name || g.id)}</option>`).join('');
+    groupSel.disabled = groups.length === 0;
+    groupSel.value = groups.some(g => g.id === prevGroup) ? prevGroup : '';
+  }
+  if (assignSel) {
+    assignSel.innerHTML = '<option value="">Tümü</option>' + groups.map(g => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.name || g.id)}</option>`).join('');
+    assignSel.disabled = groups.length === 0;
+    assignSel.value = groups.some(g => g.id === prevAssign) ? prevAssign : '';
+  }
+}
+
+function bindPanelFilters(){
+  const teacherSel = $("#teacherAvailFilter");
+  const groupSel = $("#groupAvailFilter");
+  const assignSel = $("#assignGroupFilter");
+  if (teacherSel && !teacherSel.dataset.bound) {
+    teacherSel.dataset.bound = '1';
+    teacherSel.addEventListener('change', ()=> renderAvailGrids());
+  }
+  if (groupSel && !groupSel.dataset.bound) {
+    groupSel.dataset.bound = '1';
+    groupSel.addEventListener('change', ()=> renderAvailGrids());
+  }
+  if (assignSel && !assignSel.dataset.bound) {
+    assignSel.dataset.bound = '1';
+    assignSel.addEventListener('change', ()=> renderAssignCards());
+  }
+}
+
 function renderAvailGrids(){
   const D = state.program.days.length, S = state.program.slots, days = state.program.days;
+  populatePanelFilters();
+  const selectedTeacherId = $("#teacherAvailFilter")?.value || '';
+  const selectedGroupId = $("#groupAvailFilter")?.value || '';
 
   // --- A) ÖĞRETMEN MÜSAİTLİKLERİ ---
   const tWrap=$("#teacherAvailWrap"); tWrap.innerHTML='';
@@ -5524,10 +5602,17 @@ function renderAvailGrids(){
 }
 
 function renderAssignCards(){
+  populatePanelFilters();
   const wrap = $("#assignCards"); wrap.innerHTML='';
   const days = state.program.days, S=state.program.slots;
 
-  const groups = Object.values(state.groups).slice().sort(groupComparator);
+  const selectedGroupId = $("#assignGroupFilter")?.value || '';
+  const groups = Object.values(state.groups).slice().sort(groupComparator).filter(g => !selectedGroupId || g.id === selectedGroupId);
+
+  if(groups.length===0){
+    wrap.innerHTML = '<div class="card muted">Seçilen filtreye uygun grup bulunamadı.</div>';
+    return;
+  }
 
   groups.forEach(g=>{
     const card = document.createElement('div'); card.className='card';
