@@ -981,189 +981,6 @@
     #tempPrintArea .p-chip{border:1px solid #000;border-radius:999px;padding:2px 8px;font-weight:800;font-size:11px}
   }
 
-
-
-/* ===== 2026-03-25 targeted refresh: Step 2 + Step 5 + availability toolbar ===== */
-#step2 .toolbar,
-#step5 .toolbar{
-  align-items:stretch;
-  gap:14px;
-}
-#step2 .toolbar .left,
-#step2 .toolbar .right,
-#step5 .toolbar .left,
-#step5 .toolbar .right{
-  align-items:stretch;
-  gap:12px;
-}
-#step2 .toolbar .btn-group,
-#step5 .toolbar .btn-group{
-  min-height:100%;
-}
-
-#step2 .toolbar .left > label{
-  min-width:210px;
-  padding:12px 14px;
-  border-radius:16px;
-  border:1px solid rgba(15,23,42,.10);
-  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
-  box-shadow:0 10px 26px rgba(2,8,23,.05);
-}
-#step2 .toolbar .left > label input,
-#step2 .toolbar .left > label select{
-  width:100%;
-  min-width:0;
-  margin-top:6px;
-}
-#step2 #slotLabelsWrap,
-#step2 #progGridWrap{
-  border:1px solid rgba(15,23,42,.08);
-  border-radius:20px;
-  box-shadow:0 14px 30px rgba(2,8,23,.06);
-}
-#step2 #slotLabelsWrap{
-  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
-}
-#step2 #progGridWrap{
-  background:linear-gradient(180deg,#fcfdff 0%,#f8fafc 100%);
-  padding:16px;
-  overflow:auto;
-}
-#step2 #progGridWrap > .kgrid{
-  min-width:max-content;
-  margin-bottom:8px;
-}
-#step2 #progGridWrap > .kgrid:last-child{margin-bottom:0;}
-#step2 #progGridWrap .kgrid[data-cols]{
-  grid-template-columns:170px repeat(var(--cols), minmax(118px, 1fr));
-  gap:10px;
-}
-#step2 #progGridWrap .kgrid > div:first-child{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:12px;
-  border-radius:14px;
-  background:linear-gradient(180deg,#eef2ff 0%,#e0ecff 100%);
-  border:1px solid rgba(79,70,229,.16);
-  color:#1e293b;
-  font-weight:900;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.55);
-}
-#step2 #progGridWrap .kcell.busy{
-  min-height:68px;
-  border-style:solid;
-  background:linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);
-}
-#step2 #progGridWrap .kcell:not(.busy){
-  min-height:72px !important;
-  border-style:solid;
-  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
-  border-color:rgba(148,163,184,.36);
-  border-radius:16px;
-  box-shadow:0 8px 18px rgba(2,8,23,.05);
-}
-#step2 #progGridWrap .kcell:not(.busy):hover{
-  transform:translateY(-2px);
-  border-color:rgba(79,70,229,.32);
-  box-shadow:0 14px 26px rgba(79,70,229,.12);
-}
-#step2 #progGridWrap .kcell > div{font-size:12px;}
-
-#step3 #panelTeach .toolbar .left,
-#step3 #panelGroup .toolbar .left{
-  align-items:stretch;
-}
-#step3 #panelTeach .btn-group,
-#step3 #panelGroup .btn-group{
-  min-height:100%;
-}
-
-#step5 .toolbar .left{
-  flex:1 1 980px;
-}
-#step5 .toolbar .right{
-  flex:0 1 auto;
-  justify-content:flex-end;
-}
-#step5 .toolbar .btn-group[aria-label="Atama"]{
-  flex:1 1 auto;
-  display:grid;
-  grid-template-columns:auto auto minmax(250px, 1fr) auto auto minmax(220px, 280px);
-  align-items:center;
-  gap:10px;
-}
-#step5 .toolbar .btn-group[aria-label="Atama"] .gtitle{
-  margin-right:0;
-}
-#step5 .toolbar .btn-group[aria-label="Atama"] .pill{
-  min-height:42px;
-  padding:8px 12px;
-}
-#step5 .toolbar .btn-group[aria-label="Atama"] label.mini{
-  min-width:220px;
-}
-#step5 .toolbar .btn-group[aria-label="Atama"] select{
-  width:100%;
-  min-width:0;
-}
-#step5 #assignCards{
-  gap:16px;
-}
-#step5 #assignCards .card{
-  padding:14px;
-  border-radius:18px;
-}
-#step5 #assignCards .card > .flex{
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:12px;
-}
-#step5 #assignCards .card > .flex > :first-child{
-  flex:1 1 520px;
-}
-#step5 #assignCards .card > .flex > .right{
-  flex:0 0 auto;
-  margin-left:auto;
-  justify-content:flex-end;
-}
-
-@media (max-width: 1120px){
-  #step2 .toolbar .left > label{
-    min-width:180px;
-    flex:1 1 220px;
-  }
-  #step2 #progGridWrap .kgrid[data-cols]{
-    grid-template-columns:140px repeat(var(--cols), minmax(96px, 1fr));
-  }
-  #step5 .toolbar .btn-group[aria-label="Atama"]{
-    grid-template-columns:repeat(2, minmax(180px, 1fr));
-  }
-  #step5 .toolbar .btn-group[aria-label="Atama"] .gtitle{
-    grid-column:1 / -1;
-    padding-bottom:2px;
-  }
-  #step5 .toolbar .btn-group[aria-label="Atama"] label.mini,
-  #step5 .toolbar .btn-group[aria-label="Atama"] .pill{
-    grid-column:1 / -1;
-  }
-}
-
-@media (max-width: 760px){
-  #step2 .toolbar .left,
-  #step2 .toolbar .right,
-  #step5 .toolbar .left,
-  #step5 .toolbar .right{
-    width:100%;
-  }
-  #step2 .toolbar .left > label{
-    width:100%;
-  }
-  #step5 .toolbar .btn-group[aria-label="Atama"]{
-    grid-template-columns:1fr;
-  }
-}
-
 </style>
 </head>
 <body>
@@ -1352,10 +1169,6 @@
             <button class="btn ghost" id="btnAvailExport2">Dışa Aktar</button>
             <input id="fileAvailImport2" type="file" accept="application/json" hidden />
             <button class="btn ghost" id="btnAvailImport2">İçeri Al</button>
-          </div>
-          <div class="btn-group" aria-label="Toplu işlemler">
-            <span class="gtitle">Toplu</span>
-            <button class="btn warn" id="btnAvailClear2">Tümünü Temizle</button>
           </div>
         </div>
         <div class="right">
@@ -3802,7 +3615,6 @@ $("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
 $("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
-$("#btnAvailClear2").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
 $("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
