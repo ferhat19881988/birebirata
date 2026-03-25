@@ -983,84 +983,186 @@
 
 
 
-  /* ===========================
-     STEP 2 – MODERN & KOMPAKT PROGRAM
-     =========================== */
-  #step2 .toolbar{align-items:stretch;gap:14px}
+/* ===== 2026-03-25 targeted refresh: Step 2 + Step 5 + availability toolbar ===== */
+#step2 .toolbar,
+#step5 .toolbar{
+  align-items:stretch;
+  gap:14px;
+}
+#step2 .toolbar .left,
+#step2 .toolbar .right,
+#step5 .toolbar .left,
+#step5 .toolbar .right{
+  align-items:stretch;
+  gap:12px;
+}
+#step2 .toolbar .btn-group,
+#step5 .toolbar .btn-group{
+  min-height:100%;
+}
+
+#step2 .toolbar .left > label{
+  min-width:210px;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(15,23,42,.10);
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  box-shadow:0 10px 26px rgba(2,8,23,.05);
+}
+#step2 .toolbar .left > label input,
+#step2 .toolbar .left > label select{
+  width:100%;
+  min-width:0;
+  margin-top:6px;
+}
+#step2 #slotLabelsWrap,
+#step2 #progGridWrap{
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:20px;
+  box-shadow:0 14px 30px rgba(2,8,23,.06);
+}
+#step2 #slotLabelsWrap{
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+}
+#step2 #progGridWrap{
+  background:linear-gradient(180deg,#fcfdff 0%,#f8fafc 100%);
+  padding:16px;
+  overflow:auto;
+}
+#step2 #progGridWrap > .kgrid{
+  min-width:max-content;
+  margin-bottom:8px;
+}
+#step2 #progGridWrap > .kgrid:last-child{margin-bottom:0;}
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:170px repeat(var(--cols), minmax(118px, 1fr));
+  gap:10px;
+}
+#step2 #progGridWrap .kgrid > div:first-child{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px;
+  border-radius:14px;
+  background:linear-gradient(180deg,#eef2ff 0%,#e0ecff 100%);
+  border:1px solid rgba(79,70,229,.16);
+  color:#1e293b;
+  font-weight:900;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55);
+}
+#step2 #progGridWrap .kcell.busy{
+  min-height:68px;
+  border-style:solid;
+  background:linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);
+}
+#step2 #progGridWrap .kcell:not(.busy){
+  min-height:72px !important;
+  border-style:solid;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  border-color:rgba(148,163,184,.36);
+  border-radius:16px;
+  box-shadow:0 8px 18px rgba(2,8,23,.05);
+}
+#step2 #progGridWrap .kcell:not(.busy):hover{
+  transform:translateY(-2px);
+  border-color:rgba(79,70,229,.32);
+  box-shadow:0 14px 26px rgba(79,70,229,.12);
+}
+#step2 #progGridWrap .kcell > div{font-size:12px;}
+
+#step3 #panelTeach .toolbar .left,
+#step3 #panelGroup .toolbar .left{
+  align-items:stretch;
+}
+#step3 #panelTeach .btn-group,
+#step3 #panelGroup .btn-group{
+  min-height:100%;
+}
+
+#step5 .toolbar .left{
+  flex:1 1 980px;
+}
+#step5 .toolbar .right{
+  flex:0 1 auto;
+  justify-content:flex-end;
+}
+#step5 .toolbar .btn-group[aria-label="Atama"]{
+  flex:1 1 auto;
+  display:grid;
+  grid-template-columns:auto auto minmax(250px, 1fr) auto auto minmax(220px, 280px);
+  align-items:center;
+  gap:10px;
+}
+#step5 .toolbar .btn-group[aria-label="Atama"] .gtitle{
+  margin-right:0;
+}
+#step5 .toolbar .btn-group[aria-label="Atama"] .pill{
+  min-height:42px;
+  padding:8px 12px;
+}
+#step5 .toolbar .btn-group[aria-label="Atama"] label.mini{
+  min-width:220px;
+}
+#step5 .toolbar .btn-group[aria-label="Atama"] select{
+  width:100%;
+  min-width:0;
+}
+#step5 #assignCards{
+  gap:16px;
+}
+#step5 #assignCards .card{
+  padding:14px;
+  border-radius:18px;
+}
+#step5 #assignCards .card > .flex{
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+#step5 #assignCards .card > .flex > :first-child{
+  flex:1 1 520px;
+}
+#step5 #assignCards .card > .flex > .right{
+  flex:0 0 auto;
+  margin-left:auto;
+  justify-content:flex-end;
+}
+
+@media (max-width: 1120px){
+  #step2 .toolbar .left > label{
+    min-width:180px;
+    flex:1 1 220px;
+  }
+  #step2 #progGridWrap .kgrid[data-cols]{
+    grid-template-columns:140px repeat(var(--cols), minmax(96px, 1fr));
+  }
+  #step5 .toolbar .btn-group[aria-label="Atama"]{
+    grid-template-columns:repeat(2, minmax(180px, 1fr));
+  }
+  #step5 .toolbar .btn-group[aria-label="Atama"] .gtitle{
+    grid-column:1 / -1;
+    padding-bottom:2px;
+  }
+  #step5 .toolbar .btn-group[aria-label="Atama"] label.mini,
+  #step5 .toolbar .btn-group[aria-label="Atama"] .pill{
+    grid-column:1 / -1;
+  }
+}
+
+@media (max-width: 760px){
   #step2 .toolbar .left,
-  #step2 .toolbar .right{align-items:stretch}
-  #step2 .toolbar label{
-    display:flex;flex-direction:column;justify-content:space-between;gap:6px;
-    min-width:190px;padding:10px 12px;border-radius:14px;
-    background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
-    border:1px solid rgba(15,23,42,.08);box-shadow:0 6px 18px rgba(2,8,23,.05)
-  }
-  #step2 #slotLabelsWrap,
-  #step2 #progGridWrap{
-    border:1px solid rgba(15,23,42,.08);
-    background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
-    box-shadow:0 10px 26px rgba(2,8,23,.05)
-  }
-  #step2 .program-shell{display:grid;gap:12px}
-  #step2 .program-summary{
-    display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;
-    padding:10px 12px;border:1px solid rgba(15,23,42,.08);border-radius:14px;
-    background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%)
-  }
-  #step2 .program-summary .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  #step2 .program-grid-card{padding:10px;border:1px solid rgba(15,23,42,.06);border-radius:16px;background:#fff}
-  #step2 .program-grid-card .grid-scroll-wrapper{margin:0;padding:0 0 4px}
-  #step2 .program-grid-card .kgrid[data-cols]{grid-template-columns:130px repeat(var(--cols), minmax(78px,1fr));gap:8px}
-  #step2 .program-grid-card .head-cell,
-  #step2 .program-grid-card .header-row .kcell{min-height:46px}
-  #step2 .program-grid-card .kcell{min-height:52px !important;border-style:solid;background:#fff}
-  #step2 .program-grid-card .kcell:not(.busy):hover{border-color:rgba(79,70,229,.32)}
-  #step2 .note-empty{font-size:20px;color:#cbd5e1;line-height:1}
-  #step2 .slot-note{font-size:12px;font-weight:700;line-height:1.25;color:#334155;padding:0 4px}
-  #step2 .slot-index{font-size:11px;color:#64748b;font-weight:800}
-
-  /* ===========================
-     STEP 3 – SABİT TOPLU TEMİZLE
-     =========================== */
-  #step3 .avail-global-actions{position:sticky;top:8px;z-index:8;margin-bottom:10px}
-  #step3 .avail-global-actions .btn-group{box-shadow:0 10px 24px rgba(2,8,23,.08)}
-
-  /* ===========================
-     STEP 5 – TOOLBAR HİZASI
-     =========================== */
-  #step5 .toolbar{align-items:stretch;gap:14px}
+  #step2 .toolbar .right,
   #step5 .toolbar .left,
-  #step5 .toolbar .right{align-items:stretch}
-  #step5 .btn-group{align-items:center}
-  #step5 .btn-group[aria-label="Atama"]{
-    display:grid;
-    grid-template-columns:auto auto auto auto minmax(220px, 280px);
-    align-items:center;
-    gap:8px 10px;
+  #step5 .toolbar .right{
+    width:100%;
   }
-  #step5 .btn-group[aria-label="Atama"] .gtitle{margin-right:4px}
-  #step5 .btn-group[aria-label="Atama"] .pill{height:100%;display:flex}
-  #step5 .btn-group[aria-label="Atama"] label.mini{min-width:220px;margin-left:0 !important}
-  #step5 .btn-group[aria-label="Atama"] label.mini span{font-size:11px;color:var(--muted);font-weight:800}
-  #step5 #assignCards{gap:12px}
-  #step5 .assign-card-head{
-    display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;
-    padding:0 0 10px;margin-bottom:10px;border-bottom:1px solid #eef2f7
+  #step2 .toolbar .left > label{
+    width:100%;
   }
-  #step5 .assign-card-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0;flex:1}
-  #step5 .assign-card-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-  @media (max-width: 1100px){
-    #step5 .btn-group[aria-label="Atama"]{grid-template-columns:1fr 1fr;}
-    #step5 .btn-group[aria-label="Atama"] .gtitle{grid-column:1/-1}
-    #step5 .btn-group[aria-label="Atama"] label.mini{grid-column:1/-1;min-width:0;width:100%}
+  #step5 .toolbar .btn-group[aria-label="Atama"]{
+    grid-template-columns:1fr;
   }
-  @media (max-width: 920px){
-    #step2 .toolbar label{min-width:0;width:100%}
-    #step2 .program-grid-card .kgrid[data-cols]{grid-template-columns:108px repeat(var(--cols), minmax(62px,1fr))}
-    #step5 .toolbar .left,
-    #step5 .toolbar .right{width:100%}
-    #step5 .btn-group[aria-label="Atama"]{grid-template-columns:1fr}
-  }
+}
 
 </style>
 </head>
@@ -1200,15 +1302,6 @@
       </div>
     </div>
 
-    <div class="toolbar no-print avail-global-actions">
-      <div class="left">
-        <div class="btn-group" aria-label="Genel toplu işlemler">
-          <span class="gtitle">Genel</span>
-          <button class="btn warn" id="btnAvailClearSticky">Tümünü Temizle</button>
-        </div>
-      </div>
-    </div>
-
     <div class="tabs no-print" role="tablist" aria-label="Müsaitlik Sekmeleri">
       <button class="tab" id="tabTeach" role="tab" aria-selected="true">Öğretmen Müsaitlik</button>
       <button class="tab" id="tabGroup" role="tab" aria-selected="false">Grup Müsaitlik</button>
@@ -1262,7 +1355,7 @@
           </div>
           <div class="btn-group" aria-label="Toplu işlemler">
             <span class="gtitle">Toplu</span>
-            <button class="btn warn" id="btnAvailClearGroup">Tümünü Temizle</button>
+            <button class="btn warn" id="btnAvailClear2">Tümünü Temizle</button>
           </div>
         </div>
         <div class="right">
@@ -3708,10 +3801,8 @@ $("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
-const clearAllAvailability = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
-$("#btnAvailClear").onclick = clearAllAvailability;
-if($("#btnAvailClearGroup")) $("#btnAvailClearGroup").onclick = clearAllAvailability;
-if($("#btnAvailClearSticky")) $("#btnAvailClearSticky").onclick = clearAllAvailability;
+$("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
+$("#btnAvailClear2").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
 $("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
@@ -5484,28 +5575,11 @@ function buildProgramGrid(fromRestore=false){
   const days = state.program.days, S = state.program.slots;
   const wrap = $("#progGridWrap"); wrap.innerHTML='';
 
-  const shell = document.createElement('div');
-  shell.className = 'program-shell';
-
-  const summary = document.createElement('div');
-  summary.className = 'program-summary';
-  const filledNotes = Object.values(state.program.cells || {}).filter(v => String(v || '').trim()).length;
-  summary.innerHTML = `
-    <div class="meta">
-      <span class="pill">${days.length} gün</span>
-      <span class="pill">${S} ders saati</span>
-      <span class="pill">${filledNotes} notlu hücre</span>
-    </div>
-    <div class="mini muted">Hücrelere tıklayarak kısa not ekleyebilirsiniz.</div>
-  `;
-  shell.appendChild(summary);
-
-  const gridCard = document.createElement('div');
-  gridCard.className = 'program-grid-card';
-
+  // Scroll Container
   const scrollWrap = document.createElement('div');
   scrollWrap.className = 'grid-scroll-wrapper';
 
+  // Başlık Satırı (Saatler)
   const head = document.createElement('div');
   head.className = 'kgrid header-row';
   head.style.setProperty('--cols', S);
@@ -5515,16 +5589,10 @@ function buildProgramGrid(fromRestore=false){
   corner.textContent = 'Gün / Saat';
   corner.className = 'head-cell';
   head.appendChild(corner);
-
-  for(let s=0;s<S;s++){
-    const label = state.program.slotLabels[s] || '';
-    const hc = document.createElement('div');
-    hc.className = 'kcell busy';
-    hc.innerHTML = `<div class="slot-index">${s+1}. ders</div><div class="mini2">${label || 'Saat etiketi yok'}</div>`;
-    head.appendChild(hc);
-  }
+  slotHeadCells(head, S);
   scrollWrap.appendChild(head);
 
+  // Gün Satırları
   days.forEach((d,di)=>{
     const row = document.createElement('div');
     row.className = 'kgrid';
@@ -5538,16 +5606,14 @@ function buildProgramGrid(fromRestore=false){
 
     for(let si=0; si<S; si++){
       const key = keyDS(di,si);
-      const cell = document.createElement('div');
-      cell.className='kcell';
-      const note = String(state.program.cells[key] || '').trim();
-      cell.innerHTML = note ? `<div class="slot-note">${escapeHtml(note)}</div>` : '<span class="note-empty">＋</span>';
+      const cell = document.createElement('div'); cell.className='kcell';
+      cell.textContent = state.program.cells[key] || '';
       cell.title = "Not girmek için tıklayın";
       cell.onclick = ()=>{
         const val = prompt(`${d} - ${si+1}. saat için not:`, state.program.cells[key]||'');
         if(val!==null){
           state.program.cells[key]=val.trim();
-          buildProgramGrid(true);
+          cell.textContent=state.program.cells[key]||'';
         }
       };
       row.appendChild(cell);
@@ -5555,11 +5621,10 @@ function buildProgramGrid(fromRestore=false){
     scrollWrap.appendChild(row);
   });
 
-  gridCard.appendChild(scrollWrap);
-  shell.appendChild(gridCard);
-  wrap.appendChild(shell);
+  wrap.appendChild(scrollWrap);
   reconcileAllToProgram(getAssignPolicy());
 }
+
 function populatePanelFilters(){
   const teacherSel = $("#teacherAvailFilter");
   const groupSel = $("#groupAvailFilter");
@@ -5747,19 +5812,20 @@ function renderAssignCards(){
 
   groups.forEach(g=>{
     const card = document.createElement('div'); card.className='card';
+    const head = document.createElement('div'); head.className='flex';
+    head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
 
     const count = state.assignments.filter(a=>a.group===g.id && isTeacherStillAvailableForAssignment(a)).length;
 
-    const head = document.createElement('div');
-    head.className='assign-card-head';
-
     const left = document.createElement('div');
-    left.className='assign-card-meta';
+    left.style.display = 'flex';
+    left.style.flexWrap = 'wrap';
+    left.style.gap = '8px';
+    left.style.alignItems = 'center';
     left.innerHTML = `<b>${g.name}</b><span class="tag">${g.students.length} öğrenci</span><span class="pill">${count} atama</span>
-      <span class="mini2">${escapeHtml(missingNeedsText(g.id))}</span>`;
+      <span class="mini2" style="margin-left:6px">${escapeHtml(missingNeedsText(g.id))}</span>`;
 
-    const right = document.createElement('div');
-    right.className='assign-card-actions';
+    const right = document.createElement('div'); right.className='right flex';
     const btnClearG = document.createElement('button');
     btnClearG.className = 'btn xs warn';
     btnClearG.textContent = 'Bu Grubun Atamalarını Temizle';
@@ -5793,15 +5859,17 @@ function renderAssignCards(){
       const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
       const dayCell = document.createElement('div'); dayCell.textContent=days[d]; dayCell.className='head-cell';
       row.appendChild(dayCell);
-
+      
       for(let s=0; s<S; s++){
         const cell = document.createElement('div');
         cell.className = 'kcell';
 
+        // Müsaitlik
         const avail = state.availability?.groups?.[g.id]?.[d]?.[s] === true;
         cell.classList.add(avail ? 'ok' : 'bad');
         if(!avail) cell.style.opacity = '0.5';
 
+        // Atama var mı?
         const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s && isTeacherStillAvailableForAssignment(a));
         if (cur) {
           const brClass = getBranchClass(cur.branch);
