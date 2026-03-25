@@ -981,6 +981,81 @@
     #tempPrintArea .p-chip{border:1px solid #000;border-radius:999px;padding:2px 8px;font-weight:800;font-size:11px}
   }
 
+
+/* ===========================
+   STEP 2 – DERS PROGRAMI İSKELE (Kompakt)
+   =========================== */
+#step2 .section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#step2 .toolbar{
+  gap:10px;
+  padding:12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow:0 8px 20px rgba(2,8,23,.05);
+}
+#step2 .toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+#step2 #slotLabelsWrap,
+#step2 #progGridWrap{
+  padding:12px;
+}
+#step2 #slotLabelsWrap .kgrid,
+#step2 #progGridWrap .kgrid{
+  gap:6px;
+}
+#step2 #slotLabelsWrap .kgrid[data-cols],
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:130px repeat(var(--cols), minmax(78px, 1fr));
+}
+#step2 #slotLabelsWrap .kcell,
+#step2 #progGridWrap .kcell{
+  min-height:52px !important;
+  border-radius:12px;
+}
+#step2 #slotLabelsWrap .row{
+  margin-top:10px;
+  align-items:center;
+}
+#step2 #slotLabelsWrap input[type=text]{
+  min-width:280px;
+}
+#step2 #progGridWrap > .kgrid:first-child .kcell,
+#step2 #progGridWrap > .kgrid:first-child > div:first-child,
+#step2 #slotLabelsWrap > .kgrid .kcell,
+#step2 #slotLabelsWrap > .kgrid > div:first-child{
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+}
+.filter-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.filter-row label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+.filter-row select{
+  min-width:220px;
+}
+
 </style>
 </head>
 <body>
@@ -1148,6 +1223,11 @@
         </div>
       </div>
       <div class="card">
+        <div class="filter-row no-print">
+          <label>Öğretmen filtresi
+            <select id="teacherAvailFilter"></select>
+          </label>
+        </div>
         <h3>Öğretmen Müsaitlikleri</h3>
         <div id="teacherAvailWrap" class="avGrid"></div>
       </div>
@@ -1173,6 +1253,11 @@
         </div>
       </div>
       <div class="card">
+        <div class="filter-row no-print">
+          <label>Grup filtresi
+            <select id="groupAvailFilter"></select>
+          </label>
+        </div>
         <h3>Grup Müsaitlikleri</h3>
         <div id="groupAvailWrap" class="avGrid"></div>
       </div>
@@ -1239,6 +1324,7 @@
       <div class="left">
         <div class="btn-group" aria-label="Atama">
           <span class="gtitle">Atama</span>
+          <label>Grup filtresi<br/><select id="assignGroupFilter"></select></label>
           <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
           <label class="pill" style="gap:10px;align-items:center">
             <input type="checkbox" id="chkRelaxConsecutive" checked style="width:18px;height:18px" />
@@ -3605,6 +3691,9 @@ $("#btnReqExport").onclick = exportReq;
 $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
+$("#teacherAvailFilter").onchange = renderAvailGrids;
+$("#groupAvailFilter").onchange = renderAvailGrids;
+$("#assignGroupFilter").onchange = renderAssignCards;
 
 // Otomatik atama: 45 sn boyunca farklı yerleşimler dener, en iyisini uygular (async)
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
@@ -3769,6 +3858,81 @@ showTopTab('step1');
   #step4 .reqStepper{ background:#0b1220; border-color:#1f2a44; }
   #step4 .reqInput, #step4 #reqSearch, #step4 .reqPreset{ background:#0b1220; color:#e5e7eb; border-color:#1f2a44; }
   #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
+}
+
+
+/* ===========================
+   STEP 2 – DERS PROGRAMI İSKELE (Kompakt)
+   =========================== */
+#step2 .section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#step2 .toolbar{
+  gap:10px;
+  padding:12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow:0 8px 20px rgba(2,8,23,.05);
+}
+#step2 .toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+#step2 #slotLabelsWrap,
+#step2 #progGridWrap{
+  padding:12px;
+}
+#step2 #slotLabelsWrap .kgrid,
+#step2 #progGridWrap .kgrid{
+  gap:6px;
+}
+#step2 #slotLabelsWrap .kgrid[data-cols],
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:130px repeat(var(--cols), minmax(78px, 1fr));
+}
+#step2 #slotLabelsWrap .kcell,
+#step2 #progGridWrap .kcell{
+  min-height:52px !important;
+  border-radius:12px;
+}
+#step2 #slotLabelsWrap .row{
+  margin-top:10px;
+  align-items:center;
+}
+#step2 #slotLabelsWrap input[type=text]{
+  min-width:280px;
+}
+#step2 #progGridWrap > .kgrid:first-child .kcell,
+#step2 #progGridWrap > .kgrid:first-child > div:first-child,
+#step2 #slotLabelsWrap > .kgrid .kcell,
+#step2 #slotLabelsWrap > .kgrid > div:first-child{
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+}
+.filter-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.filter-row label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+.filter-row select{
+  min-width:220px;
 }
 
 </style>
@@ -4003,6 +4167,81 @@ showTopTab('step1');
   #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
 }
 
+
+/* ===========================
+   STEP 2 – DERS PROGRAMI İSKELE (Kompakt)
+   =========================== */
+#step2 .section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#step2 .toolbar{
+  gap:10px;
+  padding:12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow:0 8px 20px rgba(2,8,23,.05);
+}
+#step2 .toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+#step2 #slotLabelsWrap,
+#step2 #progGridWrap{
+  padding:12px;
+}
+#step2 #slotLabelsWrap .kgrid,
+#step2 #progGridWrap .kgrid{
+  gap:6px;
+}
+#step2 #slotLabelsWrap .kgrid[data-cols],
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:130px repeat(var(--cols), minmax(78px, 1fr));
+}
+#step2 #slotLabelsWrap .kcell,
+#step2 #progGridWrap .kcell{
+  min-height:52px !important;
+  border-radius:12px;
+}
+#step2 #slotLabelsWrap .row{
+  margin-top:10px;
+  align-items:center;
+}
+#step2 #slotLabelsWrap input[type=text]{
+  min-width:280px;
+}
+#step2 #progGridWrap > .kgrid:first-child .kcell,
+#step2 #progGridWrap > .kgrid:first-child > div:first-child,
+#step2 #slotLabelsWrap > .kgrid .kcell,
+#step2 #slotLabelsWrap > .kgrid > div:first-child{
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+}
+.filter-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.filter-row label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+.filter-row select{
+  min-width:220px;
+}
+
 </style>
 <script>
   function computeBranchTeacherCapacity(){
@@ -4212,7 +4451,82 @@ function openPrintWindow(title, html){
       th,td{border:1px solid #0f172a;padding:4px 6px;vertical-align:top}
       th{background:#f1f5f9}
       @media print{ @page{size:A4;margin:10mm} }
-    </style>
+    
+/* ===========================
+   STEP 2 – DERS PROGRAMI İSKELE (Kompakt)
+   =========================== */
+#step2 .section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#step2 .toolbar{
+  gap:10px;
+  padding:12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow:0 8px 20px rgba(2,8,23,.05);
+}
+#step2 .toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+#step2 #slotLabelsWrap,
+#step2 #progGridWrap{
+  padding:12px;
+}
+#step2 #slotLabelsWrap .kgrid,
+#step2 #progGridWrap .kgrid{
+  gap:6px;
+}
+#step2 #slotLabelsWrap .kgrid[data-cols],
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:130px repeat(var(--cols), minmax(78px, 1fr));
+}
+#step2 #slotLabelsWrap .kcell,
+#step2 #progGridWrap .kcell{
+  min-height:52px !important;
+  border-radius:12px;
+}
+#step2 #slotLabelsWrap .row{
+  margin-top:10px;
+  align-items:center;
+}
+#step2 #slotLabelsWrap input[type=text]{
+  min-width:280px;
+}
+#step2 #progGridWrap > .kgrid:first-child .kcell,
+#step2 #progGridWrap > .kgrid:first-child > div:first-child,
+#step2 #slotLabelsWrap > .kgrid .kcell,
+#step2 #slotLabelsWrap > .kgrid > div:first-child{
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+}
+.filter-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.filter-row label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+.filter-row select{
+  min-width:220px;
+}
+
+</style>
   </head><body>
     ${html}
     <script>window.onload=()=>{ setTimeout(()=>window.print(), 50); }<\/script>
@@ -4427,7 +4741,82 @@ function printAllGradesSelected(selectedGrades) {
   w.document.write(`<!DOCTYPE html><html lang="tr"><head>
     <meta charset="utf-8">
     <title>Fenomen Eğitim Kurumları • Tüm Liste</title>
-    <style>${css}</style>
+    <style>${css}
+/* ===========================
+   STEP 2 – DERS PROGRAMI İSKELE (Kompakt)
+   =========================== */
+#step2 .section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#step2 .toolbar{
+  gap:10px;
+  padding:12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow:0 8px 20px rgba(2,8,23,.05);
+}
+#step2 .toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+#step2 #slotLabelsWrap,
+#step2 #progGridWrap{
+  padding:12px;
+}
+#step2 #slotLabelsWrap .kgrid,
+#step2 #progGridWrap .kgrid{
+  gap:6px;
+}
+#step2 #slotLabelsWrap .kgrid[data-cols],
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:130px repeat(var(--cols), minmax(78px, 1fr));
+}
+#step2 #slotLabelsWrap .kcell,
+#step2 #progGridWrap .kcell{
+  min-height:52px !important;
+  border-radius:12px;
+}
+#step2 #slotLabelsWrap .row{
+  margin-top:10px;
+  align-items:center;
+}
+#step2 #slotLabelsWrap input[type=text]{
+  min-width:280px;
+}
+#step2 #progGridWrap > .kgrid:first-child .kcell,
+#step2 #progGridWrap > .kgrid:first-child > div:first-child,
+#step2 #slotLabelsWrap > .kgrid .kcell,
+#step2 #slotLabelsWrap > .kgrid > div:first-child{
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+}
+.filter-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.filter-row label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+.filter-row select{
+  min-width:220px;
+}
+
+</style>
   </head><body>`);
 
   w.document.write(`<h1>Fenomen Eğitim Kurumları • Birebir ve Grup Listesi</h1>`);
@@ -4713,6 +5102,81 @@ function printAllGradesSelected(selectedGrades) {
   #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
 }
 
+
+/* ===========================
+   STEP 2 – DERS PROGRAMI İSKELE (Kompakt)
+   =========================== */
+#step2 .section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#step2 .toolbar{
+  gap:10px;
+  padding:12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow:0 8px 20px rgba(2,8,23,.05);
+}
+#step2 .toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+#step2 #slotLabelsWrap,
+#step2 #progGridWrap{
+  padding:12px;
+}
+#step2 #slotLabelsWrap .kgrid,
+#step2 #progGridWrap .kgrid{
+  gap:6px;
+}
+#step2 #slotLabelsWrap .kgrid[data-cols],
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:130px repeat(var(--cols), minmax(78px, 1fr));
+}
+#step2 #slotLabelsWrap .kcell,
+#step2 #progGridWrap .kcell{
+  min-height:52px !important;
+  border-radius:12px;
+}
+#step2 #slotLabelsWrap .row{
+  margin-top:10px;
+  align-items:center;
+}
+#step2 #slotLabelsWrap input[type=text]{
+  min-width:280px;
+}
+#step2 #progGridWrap > .kgrid:first-child .kcell,
+#step2 #progGridWrap > .kgrid:first-child > div:first-child,
+#step2 #slotLabelsWrap > .kgrid .kcell,
+#step2 #slotLabelsWrap > .kgrid > div:first-child{
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+}
+.filter-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.filter-row label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+.filter-row select{
+  min-width:220px;
+}
+
 </style>
 
 <script>
@@ -4947,7 +5411,82 @@ function printTeachersV2(){
     .print-teacher-v2 .page:last-child{ break-after: auto; page-break-after: auto; }
     th,td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
-  </style>
+  
+/* ===========================
+   STEP 2 – DERS PROGRAMI İSKELE (Kompakt)
+   =========================== */
+#step2 .section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#step2 .toolbar{
+  gap:10px;
+  padding:12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  box-shadow:0 8px 20px rgba(2,8,23,.05);
+}
+#step2 .toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+#step2 #slotLabelsWrap,
+#step2 #progGridWrap{
+  padding:12px;
+}
+#step2 #slotLabelsWrap .kgrid,
+#step2 #progGridWrap .kgrid{
+  gap:6px;
+}
+#step2 #slotLabelsWrap .kgrid[data-cols],
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:130px repeat(var(--cols), minmax(78px, 1fr));
+}
+#step2 #slotLabelsWrap .kcell,
+#step2 #progGridWrap .kcell{
+  min-height:52px !important;
+  border-radius:12px;
+}
+#step2 #slotLabelsWrap .row{
+  margin-top:10px;
+  align-items:center;
+}
+#step2 #slotLabelsWrap input[type=text]{
+  min-width:280px;
+}
+#step2 #progGridWrap > .kgrid:first-child .kcell,
+#step2 #progGridWrap > .kgrid:first-child > div:first-child,
+#step2 #slotLabelsWrap > .kgrid .kcell,
+#step2 #slotLabelsWrap > .kgrid > div:first-child{
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+}
+.filter-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.filter-row label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight:700;
+  color:#334155;
+}
+.filter-row select{
+  min-width:220px;
+}
+
+</style>
 </head>
 <body class="print-teacher-v2">
 </body></html>`);
@@ -5409,15 +5948,60 @@ function buildProgramGrid(fromRestore=false){
   reconcileAllToProgram(getAssignPolicy());
 }
 
+
+function populateSelectOptions(selectEl, items, allLabel='Tümü'){
+  if(!selectEl) return;
+  const current = selectEl.value || '__all__';
+  selectEl.innerHTML = '';
+  const optAll = document.createElement('option');
+  optAll.value = '__all__';
+  optAll.textContent = allLabel;
+  selectEl.appendChild(optAll);
+  items.forEach(item=>{
+    const opt = document.createElement('option');
+    opt.value = item.value;
+    opt.textContent = item.label;
+    selectEl.appendChild(opt);
+  });
+  selectEl.value = items.some(item=>item.value === current) ? current : '__all__';
+}
+function refreshAvailabilityFilters(){
+  populateSelectOptions(
+    $("#teacherAvailFilter"),
+    state.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name,'tr')).map(t=>({ value:t.id, label:t.name })),
+    'Tüm öğretmenler'
+  );
+  populateSelectOptions(
+    $("#groupAvailFilter"),
+    Object.values(state.groups).slice().sort(groupComparator).map(g=>({ value:g.id, label:g.name })),
+    'Tüm gruplar'
+  );
+}
+function refreshAssignFilter(){
+  populateSelectOptions(
+    $("#assignGroupFilter"),
+    Object.values(state.groups).slice().sort(groupComparator).map(g=>({ value:g.id, label:g.name })),
+    'Tüm gruplar'
+  );
+}
 function renderAvailGrids(){
-  const D = state.program.days.length, S = state.program.slots, days = state.program.days;
+  const D=state.program.days.length, S=state.program.slots, days=state.program.days;
+  refreshAvailabilityFilters();
+
+  const teacherFilter = $("#teacherAvailFilter")?.value || '__all__';
+  const groupFilter = $("#groupAvailFilter")?.value || '__all__';
 
   // --- A) ÖĞRETMEN MÜSAİTLİKLERİ ---
   const tWrap=$("#teacherAvailWrap"); tWrap.innerHTML='';
+  const teachers = state.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name,'tr'))
+    .filter(t => teacherFilter === '__all__' || t.id === teacherFilter);
+
   if(state.teachers.length===0){
     tWrap.innerHTML = '<div class="muted">Öğretmen verisi yok.</div>';
+  }else if(teachers.length===0){
+    tWrap.innerHTML = '<div class="muted">Seçili filtreye uygun öğretmen bulunamadı.</div>';
   }else{
-    state.teachers.forEach(t=>{
+    teachers.forEach(t=>{
       const card = document.createElement('div'); card.className='card';
 
       const head = document.createElement('div'); head.className='flex';
@@ -5469,11 +6053,15 @@ function renderAvailGrids(){
 
   // --- B) GRUP MÜSAİTLİKLERİ ---
   const gWrap=$("#groupAvailWrap"); gWrap.innerHTML='';
-  const groups = Object.values(state.groups);
-  if(groups.length===0){
+  const allGroups = Object.values(state.groups);
+  const groups = allGroups.slice().sort(groupComparator).filter(g => groupFilter === '__all__' || g.id === groupFilter);
+
+  if(allGroups.length===0){
     gWrap.innerHTML = '<div class="muted">Grup verisi yok.</div>';
+  }else if(groups.length===0){
+    gWrap.innerHTML = '<div class="muted">Seçili filtreye uygun grup bulunamadı.</div>';
   }else{
-    groups.sort(groupComparator).forEach(g=>{
+    groups.forEach(g=>{
       const card = document.createElement('div'); card.className='card';
       const head = document.createElement('div'); head.className='flex';
       head.style.borderBottom='1px solid #f1f5f9'; head.style.paddingBottom='10px'; head.style.marginBottom='10px';
@@ -5524,10 +6112,22 @@ function renderAvailGrids(){
 }
 
 function renderAssignCards(){
+  refreshAssignFilter();
   const wrap = $("#assignCards"); wrap.innerHTML='';
   const days = state.program.days, S=state.program.slots;
 
-  const groups = Object.values(state.groups).slice().sort(groupComparator);
+  const selectedGroup = $("#assignGroupFilter")?.value || '__all__';
+  const groups = Object.values(state.groups).slice().sort(groupComparator)
+    .filter(g => selectedGroup === '__all__' || g.id === selectedGroup);
+
+  if(Object.keys(state.groups).length === 0){
+    wrap.innerHTML = '<div class="muted">Grup verisi yok.</div>';
+    return;
+  }
+  if(groups.length === 0){
+    wrap.innerHTML = '<div class="muted">Seçili filtreye uygun grup bulunamadı.</div>';
+    return;
+  }
 
   groups.forEach(g=>{
     const card = document.createElement('div'); card.className='card';
@@ -5578,17 +6178,15 @@ function renderAssignCards(){
       const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
       const dayCell = document.createElement('div'); dayCell.textContent=days[d]; dayCell.className='head-cell';
       row.appendChild(dayCell);
-      
+
       for(let s=0; s<S; s++){
         const cell = document.createElement('div');
         cell.className = 'kcell';
 
-        // Müsaitlik
         const avail = state.availability?.groups?.[g.id]?.[d]?.[s] === true;
         cell.classList.add(avail ? 'ok' : 'bad');
         if(!avail) cell.style.opacity = '0.5';
 
-        // Atama var mı?
         const cur = state.assignments.find(a => a.group === g.id && a.day === d && a.slot === s && isTeacherStillAvailableForAssignment(a));
         if (cur) {
           const brClass = getBranchClass(cur.branch);
@@ -5614,22 +6212,9 @@ function renderAssignCards(){
       }
       scrollWrap.appendChild(row);
     }
+
     card.appendChild(scrollWrap);
     wrap.appendChild(card);
   });
 }
 
-//
-// Modern slot kartı işlevleri (buildProgramGrid, renderAvailGrids, renderAssignCards)
-// sadece Firebase'den yükleme sonrası değil her zaman kullanılabilmesi için
-// bu fonksiyonları global (window) nesnesine atıyoruz. Böylece daha önce
-// tanımlanmış eski sürümlerin üzerinden yazılır ve uygulamanın tüm
-// bölümlerinde modern tasarım geçerli olur.
-window.buildProgramGrid = buildProgramGrid;
-window.renderAvailGrids = renderAvailGrids;
-window.renderAssignCards = renderAssignCards;
-
-</script>
-
-</body>
-</html>
