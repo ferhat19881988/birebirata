@@ -5729,5 +5729,300 @@ window.populatePanelFilters();
 
 </script>
 
+<style id="ov_step2_step3_step5_tidy">
+  /* ===== 2026-03 layout tidy-up: Step 2, Step 3, Step 5 ===== */
+  #step2,
+  #step5{
+    background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(248,250,252,.98) 100%);
+  }
+
+  #step2 .section-title,
+  #step5 .section-title{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  #step2 .toolbar,
+  #step5 .toolbar{
+    display:grid;
+    grid-template-columns:minmax(0, 1.6fr) minmax(360px, 1fr);
+    gap:16px;
+    align-items:start;
+  }
+
+  #step2 .toolbar .left,
+  #step5 .toolbar .left,
+  #step2 .toolbar .right,
+  #step5 .toolbar .right{
+    min-width:0;
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    align-items:stretch;
+  }
+
+  #step2 .toolbar .left > label,
+  #step5 .toolbar .left > label{
+    flex:1 1 190px;
+    min-width:180px;
+    padding:12px 14px;
+    border:1px solid rgba(15,23,42,.08);
+    border-radius:16px;
+    background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 8px 20px rgba(2,8,23,.05);
+  }
+
+  #step2 .toolbar .left > label input,
+  #step2 .toolbar .left > label select,
+  #step5 .toolbar .left > label input,
+  #step5 .toolbar .left > label select{
+    width:100%;
+    min-width:0;
+    margin-top:8px;
+  }
+
+  #step2 .toolbar .right,
+  #step5 .toolbar .right{
+    justify-content:flex-end;
+    align-content:start;
+  }
+
+  #step2 .btn-group,
+  #step5 .btn-group{
+    min-height:60px;
+    padding:12px;
+    border-radius:18px;
+  }
+
+  #step2 .btn-group .gtitle,
+  #step5 .btn-group .gtitle{
+    width:100%;
+    margin:0 0 2px;
+    padding:0;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+
+  #step2 .btn-group .btn,
+  #step5 .btn-group .btn{
+    min-height:42px;
+  }
+
+  #step2 #slotLabelsWrap,
+  #step2 #progGridWrap,
+  #step5 #assignCards{
+    border:1px solid rgba(15,23,42,.08);
+    box-shadow:0 12px 28px rgba(2,8,23,.05);
+  }
+
+  #step2 #progGridWrap{
+    padding:18px;
+    border-radius:20px;
+    background:linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  }
+
+  #step5 .btn-group[aria-label="Atama"]{
+    flex:1 1 100%;
+    display:grid;
+    grid-template-columns:repeat(4, max-content) minmax(220px, 1fr);
+    gap:10px;
+    align-items:center;
+  }
+
+  #step5 .btn-group[aria-label="Atama"] > .gtitle{
+    grid-column:1 / -1;
+  }
+
+  #step5 .btn-group[aria-label="Atama"] > .pill{
+    min-height:42px;
+    padding:8px 12px;
+    align-self:stretch;
+    justify-content:center;
+    border:1px solid rgba(15,23,42,.08);
+    background:linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  }
+
+  #step5 .btn-group[aria-label="Atama"] > label.mini{
+    min-width:0 !important;
+    margin-left:0 !important;
+    padding:10px 12px;
+    border:1px solid rgba(15,23,42,.08);
+    border-radius:14px;
+    background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  }
+
+  #step5 #assignGroupFilter{
+    width:100%;
+    min-width:0;
+  }
+
+  #step5 .toolbar .right{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:12px;
+  }
+
+  #step5 .toolbar .right .btn-group,
+  #step2 .toolbar .right .btn-group{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  #step3 .shared-avail-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    padding:12px 14px;
+    margin:0 0 12px;
+    border:1px solid rgba(15,23,42,.08);
+    border-radius:16px;
+    background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 10px 22px rgba(2,8,23,.05);
+  }
+
+  #step3 .shared-avail-toolbar .left,
+  #step3 .shared-avail-toolbar .right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  #step3 .shared-avail-toolbar .shared-label{
+    font-size:12px;
+    font-weight:800;
+    color:var(--muted);
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+
+  #step3 .shared-avail-toolbar .btn{
+    min-height:42px;
+  }
+
+  @media (max-width: 1180px){
+    #step2 .toolbar,
+    #step5 .toolbar{
+      grid-template-columns:1fr;
+    }
+    #step5 .toolbar .right{
+      grid-template-columns:repeat(3, minmax(180px, 1fr));
+      justify-content:stretch;
+    }
+  }
+
+  @media (max-width: 920px){
+    #step2 .toolbar .left,
+    #step2 .toolbar .right,
+    #step5 .toolbar .left,
+    #step5 .toolbar .right{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+
+    #step2 .toolbar .left > label,
+    #step5 .toolbar .left > label,
+    #step2 .btn-group,
+    #step5 .btn-group,
+    #step3 .shared-avail-toolbar .left,
+    #step3 .shared-avail-toolbar .right{
+      width:100%;
+    }
+
+    #step2 .btn-group,
+    #step5 .btn-group{
+      justify-content:flex-start;
+    }
+
+    #step5 .btn-group[aria-label="Atama"]{
+      grid-template-columns:1fr;
+    }
+
+    #step5 .btn-group[aria-label="Atama"] > .btn,
+    #step5 .btn-group[aria-label="Atama"] > .pill,
+    #step5 .btn-group[aria-label="Atama"] > label.mini,
+    #step2 .btn-group .btn,
+    #step5 .toolbar .right .btn-group .btn,
+    #step3 .shared-avail-toolbar .btn{
+      width:100%;
+      justify-content:center;
+    }
+
+    #step5 .toolbar .right{
+      grid-template-columns:1fr;
+    }
+
+    #step3 .shared-avail-toolbar{
+      padding:12px;
+    }
+  }
+</style>
+
+<script id="ov_step2_step3_step5_tidy_script">
+(function(){
+  function ensureSharedAvailClear(){
+    const step3 = document.getElementById('step3');
+    const tabs = step3?.querySelector('.tabs[aria-label="Müsaitlik Sekmeleri"]');
+    const panelTeach = document.getElementById('panelTeach');
+    const panelGroup = document.getElementById('panelGroup');
+    if(!step3 || !tabs || !panelTeach || !panelGroup) return;
+    if(document.getElementById('sharedAvailToolbar')) return;
+
+    const bar = document.createElement('div');
+    bar.id = 'sharedAvailToolbar';
+    bar.className = 'shared-avail-toolbar no-print';
+    bar.innerHTML = `
+      <div class="left">
+        <span class="shared-label">Toplu işlem</span>
+        <button class="btn warn" id="btnAvailClearShared" type="button">Tümünü Temizle</button>
+      </div>
+      <div class="right">
+        <span class="mini muted">Öğretmen ve grup müsaitlik ekranlarında görünür kalır.</span>
+      </div>
+    `;
+    tabs.insertAdjacentElement('afterend', bar);
+
+    const oldBtn = document.getElementById('btnAvailClear');
+    if(oldBtn){
+      const holder = oldBtn.closest('.btn-group');
+      if(holder) holder.style.display = 'none';
+    }
+
+    const groupToolbarLeft = panelGroup.querySelector('.toolbar .left');
+    if(groupToolbarLeft && !document.getElementById('btnAvailClearMirror')){
+      const group = document.createElement('div');
+      group.className = 'btn-group';
+      group.setAttribute('aria-label', 'Toplu işlemler');
+      group.innerHTML = '<span class="gtitle">Toplu</span><button class="btn warn" id="btnAvailClearMirror" type="button">Tümünü Temizle</button>';
+      groupToolbarLeft.appendChild(group);
+    }
+
+    const clearAll = function(){
+      if(typeof state === 'undefined') return;
+      state.availability = {teachers:{}, groups:{}};
+      try{ reconcileAllToProgram(getAssignPolicy()); }catch(_){ }
+      try{ renderAvailGrids(); }catch(_){ }
+    };
+
+    const sharedBtn = document.getElementById('btnAvailClearShared');
+    if(sharedBtn) sharedBtn.addEventListener('click', clearAll);
+    const mirrorBtn = document.getElementById('btnAvailClearMirror');
+    if(mirrorBtn) mirrorBtn.addEventListener('click', clearAll);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', ensureSharedAvailClear, {once:true});
+  }else{
+    ensureSharedAvailClear();
+  }
+})();
+</script>
 </body>
 </html>
