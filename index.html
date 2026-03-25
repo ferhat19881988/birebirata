@@ -3681,8 +3681,8 @@ $("#tabGroup").addEventListener('click', ()=>showAvailTab('group'));
 bindTopTabs();
 buildProgramGrid(true);
 renderSlotLabels();
-bindPanelFilters();
-populatePanelFilters();
+window.bindPanelFilters?.();
+window.populatePanelFilters?.();
 showTopTab('step1');
 </script>
 <style>
@@ -5711,8 +5711,13 @@ function renderAssignCards(){
 // tanımlanmış eski sürümlerin üzerinden yazılır ve uygulamanın tüm
 // bölümlerinde modern tasarım geçerli olur.
 window.buildProgramGrid = buildProgramGrid;
+window.populatePanelFilters = populatePanelFilters;
+window.bindPanelFilters = bindPanelFilters;
 window.renderAvailGrids = renderAvailGrids;
 window.renderAssignCards = renderAssignCards;
+
+window.bindPanelFilters();
+window.populatePanelFilters();
 
 </script>
 
