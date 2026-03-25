@@ -217,10 +217,10 @@
   --avail-border: #e5e7eb;
   --avail-grid-gap: 8px;
 
-  --day-col-w: 160px;
-  --slot-min-w: 88px;
-  --cell-min-h: 58px;
-  --cell-radius: 12px;
+  --day-col-w: 138px;
+  --slot-min-w: 74px;
+  --cell-min-h: 46px;
+  --cell-radius: 10px;
 
   --head-bg: #f8fafc;
   --head-ink: #0f172a;
@@ -248,7 +248,7 @@
 #step3 .avGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 12px;
   align-items: stretch;
 }
 
@@ -267,26 +267,28 @@
 
 /* Kart başlığı (sol: isim/etiket, sağ: aksiyon butonları) */
 #step3 .avGrid .card .flex {
-  padding: 12px 14px;
-  gap: 10px;
+  padding: 8px 10px;
+  gap: 8px;
   border-bottom: 1px solid var(--avail-border);
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  align-items: center;
+  flex-wrap: wrap;
 }
 #step3 .avGrid .card .flex b { font-weight: 800; }
 #step3 .avGrid .card .tag {
   background: #eef2ff;
   color: #1f2937;
   border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
 }
 
 /* Grid: “Gün / Saat” matrisi
    Not: JS tarafı grid[data-cols] ile --cols atıyor. */
 #step3 .kgrid {
   display: grid;
-  gap: var(--avail-grid-gap);
-  padding: 12px;
+  gap: 6px;
+  padding: 8px 10px;
   background: var(--avail-bg);
 }
 #step3 .kgrid[data-cols] {
@@ -304,7 +306,8 @@
   place-items: center;
   min-height: var(--cell-min-h);
   text-align: center;
-  padding: 6px 8px;
+  padding: 4px 6px;
+  font-size: 13px;
 }
 
 /* Slot başlık hücreleri */
@@ -325,8 +328,10 @@
   display: grid;
   place-items: center;
   text-align: center;
-  padding: 6px;
+  padding: 4px;
   user-select: none;
+  font-size: 18px;
+  line-height: 1;
   transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease, color .12s ease;
   outline: none;
   position: relative;
@@ -362,15 +367,17 @@
 }
 
 /* Küçük metinler */
-#step3 .mini2 { color: var(--avail-muted); font-size: 11px; }
+#step3 .mini2 { color: var(--avail-muted); font-size: 10px; }
 
 /* Eylem butonları – kart içi küçük butonlar */
 #step3 .avGrid .card .btn.xs.ghost {
   background: #f1f5f9;
   color: #111827;
-  border-radius: 10px;
-  padding: 6px 10px;
+  border-radius: 9px;
+  padding: 5px 8px;
   border: 1px solid var(--avail-border);
+  font-size: 11px;
+  line-height: 1.1;
 }
 #step3 .avGrid .card .btn.xs.ghost:hover {
   background: #e2e8f0;
@@ -421,16 +428,16 @@
 
 /* Dar ekranlar için optimizasyon */
 @media (max-width: 920px) {
-  #step3 { --day-col-w: 132px; --slot-min-w: 72px; }
+  #step3 { --day-col-w: 112px; --slot-min-w: 62px; --cell-min-h: 42px; }
   #step3 .avGrid { grid-template-columns: 1fr; }
-  #step3 .kgrid { padding: 10px; }
-  #step3 .kgrid > :first-child { padding: 6px; }
-  #step3 .kcell { min-height: 52px; }
+  #step3 .kgrid { padding: 8px; }
+  #step3 .kgrid > :first-child { padding: 4px; }
+  #step3 .kcell { min-height: 42px; font-size: 16px; }
 }
 
 /* Büyük ekranlar için hafif yoğunluk artışı */
 @media (min-width: 1600px) {
-  #step3 { --slot-min-w: 100px; --cell-min-h: 64px; }
+  #step3 { --slot-min-w: 78px; --cell-min-h: 48px; }
 }
 
 /* Az animasyon tercih eden kullanıcılar */
@@ -753,6 +760,30 @@
     margin-top: 4px;
   }
 
+
+/* ===========================
+   STEP 5 – KOMPAKT ATAMA KARTLARI
+   =========================== */
+#step5 .cards{gap:12px;}
+#step5 .card{padding:10px 12px;border-radius:14px;}
+#step5 .card .flex{gap:8px;align-items:center;flex-wrap:wrap;}
+#step5 .card .tag{padding:2px 8px;font-size:11px;}
+#step5 .card .pill{padding:4px 8px;font-size:12px;}
+#step5 .card .mini2{font-size:10px;line-height:1.2;}
+#step5 .grid-scroll-wrapper{margin:0 -6px;padding-left:6px;padding-right:6px;padding-bottom:4px;}
+#step5 .kgrid[data-cols]{grid-template-columns:120px repeat(var(--cols), minmax(66px,1fr));gap:6px;padding:6px 0;}
+#step5 .head-cell{min-height:42px;padding:4px 6px;font-size:13px;border-radius:10px;}
+#step5 .header-row .head-cell,
+#step5 .header-row .kcell{min-height:42px;}
+#step5 .kcell{min-height:46px !important;padding:4px !important;border-radius:10px;font-size:16px;}
+#step5 .kcell.assigned > div:first-child{font-size:11px !important;line-height:1.1;}
+#step5 .kcell.assigned .mini2{font-size:10px !important;margin-top:2px !important;}
+#step5 .btn.xs.warn{padding:6px 10px;font-size:11px;border-radius:10px;}
+@media (max-width: 920px){
+  #step5 .kgrid[data-cols]{grid-template-columns:100px repeat(var(--cols), minmax(56px,1fr));}
+  #step5 .head-cell{font-size:12px;min-height:38px;}
+  #step5 .kcell{min-height:40px !important;font-size:14px;}
+}
 
 /* ===========================
    STEP 4 – TALEPLER (Sade & Hızlı)
@@ -3628,6 +3659,30 @@ showTopTab('step1');
 </script>
 <style>
 :root{ /* ders paleti */ --b-mat:#6366f1; /* Matematik */ --b-fen:#10b981; /* Fen Bilimleri */ --b-trk:#f97316; /* Türkçe */ --b-sos:#06b6d4; /* Sosyal Bilgiler */ --b-ing:#22c55e; /* İngilizce */ --b-din:#a78bfa; /* Din Kültürü */ /* tonlar */ --t-50: 14%; --t-150: 26%; --ring:#94a3b8; } /* üst sekmeler – daha modern görünüm */ .tabs{gap:8px;border:0;margin-bottom:10px;position:relative} .tabs:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#e5e7eb} .tab{padding:12px 16px;border-radius:12px;background:#f1f5f9;font-weight:800;color:#0f172a;box-shadow:0 1px 0 #e5e7eb inset} .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;box-shadow:0 6px 18px rgba(2,8,23,.06);} /* kartlar */ .card{border-radius:16px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.06)} .card header{font-weight:800;margin-bottom:8px} /* grid hücreleri – daha “takvim” hissi */ .kgrid[data-cols]{grid-template-columns:160px repeat(var(--cols), minmax(72px,1fr));} .kcell{position:relative;border:1px solid #e5e7eb;background:#fff;min-height:58px;border-radius:12px} .kcell:hover{outline:3px solid rgba(99,102,241,.08);outline-offset:0} .kcell .mini2{opacity:.9} /* atama yapılmış hücre */ .kcell.assigned{color:#0f172a;font-weight:700} .kcell.assigned .mini2{color:#111827;font-weight:600} /* ders renkleri (UI) */ .kcell.assigned.b-mat{ background:color-mix(in srgb, var(--b-mat) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-mat) var(--t-150), #fff); } .kcell.assigned.b-fen{ background:color-mix(in srgb, var(--b-fen) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-fen) var(--t-150), #fff); } .kcell.assigned.b-trk{ background:color-mix(in srgb, var(--b-trk) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-trk) var(--t-150), #fff); } .kcell.assigned.b-sos{ background:color-mix(in srgb, var(--b-sos) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-sos) var(--t-150), #fff); } .kcell.assigned.b-ing{ background:color-mix(in srgb, var(--b-ing) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-ing) var(--t-150), #fff); } .kcell.assigned.b-din{ background:color-mix(in srgb, var(--b-din) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-din) var(--t-150), #fff); } /* mini yoğunluk modu – istersen .app'a .dense ekle */ .app.dense .kcell{min-height:44px;padding:4px 6px;border-radius:10px} /* Yazdır: ders renklerinin hafif tonu ve okunabilirlik */ @media print{ .print-table td.b-mat { background:#e6e8ff; } .print-table td.b-fen { background:#d6f7e9; } .print-table td.b-trk { background:#ffe8d6; } .print-table td.b-sos { background:#d8f6fb; } .print-table td.b-ing { background:#e3f9e9; } .print-table td.b-din { background:#ece7ff; } .print-table td[class^="b-"], .print-table td[class*=" b-"]{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .print-header{margin-bottom:10px} .print-sub{margin:8px 0 10px} } /* ===========================
+   STEP 5 – KOMPAKT ATAMA KARTLARI
+   =========================== */
+#step5 .cards{gap:12px;}
+#step5 .card{padding:10px 12px;border-radius:14px;}
+#step5 .card .flex{gap:8px;align-items:center;flex-wrap:wrap;}
+#step5 .card .tag{padding:2px 8px;font-size:11px;}
+#step5 .card .pill{padding:4px 8px;font-size:12px;}
+#step5 .card .mini2{font-size:10px;line-height:1.2;}
+#step5 .grid-scroll-wrapper{margin:0 -6px;padding-left:6px;padding-right:6px;padding-bottom:4px;}
+#step5 .kgrid[data-cols]{grid-template-columns:120px repeat(var(--cols), minmax(66px,1fr));gap:6px;padding:6px 0;}
+#step5 .head-cell{min-height:42px;padding:4px 6px;font-size:13px;border-radius:10px;}
+#step5 .header-row .head-cell,
+#step5 .header-row .kcell{min-height:42px;}
+#step5 .kcell{min-height:46px !important;padding:4px !important;border-radius:10px;font-size:16px;}
+#step5 .kcell.assigned > div:first-child{font-size:11px !important;line-height:1.1;}
+#step5 .kcell.assigned .mini2{font-size:10px !important;margin-top:2px !important;}
+#step5 .btn.xs.warn{padding:6px 10px;font-size:11px;border-radius:10px;}
+@media (max-width: 920px){
+  #step5 .kgrid[data-cols]{grid-template-columns:100px repeat(var(--cols), minmax(56px,1fr));}
+  #step5 .head-cell{font-size:12px;min-height:38px;}
+  #step5 .kcell{min-height:40px !important;font-size:14px;}
+}
+
+/* ===========================
    STEP 4 – TALEPLER (Sade & Hızlı)
    =========================== */
 #step4 .reqCard{ padding:14px; }
@@ -3833,6 +3888,30 @@ showTopTab('step1');
   #btnPrint {
     display: none !important;
   }
+}
+
+/* ===========================
+   STEP 5 – KOMPAKT ATAMA KARTLARI
+   =========================== */
+#step5 .cards{gap:12px;}
+#step5 .card{padding:10px 12px;border-radius:14px;}
+#step5 .card .flex{gap:8px;align-items:center;flex-wrap:wrap;}
+#step5 .card .tag{padding:2px 8px;font-size:11px;}
+#step5 .card .pill{padding:4px 8px;font-size:12px;}
+#step5 .card .mini2{font-size:10px;line-height:1.2;}
+#step5 .grid-scroll-wrapper{margin:0 -6px;padding-left:6px;padding-right:6px;padding-bottom:4px;}
+#step5 .kgrid[data-cols]{grid-template-columns:120px repeat(var(--cols), minmax(66px,1fr));gap:6px;padding:6px 0;}
+#step5 .head-cell{min-height:42px;padding:4px 6px;font-size:13px;border-radius:10px;}
+#step5 .header-row .head-cell,
+#step5 .header-row .kcell{min-height:42px;}
+#step5 .kcell{min-height:46px !important;padding:4px !important;border-radius:10px;font-size:16px;}
+#step5 .kcell.assigned > div:first-child{font-size:11px !important;line-height:1.1;}
+#step5 .kcell.assigned .mini2{font-size:10px !important;margin-top:2px !important;}
+#step5 .btn.xs.warn{padding:6px 10px;font-size:11px;border-radius:10px;}
+@media (max-width: 920px){
+  #step5 .kgrid[data-cols]{grid-template-columns:100px repeat(var(--cols), minmax(56px,1fr));}
+  #step5 .head-cell{font-size:12px;min-height:38px;}
+  #step5 .kcell{min-height:40px !important;font-size:14px;}
 }
 
 /* ===========================
@@ -4519,6 +4598,30 @@ function printAllGradesSelected(selectedGrades) {
   @page{ size: A4; margin: 12mm; }
   .print-teacher-v2 .page{ break-after: page; page-break-after: always; }
   th,td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
+
+/* ===========================
+   STEP 5 – KOMPAKT ATAMA KARTLARI
+   =========================== */
+#step5 .cards{gap:12px;}
+#step5 .card{padding:10px 12px;border-radius:14px;}
+#step5 .card .flex{gap:8px;align-items:center;flex-wrap:wrap;}
+#step5 .card .tag{padding:2px 8px;font-size:11px;}
+#step5 .card .pill{padding:4px 8px;font-size:12px;}
+#step5 .card .mini2{font-size:10px;line-height:1.2;}
+#step5 .grid-scroll-wrapper{margin:0 -6px;padding-left:6px;padding-right:6px;padding-bottom:4px;}
+#step5 .kgrid[data-cols]{grid-template-columns:120px repeat(var(--cols), minmax(66px,1fr));gap:6px;padding:6px 0;}
+#step5 .head-cell{min-height:42px;padding:4px 6px;font-size:13px;border-radius:10px;}
+#step5 .header-row .head-cell,
+#step5 .header-row .kcell{min-height:42px;}
+#step5 .kcell{min-height:46px !important;padding:4px !important;border-radius:10px;font-size:16px;}
+#step5 .kcell.assigned > div:first-child{font-size:11px !important;line-height:1.1;}
+#step5 .kcell.assigned .mini2{font-size:10px !important;margin-top:2px !important;}
+#step5 .btn.xs.warn{padding:6px 10px;font-size:11px;border-radius:10px;}
+@media (max-width: 920px){
+  #step5 .kgrid[data-cols]{grid-template-columns:100px repeat(var(--cols), minmax(56px,1fr));}
+  #step5 .head-cell{font-size:12px;min-height:38px;}
+  #step5 .kcell{min-height:40px !important;font-size:14px;}
 }
 
 /* ===========================
@@ -5351,7 +5454,7 @@ function renderAvailGrids(){
         for(let s=0;s<S;s++){
           const val = state.availability.teachers[t.id][d][s];
           const cell = document.createElement('div'); cell.className='kcell ' + (val?'ok':'bad');
-          cell.innerHTML = val ? '✓<br/><span class="mini2">Uygun</span>' : '✕';
+          cell.innerHTML = val ? '✓' : '✕';
           cell.onclick = ()=>{
             state.availability.teachers[t.id][d][s] = !state.availability.teachers[t.id][d][s];
             renderAvailGrids();
