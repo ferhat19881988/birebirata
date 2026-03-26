@@ -1182,6 +1182,88 @@
   }
 }
 
+
+
+/* === 2026-03-26 step2 premium toolbar + grid spacing fix === */
+#step2 .toolbar{
+  grid-template-columns:minmax(0,1.2fr) minmax(360px,.95fr);
+  gap:18px;
+}
+#step2 .toolbar .right{
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:12px;
+  align-items:stretch;
+}
+#step2 .toolbar .right .btn-group{
+  min-height:96px;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:10px;
+  padding:12px;
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 10px 24px rgba(2,8,23,.06);
+}
+#step2 .toolbar .right .btn-group .gtitle{
+  flex:none;
+  min-width:0;
+  width:100%;
+  margin:0;
+  padding:0;
+  font-size:12px;
+  letter-spacing:.02em;
+}
+#step2 .toolbar .right .btn-group .btn{
+  width:100%;
+  justify-content:center;
+}
+#step2 .toolbar .right .btn-group[aria-label="Firebase işlemleri"] .btn,
+#step2 .toolbar .right .btn-group[aria-label="JSON işlemleri"] .btn{
+  min-height:40px;
+}
+#step2 .toolbar .right .btn-group[aria-label="Firebase işlemleri"],
+#step2 .toolbar .right .btn-group[aria-label="JSON işlemleri"]{
+  align-content:start;
+}
+#step2 .toolbar .right .btn-group[aria-label="Firebase işlemleri"] .btn,
+#step2 .toolbar .right .btn-group[aria-label="JSON işlemleri"] .btn,
+#step2 .toolbar .right .btn-group[aria-label="Program işlemleri"] .btn{
+  font-size:13px;
+}
+#step2 #progGridWrap .grid-scroll-wrapper{
+  gap:12px;
+  padding-top:2px;
+  padding-bottom:14px;
+}
+#step2 #progGridWrap .kgrid[data-cols]{
+  row-gap:10px;
+  column-gap:10px;
+}
+#step2 #progGridWrap .header-row .kcell{
+  min-height:64px;
+  padding:10px 8px !important;
+}
+#step2 #progGridWrap .kgrid:not(.header-row) .kcell,
+#step2 #progGridWrap .kgrid:not(.header-row) .head-cell{
+  min-height:58px;
+}
+@media (max-width: 1320px){
+  #step2 .toolbar{
+    grid-template-columns:1fr;
+  }
+  #step2 .toolbar .right{
+    grid-template-columns:repeat(3, minmax(180px, 1fr));
+  }
+}
+@media (max-width: 980px){
+  #step2 .toolbar .right{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 </head>
 <body>
