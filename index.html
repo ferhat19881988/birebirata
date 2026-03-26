@@ -1829,6 +1829,7 @@ function renderSlotLabels(){
   $("#btnClearLabels").onclick = ()=>{ state.program.slotLabels = Array(S).fill(''); renderSlotLabels(); };
 }
 
+/* Legacy duplicate of buildProgramGrid (unused; kept for reference)
 function buildProgramGrid(fromRestore=false){
   if(!fromRestore){
     state.program.days = $("#daysInput").value.split(',').map(s=>s.trim()).filter(Boolean);
@@ -1867,7 +1868,7 @@ function buildProgramGrid(fromRestore=false){
   });
 
   reconcileAllToProgram(getAssignPolicy());
-}
+}*/
 
 /* Programla uyum */
 function reconcileAllToProgram(policy='keep'){
@@ -1900,6 +1901,7 @@ function slotHeadCells(container,S){
     container.appendChild(hd);
   }
 }
+/* Legacy duplicate of renderAvailGrids (unused; replaced by improved version later)
 function renderAvailGrids(){
   const D=state.program.days.length, S=state.program.slots, days=state.program.days;
 
@@ -1988,10 +1990,11 @@ function renderAvailGrids(){
         }
         grid.appendChild(row);
       }
-      card.appendChild(grid); gWrap.appendChild(card);
+    card.appendChild(grid); gWrap.appendChild(card);
     });
   }
 }
+*/
 function bulkSet(matrix, val){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=val; }
 function bulkToggle(matrix){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=!matrix[d][s]; }
 function copyDayPattern(matrix, fromDay){ const row = matrix[fromDay].slice(); for(let d=0; d<matrix.length; d++){ matrix[d] = row.slice(); } }
@@ -2413,6 +2416,7 @@ $("#dlgDelete").onclick = async () => {
   }
 };
 
+/* Legacy duplicates (unused; replaced later)
 function hasAnyAssignments(){ return Array.isArray(state.assignments) && state.assignments.length > 0; }
 function getTeacherAssignmentsMap(){
   const m = new Map();
@@ -2422,6 +2426,7 @@ function getTeacherAssignmentsMap(){
   }
   return m;
 }
+*/
 
 /**
  * Compute the total number of lesson slots a teacher could be assigned given
