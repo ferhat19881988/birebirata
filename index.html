@@ -1298,6 +1298,92 @@
   }
 }
 
+
+/* === 2026-03-26 step5 toolbar overflow/layout fix === */
+#step5 .toolbar{
+  display:grid;
+  grid-template-columns:minmax(0, 1.35fr) minmax(0, 1fr);
+  gap:16px;
+  align-items:start;
+}
+#step5 .toolbar .left,
+#step5 .toolbar .right{
+  min-width:0;
+  display:grid;
+  gap:12px;
+  align-items:stretch;
+}
+#step5 .toolbar .left{
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+}
+#step5 .toolbar .right{
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+}
+#step5 .toolbar .btn-group{
+  min-width:0;
+  width:100%;
+  min-height:84px;
+  display:flex;
+  flex-wrap:wrap;
+  align-content:flex-start;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  box-sizing:border-box;
+}
+#step5 .toolbar .btn-group .gtitle{
+  flex:0 0 100%;
+  width:100%;
+  margin:0;
+  padding:0;
+}
+#step5 .toolbar .btn-group .btn{
+  flex:1 1 140px;
+  min-width:0;
+}
+#step5 .btn-group.actions-primary{
+  grid-column:span 2;
+}
+#step5 .btn-group.actions-primary .btn{
+  flex:1 1 160px;
+}
+#step5 .btn-group[aria-label="Atama seçenekleri"],
+#step5 .btn-group[aria-label="Grup filtresi"],
+#step5 .btn-group[aria-label="Toplu işlemler"]{
+  justify-content:flex-start;
+}
+#step5 .assign-option-label,
+#step5 .filter-block{
+  width:100%;
+  min-width:0;
+}
+#step5 .filter-block select{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+@media (max-width: 1320px){
+  #step5 .toolbar{
+    grid-template-columns:1fr;
+  }
+  #step5 .toolbar .left,
+  #step5 .toolbar .right{
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  }
+  #step5 .btn-group.actions-primary{
+    grid-column:auto;
+  }
+}
+@media (max-width: 760px){
+  #step5 .toolbar .left,
+  #step5 .toolbar .right{
+    grid-template-columns:1fr;
+  }
+  #step5 .toolbar .btn-group .btn{
+    flex:1 1 100%;
+  }
+}
+
 </style>
 </head>
 <body>
