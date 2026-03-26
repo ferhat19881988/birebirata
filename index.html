@@ -164,6 +164,39 @@
   tr{border-radius:10px}
   .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--chip);font-weight:600;color:var(--pri-ink)}
   .pill.bad{background:#fee2e2;color:#991b1b}
+  
+  /* === Düzenlenmiş Araç Çubuğu Izgaraları ===
+     Step2 ve Step5 bölümlerindeki araç çubukları 3 satır x 2 sütundan oluşan
+     bir ızgara yapısına dönüştürüldü. Her .tool-item hücresi kendi
+     içeriğini dikey olarak hizalar. */
+  #step2 .toolbar.step2-grid,
+  #step5 .toolbar.step5-grid{
+    display:grid;
+    /* Her satırda iki sütun bulunur. Sütunlar içerik genişliğine göre belirlenir
+       ve böylece buton grupları satır başında toplanır. */
+    grid-template-columns:max-content max-content;
+    gap:12px;
+    /* Önceki .toolbar tanımındaki justify-content:space-between değerini geçersiz kıl */
+    justify-content:start;
+  }
+  #step2 .toolbar.step2-grid .tool-item,
+  #step5 .toolbar.step5-grid .tool-item{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:6px;
+    /* Grid hücrelerindeki içeriklerin solda kalmasını sağlar */
+    justify-self:start;
+  }
+
+  /* Spreadsheet ID etiketinin boyutu küçültüldü */
+  #step1 label.wide{
+    font-size:13px;
+    font-weight:600;
+  }
+  #step1 label.wide input{
+    font-size:14px;
+  }
   .card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(15,23,42,.06);border:1px solid #e5e7eb;overflow:hidden}
   .kgrid{display:grid;gap:6px}
   .kgrid[data-cols]{grid-template-columns:140px repeat(var(--cols), minmax(72px,1fr));}
@@ -760,28 +793,6 @@
     margin-top: 4px;
   }
 
-  /* Spreadsheet ID etiketinin boyutunu küçültmek için özel sınıf */
-  .spreadsheet-id-label {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 4px;
-    display: inline-block;
-  }
-
-  /* Step5 atama paneli için üç satırlı düzen */
-  #step5 .assign-toolbar {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  #step5 .assign-toolbar .toolbar-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: flex-end;
-    justify-content: flex-start;
-  }
-
 
 /* ===========================
    STEP 5 – KOMPAKT ATAMA KARTLARI
@@ -1050,8 +1061,7 @@
       </div>
     </div>
     <div class="row">
-      <!-- Daha kompakt bir etiket için özel sınıf eklendi -->
-      <label class="wide spreadsheet-id-label">Spreadsheet ID
+      <label class="wide">Spreadsheet ID
         <input class="wide" type="text" id="sheetId" value="1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg" />
       </label>
       <button class="btn" id="btnFetch">Verileri Oku</button>
@@ -1084,14 +1094,38 @@
       <div class="chips"><span class="pill">JSON Kaydet/Yükle</span></div>
     </div>
     
-    <div class="toolbar">
-      <div class="left">
+    <!--
+      STEP 2 araç çubuğu yeniden düzenlendi. Önceki flex tabanlı yapı yerine
+      3 satır ve 2 sütundan oluşan bir ızgara kullanılıyor. Her bir girdi veya
+      buton grubu kendi hücresinde konumlandırılmıştır. Bu sayede öğeler
+      soldan hizalı ve daha düzenli bir görünüme sahiptir.
+    -->
+    <div class="toolbar step2-grid">
+      <div class="tool-item">
         <label>Günler (virgül ayır)<br/>
           <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
         </label>
+      </div>
+      <div class="tool-item">
+        <div class="btn-group" aria-label="Program işlemleri">
+          <span class="gtitle">Program</span>
+          <button class="btn" id="btnBuildGrid">Oluştur/Güncelle</button>
+        </div>
+      </div>
+      <div class="tool-item">
         <label>Saat/Slot sayısı<br/>
           <input type="number" id="slotsInput" value="8" min="1" max="12" />
         </label>
+      </div>
+      <div class="tool-item">
+        <div class="btn-group" aria-label="JSON işlemleri">
+          <span class="gtitle">JSON</span>
+          <button class="btn ghost" id="btnProgExport">Dışa Aktar</button>
+          <input id="fileProgImport" type="file" accept="application/json" hidden />
+          <button class="btn ghost" id="btnProgImport">İçeri Al</button>
+        </div>
+      </div>
+      <div class="tool-item">
         <label>Atama politikası<br/>
           <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
             <option value="keep" selected>Koruyabildiğini koru (taşanları at)</option>
@@ -1099,20 +1133,7 @@
           </select>
         </label>
       </div>
-
-      <div class="right">
-        <div class="btn-group" aria-label="Program işlemleri">
-          <span class="gtitle">Program</span>
-          <button class="btn" id="btnBuildGrid">Oluştur/Güncelle</button>
-        </div>
-
-        <div class="btn-group" aria-label="JSON işlemleri">
-          <span class="gtitle">JSON</span>
-          <button class="btn ghost" id="btnProgExport">Dışa Aktar</button>
-          <input id="fileProgImport" type="file" accept="application/json" hidden />
-          <button class="btn ghost" id="btnProgImport">İçeri Al</button>
-        </div>
-
+      <div class="tool-item">
         <div class="btn-group" aria-label="Firebase işlemleri">
           <span class="gtitle">Firebase</span>
           <button class="btn ghost" id="btnProgSaveFb">Kaydet</button>
@@ -1193,10 +1214,10 @@
             <input id="fileAvailImport2" type="file" accept="application/json" hidden />
             <button class="btn ghost" id="btnAvailImport2">İçeri Al</button>
           </div>
-          <!-- Grup müsaitlik için toplu işlemler eklendi -->
+          <!-- Toplu işlemler: grup müsaitlikleri için tümünü temizle butonu eklendi -->
           <div class="btn-group" aria-label="Toplu işlemler">
             <span class="gtitle">Toplu</span>
-            <button class="btn warn" id="btnAvailClearGroup">Tümünü Temizle</button>
+            <button class="btn warn" id="btnAvailClear2">Tümünü Temizle</button>
           </div>
         </div>
         <div class="right">
@@ -1279,10 +1300,13 @@
       </div>
     </div>
     
-    <!-- Atama paneli butonları daha iyi hizalama için 3 satıra bölündü -->
-    <div class="toolbar assign-toolbar">
-      <!-- 1. satır: Atama işlemleri -->
-      <div class="toolbar-row">
+    <!--
+      STEP 5 araç çubuğu yeniden düzenlendi. Tüm buton grupları ve filtre
+      girdisi 3 satır ve 2 sütundan oluşan bir ızgara içerisinde yer alıyor.
+      Böylelikle karmaşık buton dizilimi daha okunabilir hale geliyor.
+    -->
+    <div class="toolbar step5-grid">
+      <div class="tool-item">
         <div class="btn-group" aria-label="Atama">
           <span class="gtitle">Atama</span>
           <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
@@ -1292,29 +1316,23 @@
           </label>
           <button class="btn ghost" id="btnAutoAssignReport" disabled>Son Rapor</button>
           <button class="btn ghost" id="btnUnassignedReport" disabled>Atamasızlar</button>
-          <label class="mini" style="display:flex;flex-direction:column;gap:6px;min-width:260px; margin-left:6px;">
-            <span>Filtre</span>
-            <select id="assignGroupFilter" disabled>
-              <option value="">Tümü</option>
-            </select>
-          </label>
         </div>
       </div>
-      <!-- 2. satır: JSON ve Toplu işlemler -->
-      <div class="toolbar-row">
+      <div class="tool-item">
         <div class="btn-group" aria-label="JSON işlemleri">
           <span class="gtitle">JSON</span>
           <button class="btn ghost" id="btnAssgnExport">Dışa Aktar</button>
           <input id="fileAssgnImport" type="file" accept="application/json" hidden />
           <button class="btn ghost" id="btnAssgnImport">İçeri Al</button>
         </div>
+      </div>
+      <div class="tool-item">
         <div class="btn-group" aria-label="Toplu işlemler">
           <span class="gtitle">Toplu</span>
           <button class="btn warn" id="btnAssgnClear">Atamaları Temizle</button>
         </div>
       </div>
-      <!-- 3. satır: Firebase işlemleri -->
-      <div class="toolbar-row">
+      <div class="tool-item">
         <div class="btn-group" aria-label="Firebase işlemleri">
           <span class="gtitle">Firebase</span>
           <button class="btn ghost" id="btnAssgnSaveFb">Kaydet</button>
@@ -1322,6 +1340,16 @@
           <button class="btn ghost" id="btnAssgnDeleteFb">Sil</button>
         </div>
       </div>
+      <div class="tool-item">
+        <label class="mini" style="display:flex;flex-direction:column;gap:6px;min-width:260px;">
+          <span>Filtre</span>
+          <select id="assignGroupFilter" disabled>
+            <option value="">Tümü</option>
+          </select>
+        </label>
+      </div>
+      <!-- Son hücre boş bırakıldı; gelecekte ek bileşenler için kullanılabilir -->
+      <div class="tool-item"></div>
     </div>
 
     <div id="assignCards" class="cards"></div>
@@ -3648,15 +3676,8 @@ $("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
 $("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
-// Grup müsaitlik için de aynı temizleme işlevi bağlandı
-const btnClearGroup = document.getElementById('btnAvailClearGroup');
-if (btnClearGroup) {
-  btnClearGroup.onclick = ()=>{
-    state.availability = { teachers:{}, groups:{} };
-    reconcileAllToProgram(getAssignPolicy());
-    renderAvailGrids();
-  };
-}
+// Grup müsaitlik paneline eklenen yeni "Tümünü Temizle" butonu aynı davranışı paylaşır
+$("#btnAvailClear2").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
 $("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
