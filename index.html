@@ -760,6 +760,28 @@
     margin-top: 4px;
   }
 
+  /* Spreadsheet ID etiketinin boyutunu küçültmek için özel sınıf */
+  .spreadsheet-id-label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: inline-block;
+  }
+
+  /* Step5 atama paneli için üç satırlı düzen */
+  #step5 .assign-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #step5 .assign-toolbar .toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    justify-content: flex-start;
+  }
+
 
 /* ===========================
    STEP 5 – KOMPAKT ATAMA KARTLARI
@@ -1028,7 +1050,8 @@
       </div>
     </div>
     <div class="row">
-      <label class="wide">Spreadsheet ID
+      <!-- Daha kompakt bir etiket için özel sınıf eklendi -->
+      <label class="wide spreadsheet-id-label">Spreadsheet ID
         <input class="wide" type="text" id="sheetId" value="1oJGMO7FOPV4U86peeA63lmMk-wVCKsfWuyw2yefMweg" />
       </label>
       <button class="btn" id="btnFetch">Verileri Oku</button>
@@ -1170,6 +1193,11 @@
             <input id="fileAvailImport2" type="file" accept="application/json" hidden />
             <button class="btn ghost" id="btnAvailImport2">İçeri Al</button>
           </div>
+          <!-- Grup müsaitlik için toplu işlemler eklendi -->
+          <div class="btn-group" aria-label="Toplu işlemler">
+            <span class="gtitle">Toplu</span>
+            <button class="btn warn" id="btnAvailClearGroup">Tümünü Temizle</button>
+          </div>
         </div>
         <div class="right">
           <div class="btn-group" aria-label="Firebase işlemleri">
@@ -1251,8 +1279,10 @@
       </div>
     </div>
     
-    <div class="toolbar">
-      <div class="left">
+    <!-- Atama paneli butonları daha iyi hizalama için 3 satıra bölündü -->
+    <div class="toolbar assign-toolbar">
+      <!-- 1. satır: Atama işlemleri -->
+      <div class="toolbar-row">
         <div class="btn-group" aria-label="Atama">
           <span class="gtitle">Atama</span>
           <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
@@ -1270,8 +1300,8 @@
           </label>
         </div>
       </div>
-
-      <div class="right">
+      <!-- 2. satır: JSON ve Toplu işlemler -->
+      <div class="toolbar-row">
         <div class="btn-group" aria-label="JSON işlemleri">
           <span class="gtitle">JSON</span>
           <button class="btn ghost" id="btnAssgnExport">Dışa Aktar</button>
@@ -1282,6 +1312,9 @@
           <span class="gtitle">Toplu</span>
           <button class="btn warn" id="btnAssgnClear">Atamaları Temizle</button>
         </div>
+      </div>
+      <!-- 3. satır: Firebase işlemleri -->
+      <div class="toolbar-row">
         <div class="btn-group" aria-label="Firebase işlemleri">
           <span class="gtitle">Firebase</span>
           <button class="btn ghost" id="btnAssgnSaveFb">Kaydet</button>
@@ -3615,6 +3648,15 @@ $("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
 $("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
+// Grup müsaitlik için de aynı temizleme işlevi bağlandı
+const btnClearGroup = document.getElementById('btnAvailClearGroup');
+if (btnClearGroup) {
+  btnClearGroup.onclick = ()=>{
+    state.availability = { teachers:{}, groups:{} };
+    reconcileAllToProgram(getAssignPolicy());
+    renderAvailGrids();
+  };
+}
 $("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
