@@ -82,14 +82,19 @@
   }
   .content{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
   .grid{display:grid;gap:12px}
-  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 
   /* Modern action toolbars (button grouping) */
   .toolbar{
     display:flex;
     flex-wrap:wrap;
     gap:12px;
-    align-items:flex-end;
+    /*
+      Buton gruplarının ve etiketlerin dikey hizalanmasını düzeltmek için
+      align-items değerini center olarak ayarladık. Böylece her adımda
+      toolbar içindeki öğeler aynı hizada durur.
+    */
+    align-items:center;
     justify-content:space-between;
   }
   .toolbar .left,
@@ -97,7 +102,12 @@
     display:flex;
     flex-wrap:wrap;
     gap:10px;
-    align-items:flex-end;
+    /*
+      Alt hizadan ziyade orta hizalamaya geçildi. Bu sayede
+      sol ve sağ bölümlerdeki düğmeler ve kontroller birbirleriyle
+      aynı dikey çizgi üzerinde kalır.
+    */
+    align-items:center;
   }
   .btn-group{
     display:flex;
@@ -185,8 +195,12 @@
   .flex{display:flex;gap:10px;align-items:center}
   .right{margin-left:auto}
   .muted{color:var(--muted)}
-  .mini{font-size:12px}
-  .mini2{font-size:11px;color:#475569}
+  /*
+    Mini sınıfların yazı boyutları büyütüldü; okunabilirliği artırmak için
+    font-size değerleri yükseltildi.
+  */
+  .mini{font-size:13px}
+  .mini2{font-size:12px;color:#475569}
   .tag{display:inline-block;background:#f1f5f9;padding:2px 8px;border-radius:999px;margin-left:6px;color:#334155}
   .nowrap{white-space:nowrap}
 
@@ -1169,6 +1183,11 @@
             <button class="btn ghost" id="btnAvailExport2">Dışa Aktar</button>
             <input id="fileAvailImport2" type="file" accept="application/json" hidden />
             <button class="btn ghost" id="btnAvailImport2">İçeri Al</button>
+          </div>
+          <!-- Toplu işlemler buton grubu: Grup müsaitliği için tümünü temizle -->
+          <div class="btn-group" aria-label="Toplu işlemler">
+            <span class="gtitle">Toplu</span>
+            <button class="btn warn" id="btnAvailClear2">Tümünü Temizle</button>
           </div>
         </div>
         <div class="right">
@@ -3615,6 +3634,8 @@ $("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
 $("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
+// Grup müsaitliği bölümünde bulunan 'Tümünü Temizle' butonu için aynı işlem uygulanır
+$("#btnAvailClear2").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
 $("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
