@@ -120,6 +120,65 @@
   .btn-group .btn{ box-shadow: none; }
   .btn-group .btn:hover{ box-shadow: 0 8px 18px rgba(2,8,23,.10); }
 
+
+  /* Step-specific layout refinements */
+  #sheetId{
+    font-size:12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    letter-spacing:.01em;
+  }
+  #step2 .toolbar,
+  #step5 .toolbar{
+    display:grid;
+    grid-template-columns:minmax(340px, 1.1fr) minmax(340px, 1fr);
+    gap:14px;
+    align-items:start;
+  }
+  #step2 .toolbar .left,
+  #step5 .toolbar .left,
+  #step2 .toolbar .right,
+  #step5 .toolbar .right{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:12px;
+    align-items:stretch;
+  }
+  #step2 .form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:12px;
+    align-items:end;
+    width:100%;
+  }
+  #step2 .form-grid label,
+  #step5 .filter-block{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+  #step2 .form-grid input,
+  #step2 .form-grid select,
+  #step5 .filter-block select{
+    min-width:0;
+    width:100%;
+  }
+  #step5 .assign-option-label{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    line-height:1.3;
+    font-weight:700;
+    padding:2px 2px;
+  }
+  #step5 .assign-option-label input{ margin-top:2px; flex:0 0 auto; }
+  #step5 .btn-group.actions-primary{ grid-column: span 2; }
+  @media (max-width: 1100px){
+    #step2 .toolbar,
+    #step5 .toolbar{ grid-template-columns:1fr; }
+    #step5 .btn-group.actions-primary{ grid-column:auto; }
+  }
+
   .btn{
     appearance:none;
     border:1px solid rgba(15,23,42,.06);
@@ -874,37 +933,6 @@
   #step4 .reqStepBtn, #step4 .reqQuickBtn{ background:#0d1a2d; color:#e5e7eb; border-color:#1f2a44; }
 }
 
-/* =============================================
-   Özelleştirmeler – Kullanıcı geri bildirimi
-   ============================================= */
-/* Spreadsheet ID girişinin font boyutunu küçültüldü, uzun metinlerin daha iyi sığması sağlandı */
-#sheetId {
-  font-size: 13px;
-}
-
-/* Step 2 ve Step 5 araç çubukları daha modern bir grid yapısında hizalandı. 
-   responsive tasarımla buton ve form elemanları satır/sütunlara bölündü. */
-#step2 .toolbar,
-#step5 .toolbar {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-#step2 .toolbar .left,
-#step2 .toolbar .right,
-#step5 .toolbar .left,
-#step5 .toolbar .right {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: flex-end;
-}
-#step2 .toolbar label,
-#step5 .toolbar label {
-  min-width: 200px;
-}
-
 
   /* ===========================
      GRUP -> ÖĞRENCİ VURGUSU (Step 1)
@@ -1094,18 +1122,20 @@
     
     <div class="toolbar">
       <div class="left">
-        <label>Günler (virgül ayır)<br/>
-          <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
-        </label>
-        <label>Saat/Slot sayısı<br/>
-          <input type="number" id="slotsInput" value="8" min="1" max="12" />
-        </label>
-        <label>Atama politikası<br/>
-          <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
-            <option value="keep" selected>Koruyabildiğini koru (taşanları at)</option>
-            <option value="reset">Tamamen sıfırla</option>
-          </select>
-        </label>
+        <div class="form-grid">
+          <label>Günler (virgül ayır)<br/>
+            <input type="text" id="daysInput" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma" />
+          </label>
+          <label>Saat/Slot sayısı<br/>
+            <input type="number" id="slotsInput" value="8" min="1" max="12" />
+          </label>
+          <label>Atama politikası<br/>
+            <select id="assignPolicy" title="Program değişince atamaları nasıl ele alalım?">
+              <option value="keep" selected>Koruyabildiğini koru (taşanları at)</option>
+              <option value="reset">Tamamen sıfırla</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       <div class="right">
@@ -1201,7 +1231,6 @@
             <input id="fileAvailImport2" type="file" accept="application/json" hidden />
             <button class="btn ghost" id="btnAvailImport2">İçeri Al</button>
           </div>
-          <!-- Toplu işlemler: grup müsaitliklerini temizlemek için eklendi -->
           <div class="btn-group" aria-label="Toplu işlemler">
             <span class="gtitle">Toplu</span>
             <button class="btn warn" id="btnAvailClear2">Tümünü Temizle</button>
@@ -1289,17 +1318,23 @@
     
     <div class="toolbar">
       <div class="left">
-        <div class="btn-group" aria-label="Atama">
+        <div class="btn-group actions-primary" aria-label="Atama işlemleri">
           <span class="gtitle">Atama</span>
           <button class="btn" id="btnAutoAssign">Otomatik Atama</button>
-          <label class="pill" style="gap:10px;align-items:center">
-            <input type="checkbox" id="chkRelaxConsecutive" checked style="width:18px;height:18px" />
-            Ardışık aynı branş kuralını <b>çok sıkışınca</b> esnet
-          </label>
           <button class="btn ghost" id="btnAutoAssignReport" disabled>Son Rapor</button>
           <button class="btn ghost" id="btnUnassignedReport" disabled>Atamasızlar</button>
-          <label class="mini" style="display:flex;flex-direction:column;gap:6px;min-width:260px; margin-left:6px;">
-            <span>Filtre</span>
+        </div>
+        <div class="btn-group" aria-label="Atama seçenekleri">
+          <span class="gtitle">Kural</span>
+          <label class="assign-option-label">
+            <input type="checkbox" id="chkRelaxConsecutive" checked style="width:18px;height:18px" />
+            <span>Ardışık aynı branş kuralını <b>çok sıkışınca</b> esnet</span>
+          </label>
+        </div>
+        <div class="btn-group" aria-label="Grup filtresi">
+          <span class="gtitle">Filtre</span>
+          <label class="filter-block mini">
+            <span>Grup seç</span>
             <select id="assignGroupFilter" disabled>
               <option value="">Tümü</option>
             </select>
@@ -1620,27 +1655,6 @@ function focusGroupStudents(groupId){
 // the colors soft. A slightly darker border color is also produced to
 // delineate the cells.
 const branchColorCache = {};
-function getColorForBranch(branch) {
-  if (!branch) return null;
-  if (branchColorCache[branch]) return branchColorCache[branch];
-  let sum = 0;
-  for (let i = 0; i < branch.length; i++) {
-    sum = (sum + branch.charCodeAt(i)) & 0xffff;
-  }
-  const hue = (sum * 37) % 360;
-  const color = `hsl(${hue}, 70%, 85%)`;
-  branchColorCache[branch] = color;
-  return color;
-}
-function getBorderColorForBranch(branch) {
-  if (!branch) return null;
-  let sum = 0;
-  for (let i = 0; i < branch.length; i++) {
-    sum = (sum + branch.charCodeAt(i)) & 0xffff;
-  }
-  const hue = (sum * 37) % 360;
-  return `hsl(${hue}, 65%, 75%)`;
-}
 
 /* Grup sıralama:  G1-7A, G2-7A, G3-7A, ... G1-7B ... */
 function parseGroupName(name){
@@ -2299,12 +2313,6 @@ const importReq = obj=>{
 function findTeacherOptions(branch){ return state.teachers.filter(t=>t.branch===branch); }
 function isTeacherBusy(teacherId, day, slot){ return state.assignments.some(a=>a.teacherId===teacherId && a.day===day && a.slot===slot); }
 function isGroupBusy(groupId, day, slot){ return state.assignments.some(a=>a.group===groupId && a.day===day && a.slot===slot); }
-function prevGroupSubject(groupId, day, slot){
-  if(slot>0){ const a = state.assignments.find(x=>x.group===groupId && x.day===day && x.slot===slot-1); return a ? a.branch : null; }
-  if(day>0){ const a = state.assignments.find(x=>x.group===groupId && x.day===day-1 && x.slot===state.program.slots-1); return a ? a.branch : null; }
-  return null;
-}
-function hasAssignmentsForGroup(gid){ return state.assignments.some(a=>a.group===gid); }
 
 /* ===== Atamalar: Grup bazlı eksik ders & rapor güncelleme helper'ları ===== */
 function getMissingNeedsForGroup(gid){
@@ -2468,18 +2476,6 @@ function getTeacherAssignmentsMap(){
  * @param {string} tid - teacher ID
  * @returns {number} total slots requested for this teacher's branch
  */
-function teacherCapacity(tid) {
-  const tObj = state.teachers.find(x => x.id === tid);
-  if (!tObj) return 0;
-  const br = tObj.branch;
-  let total = 0;
-  for (const gid of Object.keys(state.requests)) {
-    const req = state.requests[gid] || {};
-    const n = req[br];
-    if (typeof n === 'number' && !isNaN(n)) total += n;
-  }
-  return total;
-}
 
 /**
  * Calculate how many lesson slots a teacher is available for based on the
@@ -3651,19 +3647,12 @@ $("#btnAvailImport").onclick = ()=>openFile($("#fileAvailImport"), obj=>{
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
 $("#btnAvailClear").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
+$("#btnAvailClear2").onclick = ()=>{ state.availability={teachers:{},groups:{}}; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids(); };
 $("#btnAvailExport2").onclick = ()=>download('musaitlikler.json', state.availability);
 $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
-
-// Grup müsaitlikleri için toplu temizleme butonu – öğretmenler panelindeki temizleme işleviyle aynı davranır
-$("#btnAvailClear2").onclick = ()=>{
-  // Both teachers and groups availability are reset to keep data consistent with program
-  state.availability = { teachers: {}, groups: {} };
-  reconcileAllToProgram(getAssignPolicy());
-  renderAvailGrids();
-};
 
 $("#goto2").onclick = ()=> showTopTab('step2');
 $("#goto3").onclick = ()=> showTopTab('step3');
