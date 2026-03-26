@@ -1116,6 +1116,72 @@
   }
 }
 
+
+/* === 2026-03-26 ince düzen düzeltmeleri === */
+#step2 .toolbar .right{
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  align-items:stretch;
+}
+#step2 .toolbar .right .btn-group{
+  min-height:72px;
+  justify-content:flex-start;
+  align-content:center;
+  gap:10px;
+}
+#step2 .toolbar .right .btn-group .gtitle{
+  flex:0 0 56px;
+  min-width:56px;
+}
+#step2 .toolbar .right .btn-group .btn{
+  flex:0 0 auto;
+}
+
+#step2 #progGridWrap .grid-scroll-wrapper{
+  display:grid;
+  gap:10px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding-bottom:10px;
+}
+#step2 #progGridWrap .kgrid[data-cols]{
+  grid-template-columns:144px repeat(var(--cols), minmax(150px, 1fr));
+  align-items:stretch;
+}
+#step2 #progGridWrap .kgrid .head-cell,
+#step2 #progGridWrap .header-row .kcell,
+#step2 #progGridWrap .kgrid .kcell{
+  min-width:0;
+}
+#step2 #progGridWrap .header-row .kcell{
+  min-height:58px;
+  padding:8px 6px !important;
+}
+#step2 #progGridWrap .header-row .kcell > div:first-child{
+  font-size:22px;
+  font-weight:800;
+  line-height:1;
+}
+#step2 #progGridWrap .header-row .kcell .mini2{
+  font-size:11px;
+  line-height:1.15;
+  text-align:center;
+  white-space:normal !important;
+  word-break:break-word;
+}
+#step2 #progGridWrap .kgrid:not(.header-row) .kcell,
+#step2 #progGridWrap .kgrid:not(.header-row) .head-cell{
+  min-height:54px;
+}
+
+@media (max-width: 1180px){
+  #step2 .toolbar .right{
+    grid-template-columns:1fr;
+  }
+  #step2 #progGridWrap .kgrid[data-cols]{
+    grid-template-columns:132px repeat(var(--cols), minmax(132px, 1fr));
+  }
+}
+
 </style>
 </head>
 <body>
