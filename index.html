@@ -1170,11 +1170,6 @@
             <input id="fileAvailImport2" type="file" accept="application/json" hidden />
             <button class="btn ghost" id="btnAvailImport2">İçeri Al</button>
           </div>
-          <!-- Toplu işlemler: Grup müsaitliği için tümünü temizle düğmesini görünür kıl -->
-          <div class="btn-group" aria-label="Toplu işlemler">
-            <span class="gtitle">Toplu</span>
-            <button class="btn warn" id="btnAvailClear2">Tümünü Temizle</button>
-          </div>
         </div>
         <div class="right">
           <div class="btn-group" aria-label="Firebase işlemleri">
@@ -3625,13 +3620,6 @@ $("#btnAvailImport2").onclick = ()=>openFile($("#fileAvailImport2"), obj=>{
   if(!obj || !obj.teachers || !obj.groups) return uiAlert('Geçersiz müsaitlik JSON.');
   state.availability = obj; reconcileAllToProgram(getAssignPolicy()); renderAvailGrids();
 });
-// Grup müsaitlik sekmesi için toplu temizle düğmesi
-$("#btnAvailClear2").onclick = () => {
-  // Öğretmen ve grup müsaitliklerini tamamen sıfırla
-  state.availability = { teachers: {}, groups: {} };
-  reconcileAllToProgram(getAssignPolicy());
-  renderAvailGrids();
-};
 
 $("#goto2").onclick = ()=> showTopTab('step2');
 $("#goto3").onclick = ()=> showTopTab('step3');
