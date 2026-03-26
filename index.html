@@ -123,15 +123,18 @@
 
   /* Step-specific layout refinements */
   #sheetId{
-    font-size:12px;
+    font-size:13px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    letter-spacing:.01em;
+    font-weight:600;
+    letter-spacing:0;
+    line-height:1.35;
+    color:#334155;
   }
   #step2 .toolbar,
   #step5 .toolbar{
     display:grid;
-    grid-template-columns:minmax(340px, 1.1fr) minmax(340px, 1fr);
-    gap:14px;
+    grid-template-columns:minmax(420px, 1.25fr) minmax(360px, 1fr);
+    gap:16px;
     align-items:start;
   }
   #step2 .toolbar .left,
@@ -143,9 +146,12 @@
     gap:12px;
     align-items:stretch;
   }
+  #step2 .toolbar .left{align-content:start;}
+  #step2 .toolbar .right,
+  #step5 .toolbar .right{align-content:start;}
   #step2 .form-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns:minmax(0, 1.45fr) minmax(160px, .75fr) minmax(240px, 1.1fr);
     gap:12px;
     align-items:end;
     width:100%;
@@ -157,12 +163,34 @@
     gap:6px;
     min-width:0;
   }
+  #step2 .form-grid label > br{display:none;}
   #step2 .form-grid input,
   #step2 .form-grid select,
   #step5 .filter-block select{
     min-width:0;
     width:100%;
   }
+  #step2 .form-grid label,
+  #step5 .filter-block span{
+    font-size:13px;
+    font-weight:800;
+    color:#334155;
+  }
+  #step2 #daysInput,
+  #step2 #slotsInput,
+  #step2 #assignPolicy{
+    height:46px;
+  }
+  #step2 #slotsInput{ text-align:center; }
+  #step2 #progGridWrap,
+  #step2 #slotLabelsWrap{ padding:16px; }
+  #step2 #progGridWrap .grid-scroll-wrapper{ padding-bottom:12px; }
+  #step2 #progGridWrap .grid-scroll-wrapper > .kgrid + .kgrid{ margin-top:10px; }
+  #step2 #progGridWrap .kcell{ border-radius:14px; }
+  #step2 #progGridWrap .head-cell{ border-radius:14px; }
+  #step5 .toolbar .left{ grid-template-columns:minmax(260px, 1.2fr) minmax(260px, 1fr) minmax(220px, .85fr); }
+  #step5 .toolbar .right{ grid-template-columns:repeat(3, minmax(180px, 1fr)); }
+  #step5 .btn-group{ height:100%; align-items:flex-start; }
   #step5 .assign-option-label{
     display:flex;
     gap:10px;
@@ -173,9 +201,12 @@
   }
   #step5 .assign-option-label input{ margin-top:2px; flex:0 0 auto; }
   #step5 .btn-group.actions-primary{ grid-column: span 2; }
-  @media (max-width: 1100px){
+  @media (max-width: 1180px){
     #step2 .toolbar,
     #step5 .toolbar{ grid-template-columns:1fr; }
+    #step2 .form-grid{ grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); }
+    #step5 .toolbar .left,
+    #step5 .toolbar .right{ grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); }
     #step5 .btn-group.actions-primary{ grid-column:auto; }
   }
 
