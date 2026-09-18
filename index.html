@@ -1402,7 +1402,7 @@
       </div>
       <div class="title">
         <h1>Fenomen Eğitim Kurumları</h1>
-        <small>Grup dersleri planlama • Tablı</small>
+        <small>Grup dersleri planlama • Tablı • V4.2 🔥</small>
       </div>
     </div>
     <div class="flex">
@@ -1656,7 +1656,7 @@
       <h2>5) Atama Paneli</h2>
       <div class="chips">
         <span class="pill">Aynı gruba ardışık aynı branş verilmez</span>
-        <span class="pill">Branşa göre öğretmen yükü dengelenir</span>
+        <span class="pill">Maksimum atama kapasitesi önceliklidir</span>
       </div>
     </div>
     
@@ -2136,6 +2136,7 @@ async function fetchAll(){
       const bRaw = (r[ixBr]||'').toString().trim().toUpperCase();
       return { id: toId(name||("T"+Math.random())), name, branch:bRaw };
     }).filter(x=>x.name && ALLOWED_BRANCHES.includes(x.branch));
+    if (typeof __teacherBranchesCache !== 'undefined') __teacherBranchesCache.clear();
     if(state.teachers.length===0) throw new Error("Filtre sonrası öğretmen bulunamadı.");
 
     const s = await gvizFetch(sheetId, 'Ogrenciler');
@@ -2990,6 +2991,212 @@ function escapeHtml(s){
 }
 function escapeAttr(s){ return escapeHtml(s).replaceAll('"','&quot;'); }
 
+function getGroupDisplayName(gid){
+  const direct = state.groups?.[gid];
+  const g = direct || Object.values(state.groups || {}).find(x => String(x?.id) === String(gid));
+  return g?.name || g?.label || String(gid);
+}
+
+function maxBipartiteCapacity(slotOptions, tokenCounts){
+  // Her ihtiyaç bir "token"; her slot en fazla bir token karşılar.
+  // Küçük slot matrislerinde exact maksimum eşleşme hesaplanır.
+  const tokenKeys = [];
+  for (const [key, rawCount] of Object.entries(tokenCounts || {})) {
+    const count = Math.max(0, rawCount | 0);
+    for (let i=0; i<count; i++) tokenKeys.push(key);
+  }
+  if (!tokenKeys.length || !slotOptions?.length) return 0;
+
+  const tokenIndexesByKey = new Map();
+  tokenKeys.forEach((key, idx) => {
+    if (!tokenIndexesByKey.has(key)) tokenIndexesByKey.set(key, []);
+    tokenIndexesByKey.get(key).push(idx);
+  });
+
+  const adj = slotOptions.map(item => {
+    const out = [];
+    for (const key of (item.keys || [])) {
+      const ids = tokenIndexesByKey.get(key);
+      if (ids) out.push(...ids);
+    }
+    return Array.from(new Set(out));
+  });
+
+  const tokenMatch = Array(tokenKeys.length).fill(-1);
+  function trySlot(slotIdx, seenTokens){
+    for (const tokenIdx of adj[slotIdx]) {
+      if (seenTokens[tokenIdx]) continue;
+      seenTokens[tokenIdx] = true;
+      if (tokenMatch[tokenIdx] === -1 || trySlot(tokenMatch[tokenIdx], seenTokens)) {
+        tokenMatch[tokenIdx] = slotIdx;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  let matched = 0;
+  const order = slotOptions.map((_,i)=>i).sort((a,b)=>adj[a].length-adj[b].length);
+  for (const slotIdx of order) {
+    if (trySlot(slotIdx, Array(tokenKeys.length).fill(false))) matched++;
+  }
+  return matched;
+}
+
+function buildCapacityRecommendations(needsLeft, currentAssigned){
+  const D = state.program.days.length;
+  const S = state.program.slots;
+  const assignments = state.assignments || [];
+  const groups = Object.values(state.groups || {});
+  const teacherRecs = [];
+  const groupRecs = [];
+
+  const assignedGroupSlot = new Set(assignments.map(a => `${a.group}|${a.day}|${a.slot}`));
+  const assignedTeacherSlot = new Set(assignments.map(a => `${a.teacherId}|${a.day}|${a.slot}`));
+
+  const enumerateIntervals = (cells, tokenCounts, pushCandidate) => {
+    // Sadece art arda gelen ve gerçekten müsaitlik değişimi gerektiren slotlardan
+    // alt aralıkları dener. Aynı kapasitede daha kısa aralık daha üstte sıralanır.
+    const bySlot = new Map((cells || []).map(x => [x.slot, x]));
+    const slots = Array.from(bySlot.keys()).sort((a,b)=>a-b);
+    let run = [];
+    const flush = () => {
+      if (!run.length) return;
+      for (let i=0; i<run.length; i++) {
+        for (let j=i; j<run.length; j++) {
+          const interval = run.slice(i, j+1);
+          const gain = maxBipartiteCapacity(interval, tokenCounts);
+          if (gain <= 0) continue;
+          pushCandidate(interval, gain);
+        }
+      }
+      run = [];
+    };
+    for (const slot of slots) {
+      if (run.length && slot !== run[run.length-1].slot + 1) flush();
+      run.push(bySlot.get(slot));
+    }
+    flush();
+  };
+
+  // A) Öğretmen müsaitliği: tek öğretmenin aynı gün ardışık slotlarını açınca
+  // hangi karşılanmamış grup/branş ihtiyaçları doğrudan açılıyor?
+  for (const t of (state.teachers || [])) {
+    const branches = teacherBranchesById(t.id);
+    if (!branches.length) continue;
+
+    const tokenCounts = {};
+    for (const g of groups) {
+      const left = needsLeft?.[g.id] || {};
+      for (const b of branches) {
+        const cnt = +(left[b] || 0);
+        if (cnt > 0) tokenCounts[`${g.id}::${b}`] = cnt;
+      }
+    }
+    if (!Object.keys(tokenCounts).length) continue;
+
+    for (let d=0; d<D; d++) {
+      const cells = [];
+      for (let s=0; s<S; s++) {
+        if (state.availability.teachers?.[t.id]?.[d]?.[s] === true) continue; // değişiklik gerekmiyor
+        if (assignedTeacherSlot.has(`${t.id}|${d}|${s}`)) continue;
+
+        const keys = [];
+        for (const g of groups) {
+          if (state.availability.groups?.[g.id]?.[d]?.[s] !== true) continue;
+          if (assignedGroupSlot.has(`${g.id}|${d}|${s}`)) continue;
+          const left = needsLeft?.[g.id] || {};
+          for (const b of branches) {
+            if (+(left[b] || 0) > 0) keys.push(`${g.id}::${b}`);
+          }
+        }
+        if (keys.length) cells.push({ slot:s, keys:Array.from(new Set(keys)) });
+      }
+
+      enumerateIntervals(cells, tokenCounts, (interval, gain) => {
+        const touched = new Set();
+        for (const item of interval) for (const key of item.keys) touched.add(key);
+        teacherRecs.push({
+          type:'teacher', id:String(t.id), name:t.name || String(t.id), day:d,
+          startSlot:interval[0].slot, endSlot:interval[interval.length-1].slot,
+          changes:interval.length, gain,
+          projectedTotal:(currentAssigned||0)+gain,
+          affects:Array.from(touched).slice(0,6).map(key => {
+            const [gid,b] = key.split('::');
+            return `${getGroupDisplayName(gid)} / ${b}`;
+          })
+        });
+      });
+    }
+  }
+
+  // B) Sınıf/grup müsaitliği: tek grubun aynı gün ardışık slotlarını açınca
+  // mevcut öğretmen müsaitlikleriyle kaç ek ders doğrudan yerleşebilir?
+  for (const g of groups) {
+    const left = needsLeft?.[g.id] || {};
+    const tokenCounts = Object.fromEntries(Object.entries(left).filter(([,v]) => +v > 0).map(([b,v]) => [b, +v]));
+    if (!Object.keys(tokenCounts).length) continue;
+
+    for (let d=0; d<D; d++) {
+      const cells = [];
+      for (let s=0; s<S; s++) {
+        if (state.availability.groups?.[g.id]?.[d]?.[s] === true) continue; // değişiklik gerekmiyor
+        if (assignedGroupSlot.has(`${g.id}|${d}|${s}`)) continue;
+
+        const keys = [];
+        for (const [branch, cnt] of Object.entries(tokenCounts)) {
+          if (+cnt <= 0) continue;
+          const hasTeacher = (findTeacherOptions(branch) || []).some(t =>
+            state.availability.teachers?.[t.id]?.[d]?.[s] === true &&
+            !assignedTeacherSlot.has(`${t.id}|${d}|${s}`)
+          );
+          if (hasTeacher) keys.push(branch);
+        }
+        if (keys.length) cells.push({ slot:s, keys });
+      }
+
+      enumerateIntervals(cells, tokenCounts, (interval, gain) => {
+        const touched = new Set();
+        for (const item of interval) for (const key of item.keys) touched.add(key);
+        groupRecs.push({
+          type:'group', id:String(g.id), name:getGroupDisplayName(g.id), day:d,
+          startSlot:interval[0].slot, endSlot:interval[interval.length-1].slot,
+          changes:interval.length, gain,
+          projectedTotal:(currentAssigned||0)+gain,
+          affects:Array.from(touched).slice(0,6)
+        });
+      });
+    }
+  }
+
+  const rank = (a,b) =>
+    (b.gain - a.gain) ||
+    (a.changes - b.changes) ||
+    ((b.gain / b.changes) - (a.gain / a.changes)) ||
+    String(a.name).localeCompare(String(b.name), 'tr');
+
+  // Aynı hedef/gün/aralık için tekrarları temizle; en iyi kapasite + minimum değişim önde.
+  const uniqueTop = (arr, max=5) => {
+    const seen = new Set();
+    const out = [];
+    for (const x of arr.sort(rank)) {
+      const k = `${x.type}|${x.id}|${x.day}|${x.startSlot}|${x.endSlot}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(x);
+      if (out.length >= max) break;
+    }
+    return out;
+  };
+
+  const bestOverall = uniqueTop([...teacherRecs, ...groupRecs], 1)[0] || null;
+  return {
+    teacher: uniqueTop(teacherRecs, 5),
+    group: uniqueTop(groupRecs, 5),
+    bestOverall
+  };
+}
+
 function buildAutoAssignReport(prevCount){
   const D = state.program.days.length;
   const S = state.program.slots;
@@ -3067,6 +3274,8 @@ function buildAutoAssignReport(prevCount){
     ? state.lastAvailabilityNormalization.removed.slice()
     : [];
 
+  const capacityRecommendations = buildCapacityRecommendations(needsLeft, totalAssigned);
+
   return {
     totals: {
       groups: groups.length,
@@ -3083,6 +3292,7 @@ function buildAutoAssignReport(prevCount){
     },
     needsLeft,
     details,
+    capacityRecommendations,
     removedOnLoad,
     normalizationSource: state.lastAvailabilityNormalization?.source || null
   };
@@ -3238,9 +3448,33 @@ function showAutoAssignReport(report, prevCount){
         `;
       }).join('');
 
+    const fmtInterval = (item) => {
+      const day = state.program.days[item.day] || `${item.day+1}. gün`;
+      const first = state.program.slotLabels?.[item.startSlot] || `${item.startSlot+1}. ders`;
+      const last = state.program.slotLabels?.[item.endSlot] || `${item.endSlot+1}. ders`;
+      return item.startSlot === item.endSlot ? `${day} • ${first}` : `${day} • ${first} → ${last}`;
+    };
+    const renderCapacityItems = (items) => {
+      if (!items?.length) return `<div class="muted">Tek bir müsaitlik aralığı değişikliğiyle doğrudan ek kapasite bulunamadı.</div>`;
+      return `<ol style="margin:8px 0 0 18px">${items.map(x => `
+        <li style="margin:8px 0">
+          <b>${escapeHtml(x.name)}</b> — ${escapeHtml(fmtInterval(x))}
+          <span class="tag">+${x.gain} ders</span>
+          <span class="mini2">${x.changes} slot değişikliği • tahmini toplam ${x.projectedTotal} atama</span>
+          ${x.affects?.length ? `<div class="mini2">Açılan ihtiyaç: ${escapeHtml(x.affects.join(', '))}</div>` : ''}
+        </li>`).join('')}</ol>`;
+    };
+    const teacherCapacityHtml = renderCapacityItems(rep.capacityRecommendations?.teacher);
+    const groupCapacityHtml = renderCapacityItems(rep.capacityRecommendations?.group);
+    const bestCapacity = rep.capacityRecommendations?.bestOverall;
+    const bestCapacityHtml = bestCapacity
+      ? `<div class="pill" style="margin-bottom:10px">En güçlü tek değişiklik: <b>${escapeHtml(bestCapacity.type === 'teacher' ? 'Öğretmen' : 'Sınıf / grup')} • ${escapeHtml(bestCapacity.name)}</b> • ${escapeHtml(fmtInterval(bestCapacity))} → <b>+${bestCapacity.gain} ders</b> • ${bestCapacity.changes} slot değişikliği • tahmini toplam <b>${bestCapacity.projectedTotal}</b></div>`
+      : `<div class="muted" style="margin-bottom:10px">Tek bir müsaitlik aralığı değişikliğiyle ek kapasite görünmüyor.</div>`;
+
     el.innerHTML = `
       <div class="grid" style="gap:10px">
         <div class="pill">Toplam atama: <b>${t.totalAssigned}</b> • Bu çalıştırmada yeni: <b>${t.newlyAssigned}</b></div>
+        ${state.autoAssignMeta?.version ? `<div class="pill">Strateji: <b>20 sn katı</b> • <b>${state.autoAssignMeta?.relaxConsecutive ? '25 sn esnetilmiş' : '25 sn katı (esnetme kapalı)'}</b> • deneme adedi sınırsız</div>` : ''}
         <div class="pill">Grup müsait kapasite: <b>${t.availableCells}</b> • Grup müsait değil: <b>${t.blockedByGroup}</b></div>
         <div class="pill">Kalan toplam ihtiyaç (ders): <b>${t.remainingNeedTotal}</b></div>
         <div class="pill">Yüklemede boş sayılan kayıt: <b>${t.hiddenByTeacherAvailabilityOnLoad}</b> • Geçersiz kayıt: <b>${t.invalidRemovedOnLoad}</b></div>
@@ -3248,6 +3482,16 @@ function showAutoAssignReport(report, prevCount){
         <div class="card">
           <h3>Kalan İhtiyaçlar (talep - atanan)</h3>
           ${needList.length ? `<ul style="margin:6px 0 0 18px">${needList.join('')}</ul>` : `<div class="muted">Tüm talepler karşılanmış görünüyor ✅</div>`}
+        </div>
+
+        <div class="card">
+          <h3>📈 En Az Değişiklikle Atama Kapasitesini Artırma</h3>
+          <div class="mini2" style="margin-bottom:10px">Mevcut atamaları taşımadan, yalnızca tek bir öğretmen veya sınıf/grup için ardışık müsaitlik aralığı açılarak elde edilebilecek doğrudan ek kapasite hesaplanır. Aynı kazançta daha az slot değişikliği üstte gösterilir.</div>
+          ${bestCapacityHtml}
+          <div style="font-weight:900;margin-top:6px">Öğretmen müsaitliği önerileri</div>
+          ${teacherCapacityHtml}
+          <div style="font-weight:900;margin-top:14px">Sınıf / grup müsaitliği önerileri</div>
+          ${groupCapacityHtml}
         </div>
 
         <div class="card">
@@ -3277,7 +3521,7 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-// index.html — Auto Assign (V4.1): Maks Yerleşim Odaklı, Yük Dengesi YOK
+// index.html — Auto Assign (V4.2 🔥): 20 sn Katı + 25 sn Esnetilmiş, Süre Bazlı Sınırsız Deneme
 
 /**
  * Amaç: Öğretmen yük dengesini tamamen devre dışı bırakarak,
@@ -3287,10 +3531,13 @@ async function autoAssign() {
   const D = state.program.days.length;
   const S = state.program.slots;
 
-  // --------- Ayarlar ---------
-  const TIME_LIMIT_MS = 45000;
-  const RELAX_CONSECUTIVE_WHEN_TIGHT = $("#chkRelaxConsecutive")?.checked !== false;
-  // ---------------------------
+  // --------- Ayarlar (V4.2 🔥) ---------
+  const STRICT_PHASE_MS = 20000;
+  const RELAX_PHASE_MS = 25000;
+  const TIME_LIMIT_MS = STRICT_PHASE_MS + RELAX_PHASE_MS;
+  const RELAX_CONSECUTIVE_WHEN_TIGHT = $("#chkRelaxConsecutive")?.checked === true;
+  // Deneme/restart adedi için üst sınır yok; tek sınır toplam 45 sn çalışma süresidir.
+  // -------------------------------------
 
   // UI: overlay + sayaç
   const overlay = document.getElementById('autoAssignOverlay');
@@ -3326,40 +3573,20 @@ async function autoAssign() {
     const rem = Math.max(0, TIME_LIMIT_MS - elapsed);
     const pct = Math.min(100, (elapsed / TIME_LIMIT_MS) * 100);
     if (elBar) elBar.style.width = pct.toFixed(1) + '%';
-    if (elMet) elMet.textContent = `Kalan süre: ${(rem/1000).toFixed(1)} sn • Deneme: ${restartsDone} • En iyi: ${Math.max(0,bestScore)}`;
+    const relaxedNow = RELAX_CONSECUTIVE_WHEN_TIGHT && elapsed >= STRICT_PHASE_MS;
+    const phaseText = relaxedNow ? 'Esnetilmiş kurallar' : (RELAX_CONSECUTIVE_WHEN_TIGHT ? 'Katı kurallar' : 'Katı kurallar • esnetme kapalı');
+    if (elMet) elMet.textContent = `${phaseText} • Kalan: ${(rem/1000).toFixed(1)} sn • Deneme: ${restartsDone} • En iyi: ${Math.max(0,bestScore)}`;
     if (elSub && msg) elSub.textContent = msg;
   };
 
-  const STRICT_UNTIL_MS = TIME_LIMIT_MS - 15000; // son 15 sn
   let totalNeedCount = 0; // needs hesaplandıktan sonra set edilir
-  const PROBE_WINDOW_MS = 4000; // son 15 sn içinde kısa deneme penceresi
-  let consecutiveDecision = null; // null: karar yok, true: kuralı kaldır, false: kural kalsın
 
-  
   const shouldRelax = () => {
-    // Son 15 sn kala: önce kısa bir "probe" denemesi yap.
-    // Eğer ardışık ders kuralını kaldırmak atama sayısını artırıyorsa kalan sürede tamamen kaldır.
-    // Artmıyorsa kural katı şekilde kalsın (boşa deneme harcanmasın).
-
+    // V4.2 🔥: Tik açıksa ilk 20 sn katı, son 25 sn ardışık aynı branş kuralı esnetilmiş.
+    // Tik kapalıysa 45 sn boyunca kural katı kalır.
     if (!RELAX_CONSECUTIVE_WHEN_TIGHT) return false;
     if (!totalNeedCount) return false;
-
-    const elapsed = performance.now() - startTime;
-    if (elapsed < STRICT_UNTIL_MS) return false;
-
-    // Katı mod tüm ihtiyaçları zaten doldurduysa esnetmeye gerek yok
-    if (bestStrictScore >= totalNeedCount) return false;
-
-    // Karar verildiyse aynen uygula
-    if (consecutiveDecision === true) return true;
-    if (consecutiveDecision === false) return false;
-
-    // Karar yoksa: son 15 sn başında kısa bir deneme penceresi aç
-    if (elapsed < (STRICT_UNTIL_MS + PROBE_WINDOW_MS)) return true;
-
-    // Deneme penceresi bitti: gerçekten atama sayısı arttı mı?
-    consecutiveDecision = (bestRelaxScore > bestStrictScore);
-    return consecutiveDecision;
+    return (performance.now() - startTime) >= STRICT_PHASE_MS;
   };
 
   showOverlay();
@@ -3419,7 +3646,14 @@ async function autoAssign() {
   totalNeedCount = remainingNeedsCount;
   if (remainingNeedsCount === 0) {
     renderAssignCards();
-    state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now() };
+    state.autoAssignMeta = {
+      prevCount: fixed.length,
+      lastRunAt: Date.now(),
+      version: 'V4.2 🔥',
+      strictSeconds: 20,
+      relaxedSeconds: RELAX_CONSECUTIVE_WHEN_TIGHT ? 25 : 0,
+      relaxConsecutive: RELAX_CONSECUTIVE_WHEN_TIGHT
+    };
     const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
     state.lastAutoAssignReport = rep;
     showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
@@ -3431,13 +3665,7 @@ async function autoAssign() {
     return;
   }
 
-  // Deneme sayısı (ihtiyaca göre dinamik)
-  // Geliştirilmiş değerler: daha yüksek başlangıç ve ihtiyaç başına deneme sayısı,
-  // ayrıca maksimum deneme sayısı artırıldı.
-  const BASE_RESTARTS = 200;
-  const RESTARTS_PER_NEED = 10;
-  const MAX_RESTARTS = 5000;
-  const TARGET_RESTARTS = Math.min(MAX_RESTARTS, BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED);
+  // Deneme sayısı sınırsızdır; algoritma 45 sn boyunca yeni varyasyonlar dener.
 
   // Hücre sıra paternleri
   const orderings = {
@@ -3483,10 +3711,6 @@ async function autoAssign() {
     restartsDone++;
 
     const allowConsecutive = shouldRelax();
-    if (restartsDone > TARGET_RESTARTS && (performance.now()-startTime) < TIME_LIMIT_MS*0.85) {
-      // Hedef restart sayısı bittiyse, kalan sürede daha hızlı küçük denemeler (why: süreyi tam kullan)
-      // Burada yine devam ediyoruz; amaç tie-break iyileştirmek.
-    }
 
     const gGrid = {};
     const tGrid = {};
@@ -3505,7 +3729,7 @@ async function autoAssign() {
     let placedCount = 0;
 
     for (const [d,s] of cells) {
-      // UI'yi kilitlememek için küçük yield'ler (why: 45sn boyunca sayfa donmasın)
+      // UI'yi kilitlememek için küçük yield'ler (why: 45 sn boyunca sayfa donmasın)
       const nowY = performance.now();
       if (nowY - lastYield > 40) {
         updateOverlay();
@@ -3723,8 +3947,10 @@ async function autoAssign() {
       tasks.sort((a, b) => getCandidates(a).length - getCandidates(b).length);
 
       const newAssignments = [];
-      // Backtracking patlamasın: kısa bir süre limiti (why: sayfa donmasın)
-      const fillDeadline = performance.now() + Math.min(1500, Math.max(300, TIME_LIMIT_MS - (performance.now() - startTime) - 250));
+      // 45 sn toplam bütçeyi aşma: yalnızca ana denemeden süre kaldıysa backtracking kullan.
+      const remainingBudget = Math.max(0, TIME_LIMIT_MS - (performance.now() - startTime));
+      if (remainingBudget < 40) return;
+      const fillDeadline = performance.now() + Math.min(1500, remainingBudget);
 
       function backtrack(index) {
         if (performance.now() > fillDeadline) return false;
@@ -3770,7 +3996,14 @@ async function autoAssign() {
     renderAssignCards();
 
     // meta: son otomatik atama
-    state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now() };
+    state.autoAssignMeta = {
+      prevCount: fixed.length,
+      lastRunAt: Date.now(),
+      version: 'V4.2 🔥',
+      strictSeconds: 20,
+      relaxedSeconds: RELAX_CONSECUTIVE_WHEN_TIGHT ? 25 : 0,
+      relaxConsecutive: RELAX_CONSECUTIVE_WHEN_TIGHT
+    };
     const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
     state.lastAutoAssignReport = rep;
 
