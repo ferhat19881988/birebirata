@@ -1656,7 +1656,7 @@
       <h2>5) Atama Paneli</h2>
       <div class="chips">
         <span class="pill">Aynı gruba ardışık aynı branş verilmez</span>
-        <span class="pill">Otomatik Atama V5.0 🔥 • Öncelik: maksimum ders yerleşimi</span>
+        <span class="pill">Branşa göre öğretmen yükü dengelenir</span>
       </div>
     </div>
     
@@ -3277,17 +3277,11 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-// index.html — Auto Assign V5.0 🔥: MAX-FILL / CSP + Branch & Bound
+// index.html — Auto Assign (V4.1): Maks Yerleşim Odaklı, Yük Dengesi YOK
 
 /**
- * V5.0 🔥 hedef sırası:
- * 1) Mümkün olan EN YÜKSEK sayıda dersi yerleştir.
- * 2) Aynı gün ardışık aynı branştan kaçın; yalnızca daha fazla ders atamak için
- *    kullanıcı izin verdiyse bu kuralı esnet.
- * 3) Eşit sayıda atamada daha az ardışık ihlal ve mümkünse öğretmen sürekliliği.
- *
- * ÖNEMLİ: Mevcut atamalar "sabit" kabul edilir. Son Rapor, Atamasızlar ve
- * rapordan/tabloda elle atama akışları bu motorun dışındadır ve değiştirilmez.
+ * Amaç: Öğretmen yük dengesini tamamen devre dışı bırakarak,
+ * mümkün olan EN ÇOK derse atama yapan varyasyonu bulup uygulamak.
  */
 async function autoAssign() {
   const D = state.program.days.length;
@@ -3295,126 +3289,137 @@ async function autoAssign() {
 
   // --------- Ayarlar ---------
   const TIME_LIMIT_MS = 45000;
-  const STRICT_SEARCH_UNTIL_MS = 30000;
-  const GREEDY_STRICT_MS = 6500;
-  const GREEDY_RELAX_MS = 3500;
   const RELAX_CONSECUTIVE_WHEN_TIGHT = $("#chkRelaxConsecutive")?.checked !== false;
   // ---------------------------
 
+  // UI: overlay + sayaç
   const overlay = document.getElementById('autoAssignOverlay');
   const elSub = document.getElementById('aaSub');
   const elBar = document.getElementById('aaBarIn');
   const elMet = document.getElementById('aaMetrics');
   const btnAuto = document.getElementById('btnAutoAssign');
-  const sleep0 = () => new Promise(r => setTimeout(r, 0));
 
-  const startTime = performance.now();
-  let lastYield = startTime;
-  let searchNodes = 0;
-  let attempts = 0;
+  const sleep0 = () => new Promise(r => setTimeout(r, 0));
 
   let bestStrictScore = -1;
   let bestStrictVio = Infinity;
-  let bestStrictContinuity = -Infinity;
   let bestStrictSolution = null;
 
   let bestRelaxScore = -1;
   let bestRelaxVio = Infinity;
-  let bestRelaxContinuity = -Infinity;
   let bestRelaxSolution = null;
 
-  const elapsedMs = () => performance.now() - startTime;
-  const outOfTime = (deadlineMs=TIME_LIMIT_MS) => elapsedMs() >= deadlineMs;
+  // UI için genel "en iyi"
+  let bestScore = -1;
+  let bestVio = Infinity;
+  let bestSolution = null;
+  let restartsDone = 0;
+
+  const startTime = performance.now();
+  let lastYield = startTime;
+
   const showOverlay = () => { if (overlay) overlay.hidden = false; };
   const hideOverlay = () => { if (overlay) overlay.hidden = true; };
-
-  const currentBestScore = () => Math.max(bestStrictScore, bestRelaxScore, 0);
   const updateOverlay = (msg='') => {
-    const elapsed = elapsedMs();
+    const now = performance.now();
+    const elapsed = now - startTime;
     const rem = Math.max(0, TIME_LIMIT_MS - elapsed);
     const pct = Math.min(100, (elapsed / TIME_LIMIT_MS) * 100);
     if (elBar) elBar.style.width = pct.toFixed(1) + '%';
-    if (elMet) {
-      elMet.textContent = `Kalan süre: ${(rem/1000).toFixed(1)} sn • Deneme: ${attempts} • Arama: ${searchNodes.toLocaleString('tr-TR')} • En iyi: ${currentBestScore()}`;
-    }
+    if (elMet) elMet.textContent = `Kalan süre: ${(rem/1000).toFixed(1)} sn • Deneme: ${restartsDone} • En iyi: ${Math.max(0,bestScore)}`;
     if (elSub && msg) elSub.textContent = msg;
   };
 
-  async function cooperativeYield(force=false){
-    const now = performance.now();
-    if (force || now - lastYield > 35) {
-      updateOverlay();
-      lastYield = now;
-      await sleep0();
-    }
-  }
+  const STRICT_UNTIL_MS = TIME_LIMIT_MS - 15000; // son 15 sn
+  let totalNeedCount = 0; // needs hesaplandıktan sonra set edilir
+  const PROBE_WINDOW_MS = 4000; // son 15 sn içinde kısa deneme penceresi
+  let consecutiveDecision = null; // null: karar yok, true: kuralı kaldır, false: kural kalsın
+
+  
+  const shouldRelax = () => {
+    // Son 15 sn kala: önce kısa bir "probe" denemesi yap.
+    // Eğer ardışık ders kuralını kaldırmak atama sayısını artırıyorsa kalan sürede tamamen kaldır.
+    // Artmıyorsa kural katı şekilde kalsın (boşa deneme harcanmasın).
+
+    if (!RELAX_CONSECUTIVE_WHEN_TIGHT) return false;
+    if (!totalNeedCount) return false;
+
+    const elapsed = performance.now() - startTime;
+    if (elapsed < STRICT_UNTIL_MS) return false;
+
+    // Katı mod tüm ihtiyaçları zaten doldurduysa esnetmeye gerek yok
+    if (bestStrictScore >= totalNeedCount) return false;
+
+    // Karar verildiyse aynen uygula
+    if (consecutiveDecision === true) return true;
+    if (consecutiveDecision === false) return false;
+
+    // Karar yoksa: son 15 sn başında kısa bir deneme penceresi aç
+    if (elapsed < (STRICT_UNTIL_MS + PROBE_WINDOW_MS)) return true;
+
+    // Deneme penceresi bitti: gerçekten atama sayısı arttı mı?
+    consecutiveDecision = (bestRelaxScore > bestStrictScore);
+    return consecutiveDecision;
+  };
 
   showOverlay();
   if (btnAuto) btnAuto.disabled = true;
-  updateOverlay('V5.0 🔥 maksimum yerleşim aranıyor…');
+  updateOverlay('Farklı yerleşimler deneniyor…');
 
-  const makeGrid = () => Array.from({length:D}, () => Array(S).fill(null));
-  const ensureGrid = (map, id) => (map[id] ||= makeGrid());
-  const cloneGridMap = src => {
-    const out = {};
-    for (const [id, mat] of Object.entries(src)) out[id] = mat.map(row => row.slice());
-    return out;
+  // --- Yardımcılar ---
+  const makeGrid = (rows, cols, fill=null) => Array.from({length:rows}, () => Array(cols).fill(fill));
+  const keyCell = (g,d,s) => `${g}|${d}|${s}`;
+  const rndInt = (n) => Math.floor(Math.random()*n);
+  const shuffle = (arr) => { for (let i=arr.length-1;i>0;i--){ const j=rndInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; };
+  const prevBranchOf = (gGrid, gid, d, s) => {
+    if (s > 0) return gGrid[gid]?.[d]?.[s-1]?.branch || null;
+    if (d > 0) return gGrid[gid]?.[d-1]?.[S-1]?.branch || null;
+    return null;
   };
-  const rnd = n => Math.floor(Math.random() * n);
-  const shuffle = arr => {
-    for (let i=arr.length-1;i>0;i--) {
-      const j=rnd(i+1);
-      [arr[i],arr[j]]=[arr[j],arr[i]];
-    }
-    return arr;
-  };
-
-  // Aynı branş "ardışık" kontrolü yalnızca aynı gün içinde yapılır.
-  // Hem sol hem sağ komşu kontrol edilir; hücreler hangi sırada doldurulursa doldurulsun kural korunur.
-  const createsConsecutive = (gGrid, gid, branch, d, s) => {
-    const row = gGrid[gid]?.[d] || [];
-    const left = s > 0 ? row[s-1]?.branch : null;
-    const right = s+1 < S ? row[s+1]?.branch : null;
-    return left === branch || right === branch;
-  };
-
-  const canUse = (gGrid, tGrid, gid, tid, branch, d, s, allowConsecutive) => {
+  const canUse = (gGrid, tGrid, gid, tid, d, s) => {
     if (state.availability.groups[gid]?.[d]?.[s] !== true) return false;
     if (state.availability.teachers[tid]?.[d]?.[s] !== true) return false;
     if (gGrid[gid]?.[d]?.[s]) return false;
     if (tGrid[tid]?.[d]?.[s]) return false;
-    if (!allowConsecutive && createsConsecutive(gGrid, gid, branch, d, s)) return false;
     return true;
   };
 
-  // Sabit/mevcut atamalar korunur.
-  const fixed = (state.assignments || []).map(a => ({...a}));
+  // NOTE: Rapor/elle atama yardımcıları global olarak tanımlı (teacherNameById, teacherBranchesById, listFreeTeachersAt, performManualAssignFromReport)
+
+  try {
+  // --- Sabit atamalar (korunur) ---
+  const fixed = state.assignments.map(a => ({...a}));
+
+  // Hızlı erişim ızgaraları (yalnız sabitler)
   const gGridBase = {};
   const tGridBase = {};
-  for (const a of fixed) {
-    ensureGrid(gGridBase, a.group)[a.day][a.slot] = a;
-    ensureGrid(tGridBase, a.teacherId)[a.day][a.slot] = a;
-  }
+  const ensure = (mat, id, rows, cols) => (mat[id] ||= makeGrid(rows, cols));
+  const placeBase = a => {
+    ensure(gGridBase, a.group, D, S)[a.day][a.slot] = a;
+    ensure(tGridBase, a.teacherId, D, S)[a.day][a.slot] = a;
+  };
+  fixed.forEach(placeBase);
 
-  // Kalan ihtiyaçları kategori halinde tut: aynı grup+branş tekrarlarını tek sayaçta toplar.
-  const categories = [];
-  const fixedHave = {};
-  for (const a of fixed) {
-    const k = `${a.group}\u0000${a.branch}`;
-    fixedHave[k] = (fixedHave[k] || 0) + 1;
-  }
+  // İhtiyaç listeleri (group -> [branch, ...])
+  const needsByGroup = {};
   for (const g of Object.values(state.groups)) {
     const req = state.requests[g.id] || {};
-    for (const [branch, rawCnt] of Object.entries(req)) {
-      const cnt = Math.max(0, (rawCnt|0) - (fixedHave[`${g.id}\u0000${branch}`] || 0));
-      if (cnt > 0) categories.push({ gid:g.id, branch, initialCount:cnt });
+    const have = {};
+    fixed.forEach(a => { if (a.group === g.id) have[a.branch] = (have[a.branch]||0) + 1; });
+    const list = [];
+    for (const [b, cnt] of Object.entries(req)) {
+      const need = Math.max(0, (cnt|0) - (have[b]||0));
+      for (let i=0;i<need;i++) list.push(b);
     }
+    needsByGroup[g.id] = list;
   }
 
-  const totalNeedCount = categories.reduce((a,c)=>a+c.initialCount,0);
-  if (totalNeedCount === 0) {
+  // İhtiyaç yoksa sadece yeniden çiz ve rapor
+  const remainingNeedsCount = Object.values(needsByGroup).reduce((acc, arr) => acc + (arr?.length || 0), 0);
+  totalNeedCount = remainingNeedsCount;
+  if (remainingNeedsCount === 0) {
     renderAssignCards();
-    state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now(), engineVersion:'V5.0 🔥', bestNewCount:0 };
+    state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now() };
     const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
     state.lastAutoAssignReport = rep;
     showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
@@ -3423,364 +3428,353 @@ async function autoAssign() {
     syncReportButtons();
     const btnUn = document.getElementById('btnUnassignedReport');
     if (btnUn) btnUn.disabled = false;
-    hideOverlay();
-    if (btnAuto) btnAuto.disabled = false;
     return;
   }
 
-  // Branş -> öğretmen listesi bir kez hazırlanır.
-  const branchTeachers = new Map();
-  for (const c of categories) {
-    if (!branchTeachers.has(c.branch)) branchTeachers.set(c.branch, (findTeacherOptions(c.branch)||[]).slice());
-  }
+  // Deneme sayısı (ihtiyaca göre dinamik)
+  // Geliştirilmiş değerler: daha yüksek başlangıç ve ihtiyaç başına deneme sayısı,
+  // ayrıca maksimum deneme sayısı artırıldı.
+  const BASE_RESTARTS = 200;
+  const RESTARTS_PER_NEED = 10;
+  const MAX_RESTARTS = 5000;
+  const TARGET_RESTARTS = Math.min(MAX_RESTARTS, BASE_RESTARTS + remainingNeedsCount * RESTARTS_PER_NEED);
 
-  // Bir öğretmenin o an için kaç başka boş/müsait slotu olduğunu verir.
-  // Yük dengelemez; yalnızca aday sıralamasında esnek öğretmeni önce kullanarak dar kaynakları korur.
-  const teacherFlex = (tGrid, tid) => {
-    let n = 0;
-    for (let d=0; d<D; d++) for (let s=0; s<S; s++) {
-      if (state.availability.teachers[tid]?.[d]?.[s] === true && !tGrid[tid]?.[d]?.[s]) n++;
+  // Hücre sıra paternleri
+  const orderings = {
+    randomAll(D,S) { const cells = []; for (let d=0; d<D; d++) for (let s=0; s<S; s++) cells.push([d,s]); return shuffle(cells); },
+    dayMajorRandom(D,S) {
+      const days = shuffle([...Array(D).keys()]); const slots = shuffle([...Array(S).keys()]);
+      const cells = []; for (const d of days) for (const s of slots) cells.push([d,s]); return cells;
+    },
+    slotMajorRandom(D,S) {
+      const days = shuffle([...Array(D).keys()]); const slots = shuffle([...Array(S).keys()]);
+      const cells = []; for (const s of slots) for (const d of days) cells.push([d,s]); return cells;
+    },
+    serpentine(D,S) {
+      const days = shuffle([...Array(D).keys()]); const cells = [];
+      for (let i=0;i<days.length;i++){ const d = days[i];
+        if (i%2===0) for (let s=0;s<S;s++) cells.push([d,s]); else for (let s=S-1;s>=0;s--) cells.push([d,s]);
+      } return cells;
     }
-    return n;
   };
+  const orderingKeys = Object.keys(orderings);
 
-  const continuityBonus = (gGrid, gid, branch, tid) => {
-    const mat = gGrid[gid] || [];
-    let same = 0;
-    for (let d=0; d<D; d++) for (let s=0; s<S; s++) {
-      const a = mat?.[d]?.[s];
-      if (a?.branch === branch && a?.teacherId === tid) same++;
-    }
-    return same;
-  };
+  // Çoklu denemeler
+  const groupsAll = Object.values(state.groups).map(x => x.id);
 
-  const getCandidates = (gGrid, tGrid, cat, allowConsecutive, randomized=false) => {
-    const teachers = branchTeachers.get(cat.branch) || [];
-    const out = [];
-    const flexCache = new Map();
-    const continuityCache = new Map();
-    for (let d=0; d<D; d++) {
-      for (let s=0; s<S; s++) {
-        if (state.availability.groups[cat.gid]?.[d]?.[s] !== true) continue;
-        if (gGrid[cat.gid]?.[d]?.[s]) continue;
-        if (!allowConsecutive && createsConsecutive(gGrid, cat.gid, cat.branch, d, s)) continue;
-        for (const t of teachers) {
-          if (!canUse(gGrid, tGrid, cat.gid, t.id, cat.branch, d, s, allowConsecutive)) continue;
-          out.push({
-            day:d,
-            slot:s,
-            teacherId:t.id,
-            continuity: continuityCache.has(t.id) ? continuityCache.get(t.id) : (()=>{ const v=continuityBonus(gGrid, cat.gid, cat.branch, t.id); continuityCache.set(t.id,v); return v; })(),
-            flex: flexCache.has(t.id) ? flexCache.get(t.id) : (()=>{ const v=teacherFlex(tGrid, t.id); flexCache.set(t.id,v); return v; })(),
-            jitter: randomized ? Math.random() : 0
-          });
-        }
-      }
-    }
-    out.sort((a,b) =>
-      (b.continuity - a.continuity) ||
-      (b.flex - a.flex) ||
-      (randomized ? (a.jitter - b.jitter) : 0) ||
-      (a.day - b.day) || (a.slot - b.slot) || String(a.teacherId).localeCompare(String(b.teacherId),'tr')
-    );
-    return out;
-  };
-
-  const countConsecutiveViolations = assignments => {
-    const byGroup = {};
-    for (const a of assignments) ensureGrid(byGroup, a.group)[a.day][a.slot] = a;
+  const countConsecutiveViolations = (gGrid) => {
     let vio = 0;
-    for (const gid of Object.keys(byGroup)) {
+    for (const gid of groupsAll) {
+      let prev = null;
+      const mat = gGrid[gid] || [];
       for (let d=0; d<D; d++) {
-        for (let s=1; s<S; s++) {
-          const a = byGroup[gid]?.[d]?.[s-1];
-          const b = byGroup[gid]?.[d]?.[s];
-          if (a?.branch && b?.branch && a.branch === b.branch) vio++;
+        for (let s=0; s<S; s++) {
+          const a = mat?.[d]?.[s];
+          const cur = a?.branch || null;
+          if (cur && prev && cur === prev) vio++;
+          prev = cur;
         }
       }
     }
     return vio;
   };
 
-  const scoreContinuity = assignments => {
-    const map = new Map();
-    for (const a of assignments) {
-      const k = `${a.group}\u0000${a.branch}\u0000${a.teacherId}`;
-      map.set(k, (map.get(k)||0)+1);
+  while ((performance.now() - startTime) < TIME_LIMIT_MS) {
+    restartsDone++;
+
+    const allowConsecutive = shouldRelax();
+    if (restartsDone > TARGET_RESTARTS && (performance.now()-startTime) < TIME_LIMIT_MS*0.85) {
+      // Hedef restart sayısı bittiyse, kalan sürede daha hızlı küçük denemeler (why: süreyi tam kullan)
+      // Burada yine devam ediyoruz; amaç tie-break iyileştirmek.
     }
-    let score = 0;
-    for (const n of map.values()) if (n>1) score += (n-1);
-    return score;
-  };
 
-  const isBetter = (score, vio, continuity, bestScore, bestVio, bestContinuity) =>
-    score > bestScore ||
-    (score === bestScore && vio < bestVio) ||
-    (score === bestScore && vio === bestVio && continuity > bestContinuity);
+    const gGrid = {};
+    const tGrid = {};
+    for (const gid of Object.keys(gGridBase)) gGrid[gid] = gGridBase[gid].map(row => row.slice());
+    for (const tid of Object.keys(tGridBase)) tGrid[tid] = tGridBase[tid].map(row => row.slice());
+    const needs = JSON.parse(JSON.stringify(needsByGroup));
 
-  const considerSolution = (solution, placedCount, allowConsecutive, source='') => {
-    const vio = countConsecutiveViolations(solution);
-    const continuity = scoreContinuity(solution);
-    let improved = false;
-    if (allowConsecutive) {
-      if (isBetter(placedCount, vio, continuity, bestRelaxScore, bestRelaxVio, bestRelaxContinuity)) {
-        bestRelaxScore = placedCount;
-        bestRelaxVio = vio;
-        bestRelaxContinuity = continuity;
-        bestRelaxSolution = solution.map(a=>({...a}));
-        improved = true;
+    const pattern = orderingKeys[rndInt(orderingKeys.length)];
+    const cells = orderings[pattern](D, S);
+
+    const groupOrder = groupsAll
+      .map(gid => ({ gid, need: needs[gid]?.length || 0 }))
+      .sort((a,b) => a.need - b.need || (Math.random()-0.5))
+      .map(x => x.gid);
+
+    let placedCount = 0;
+
+    for (const [d,s] of cells) {
+      // UI'yi kilitlememek için küçük yield'ler (why: 45sn boyunca sayfa donmasın)
+      const nowY = performance.now();
+      if (nowY - lastYield > 40) {
+        updateOverlay();
+        lastYield = nowY;
+        await sleep0();
       }
-    } else {
-      if (isBetter(placedCount, vio, continuity, bestStrictScore, bestStrictVio, bestStrictContinuity)) {
+      if ((performance.now() - startTime) >= TIME_LIMIT_MS) break;
+      const localGroups = groupOrder.slice();
+      if (Math.random() < 0.5) shuffle(localGroups);
+
+      for (const gid of localGroups) {
+        const needArr = needs[gid];
+        if (!needArr || needArr.length === 0) continue;
+        if (state.availability.groups[gid]?.[d]?.[s] !== true) continue;
+        if (gGrid[gid]?.[d]?.[s]) continue;
+
+        const lastB = prevBranchOf(gGrid, gid, d, s);
+        const uniqBranches = Array.from(new Set(needArr));
+        shuffle(uniqBranches);
+        if (lastB && !allowConsecutive) {
+          // normalde ardışık aynı branşı sona it (soft)
+          const ix = uniqBranches.indexOf(lastB);
+          if (ix > -1) { uniqBranches.splice(ix,1); uniqBranches.push(lastB); }
+        }
+
+        let placedHere = false;
+
+        for (const branch of uniqBranches) {
+          if (!allowConsecutive && lastB && branch === lastB) continue; // ardışık aynı branşı katı modda engelle
+          // Tüm aday öğretmenleri filtrele (uygunluk ve boşluk kontrolü)
+          const allCandidates = findTeacherOptions(branch)
+            .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true && !(tGrid[t.id] || [])[d]?.[s]);
+          if (allCandidates.length === 0) continue;
+
+          // Daha önce bu gruba aynı branş için atanmış öğretmenleri belirle
+          const usedTeachers = new Set();
+          const gRows = gGrid[gid] || [];
+          for (let dd = 0; dd < D; dd++) {
+            const row = gRows[dd] || [];
+            for (let ss = 0; ss < S; ss++) {
+              const a2 = row[ss];
+              if (a2 && a2.branch === branch) usedTeachers.add(a2.teacherId);
+            }
+          }
+
+          // Öncelikli olarak henüz kullanılmamış öğretmenleri listele
+          const preferred = allCandidates.filter(t => !usedTeachers.has(t.id));
+          const candidateList = preferred.length > 0 ? preferred : allCandidates;
+
+          shuffle(candidateList);
+
+          for (const t of candidateList) {
+            if (!canUse(gGrid, tGrid, gid, t.id, d, s)) continue;
+
+            const a = { group: gid, day: d, slot: s, branch, teacherId: t.id };
+            (gGrid[gid] ||= makeGrid(D, S))[d][s] = a;
+            (tGrid[t.id] ||= makeGrid(D, S))[d][s] = a;
+
+            const idx = needArr.indexOf(branch);
+            if (idx > -1) needArr.splice(idx, 1);
+
+            placedCount++;
+            placedHere = true;
+            break;
+          }
+          if (placedHere) break;
+        }
+      }
+
+      if ((performance.now() - startTime) >= TIME_LIMIT_MS) break;
+    }
+
+    const solution = [];
+    for (const a of fixed) solution.push({...a});
+    for (const gid of Object.keys(gGrid)) {
+      for (let d=0; d<D; d++) {
+        for (let s=0; s<S; s++) {
+          const a = gGrid[gid][d][s];
+          if (!a) continue;
+          if (!gGridBase[gid]?.[d]?.[s]) solution.push(a);
+        }
+      }
+    }
+
+    const vio = countConsecutiveViolations(gGrid);
+
+    // === En iyi çözümü ayrı ayrı tut: katı mod vs. esnetilmiş mod ===
+    if (!allowConsecutive) {
+      if (placedCount > bestStrictScore || (placedCount === bestStrictScore && vio < bestStrictVio)) {
         bestStrictScore = placedCount;
         bestStrictVio = vio;
-        bestStrictContinuity = continuity;
-        bestStrictSolution = solution.map(a=>({...a}));
-        improved = true;
+        bestStrictSolution = solution;
+      }
+    } else {
+      if (placedCount > bestRelaxScore || (placedCount === bestRelaxScore && vio < bestRelaxVio)) {
+        bestRelaxScore = placedCount;
+        bestRelaxVio = vio;
+        bestRelaxSolution = solution;
       }
     }
-    if (improved) {
-      updateOverlay(`Yeni en iyi: ${placedCount}/${totalNeedCount} ders • ${allowConsecutive ? 'esnek' : 'katı'}${source ? ` • ${source}` : ''}`);
+
+    // UI'da göstermek için genel en iyi
+    const candBestScore = Math.max(bestStrictScore, bestRelaxScore);
+    const candBestVio = (candBestScore === bestRelaxScore && bestRelaxScore > bestStrictScore)
+      ? bestRelaxVio
+      : bestStrictVio;
+
+    if (candBestScore > bestScore || (candBestScore === bestScore && candBestVio < bestVio)) {
+      bestScore = candBestScore;
+      bestVio = candBestVio;
+      bestSolution = (bestRelaxScore > bestStrictScore) ? bestRelaxSolution : bestStrictSolution;
+      updateOverlay(`Yeni en iyi çözüm: ${bestScore} atama${bestVio<Infinity ? ` • ardışık ihlal: ${bestVio}` : ''}${bestRelaxScore > bestStrictScore ? ' • (esnetme ile)' : ''}`);
     }
-    return improved;
-  };
+  }
 
-  // ---------- Faz 1: Dinamik MRV greedy çoklu başlangıç ----------
-  async function runGreedyPhase(allowConsecutive, phaseEndMs){
-    while (!outOfTime(phaseEndMs)) {
-      attempts++;
-      const gGrid = cloneGridMap(gGridBase);
-      const tGrid = cloneGridMap(tGridBase);
-      const counts = categories.map(c=>c.initialCount);
-      const added = [];
-      let remaining = totalNeedCount;
+  // En iyi sonucu uygula
+  // Not: Esnetme ancak gerçekten daha fazla atama getiriyorsa seçilir.
+  if (bestRelaxScore > bestStrictScore) {
+    bestSolution = bestRelaxSolution;
+    bestScore = bestRelaxScore;
+    bestVio = bestRelaxVio;
+  } else {
+    bestSolution = bestStrictSolution;
+    bestScore = bestStrictScore;
+    bestVio = bestStrictVio;
+  }
+    if (bestSolution) {
+      const seen = new Set();
+      const merged = [];
+      for (const a of bestSolution) {
+        const k = keyCell(a.group, a.day, a.slot);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        merged.push({group:a.group, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId});
+      }
+      state.assignments = merged;
+    }
 
-      while (remaining > 0 && !outOfTime(phaseEndMs)) {
-        let minCand = Infinity;
-        const choices = [];
+    /**
+     * Fill any remaining unassigned course requests using a backtracking search.
+     *
+     * After the greedy/random phase above, there may still be unmet requests
+     * for some group/branch combinations. This helper builds the current
+     * assignment grids and then attempts to place the remaining requests
+     * deterministically. It explores available time slots and candidate
+     * teachers for each outstanding (group, branch) pair in a depth‑first
+     * manner. If a complete placement is found, the new assignments are
+     * appended to state.assignments. Otherwise, the existing assignments are
+     * left untouched.
+     */
+    function fillRemainingAssignments() {
+      // Build grids based off the current assignments
+      const gGrid = {};
+      const tGrid = {};
+      const ensureGrid = (mat, id) => (mat[id] ||= Array.from({ length: D }, () => Array(S).fill(null)));
+      for (const a of state.assignments) {
+        ensureGrid(gGrid, a.group)[a.day][a.slot] = a;
+        ensureGrid(tGrid, a.teacherId)[a.day][a.slot] = a;
+      }
 
-        for (let i=0; i<categories.length; i++) {
-          if (counts[i] <= 0) continue;
-          const cand = getCandidates(gGrid, tGrid, categories[i], allowConsecutive, true);
-          const n = cand.length;
-          if (n < minCand) {
-            minCand = n;
-            choices.length = 0;
-            choices.push({i, cand});
-          } else if (n === minCand) {
-            choices.push({i, cand});
+      // Build a list of outstanding tasks: one entry for each unmet request
+      const tasks = [];
+      for (const g of Object.values(state.groups)) {
+        const req = state.requests[g.id] || {};
+        // Count existing assignments per branch for this group
+        const have = {};
+        for (const a of state.assignments) {
+          if (a.group === g.id) have[a.branch] = (have[a.branch] || 0) + 1;
+        }
+        for (const [b, cnt] of Object.entries(req)) {
+          const needed = Math.max(0, (cnt | 0) - (have[b] || 0));
+          for (let i = 0; i < needed; i++) tasks.push({ group: g.id, branch: b });
+        }
+      }
+      if (tasks.length === 0) return; // nothing to place
+
+      // Helper to compute candidate placements for a task
+      function getCandidates(task) {
+        const { group: gid, branch } = task;
+        const candidates = [];
+        for (let d = 0; d < D; d++) {
+          for (let s = 0; s < S; s++) {
+            // group availability and no assignment in this slot
+            if (state.availability.groups[gid]?.[d]?.[s] !== true) continue;
+            if (gGrid[gid]?.[d]?.[s]) continue;
+            // Ardışık aynı branş: normalde kaçın, çok sıkışınca izin ver
+            const lastB = prevBranchOf(gGrid, gid, d, s);
+            if (lastB && lastB === branch && !shouldRelax()) continue;
+            // list candidate teachers for this branch at (d,s)
+            const teachers = findTeacherOptions(branch)
+              .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true)
+              .filter(t => !tGrid[t.id]?.[d]?.[s]);
+            if (teachers.length === 0) continue;
+            // prefer teachers not already teaching this branch to this group
+            const used = new Set();
+            const gRows = gGrid[gid] || [];
+            for (let dd = 0; dd < D; dd++) {
+              const row = gRows[dd] || [];
+              for (let ss = 0; ss < S; ss++) {
+                const a2 = row[ss];
+                if (a2 && a2.branch === branch) used.add(a2.teacherId);
+              }
+            }
+            const pref = teachers.filter(t => !used.has(t.id));
+            const finalList = pref.length ? pref : teachers;
+            for (const t of finalList) {
+              candidates.push({ day: d, slot: s, teacherId: t.id });
+            }
           }
         }
+        return candidates;
+      }
 
-        if (!choices.length) break;
-        const pick = choices[rnd(choices.length)];
-        const idx = pick.i;
+      // Sort tasks by the number of candidate placements (most constrained first)
+      tasks.sort((a, b) => getCandidates(a).length - getCandidates(b).length);
 
-        // Bu kategori şu anda hiç yerleşemiyorsa, daha sonra da yeni boşluk oluşmayacağı için kalanını geç.
-        if (pick.cand.length === 0) {
-          remaining -= counts[idx];
-          counts[idx] = 0;
-          continue;
+      const newAssignments = [];
+      // Backtracking patlamasın: kısa bir süre limiti (why: sayfa donmasın)
+      const fillDeadline = performance.now() + Math.min(1500, Math.max(300, TIME_LIMIT_MS - (performance.now() - startTime) - 250));
+
+      function backtrack(index) {
+        if (performance.now() > fillDeadline) return false;
+        if (index === tasks.length) return true;
+        const task = tasks[index];
+        const cand = getCandidates(task);
+        // If no placements possible, fail
+        if (cand.length === 0) return false;
+        // Heuristic: sort candidate placements to use least busy teachers first
+        cand.sort((c1, c2) => {
+          // count existing classes for teacher in final assignments
+          const t1Count = state.assignments.concat(newAssignments).filter(a => a.teacherId === c1.teacherId).length;
+          const t2Count = state.assignments.concat(newAssignments).filter(a => a.teacherId === c2.teacherId).length;
+          return t1Count - t2Count;
+        });
+        for (const { day: d, slot: s, teacherId: tid } of cand) {
+          // tentative assign
+          const assignment = { group: task.group, day: d, slot: s, branch: task.branch, teacherId: tid };
+          // mark in grids
+          ensureGrid(gGrid, task.group)[d][s] = assignment;
+          ensureGrid(tGrid, tid)[d][s] = assignment;
+          newAssignments.push(assignment);
+          // recurse
+          if (backtrack(index + 1)) return true;
+          // backtrack: remove
+          newAssignments.pop();
+          gGrid[task.group][d][s] = null;
+          tGrid[tid][d][s] = null;
         }
-
-        // En iyi birkaç adaydan rastgele seç; çeşitlilik sağlar ama MRV mantığını bozmaz.
-        const topN = Math.min(4, pick.cand.length);
-        const c = pick.cand[rnd(topN)];
-        const cat = categories[idx];
-        const a = { group:cat.gid, day:c.day, slot:c.slot, branch:cat.branch, teacherId:c.teacherId };
-        ensureGrid(gGrid, cat.gid)[c.day][c.slot] = a;
-        ensureGrid(tGrid, c.teacherId)[c.day][c.slot] = a;
-        added.push(a);
-        counts[idx]--;
-        remaining--;
-
-        await cooperativeYield();
+        return false;
       }
 
-      considerSolution(fixed.concat(added), added.length, allowConsecutive, 'MRV');
-      if (added.length >= totalNeedCount) return true;
-      await cooperativeYield();
-    }
-    return false;
-  }
-
-  // ---------- Faz 2: Branch & Bound / Forward Checking ----------
-  async function runBranchAndBound(allowConsecutive, phaseEndMs){
-    const gGrid = cloneGridMap(gGridBase);
-    const tGrid = cloneGridMap(tGridBase);
-    const counts = categories.map(c=>c.initialCount);
-    const added = [];
-
-    const phaseBestScore = () => allowConsecutive ? bestRelaxScore : bestStrictScore;
-
-    // Grup boş slot üst sınırı: güvenli (iyimser) pruning.
-    const groupCapacityUpper = () => {
-      const remByGroup = new Map();
-      for (let i=0;i<categories.length;i++) {
-        if (counts[i] > 0) remByGroup.set(categories[i].gid, (remByGroup.get(categories[i].gid)||0)+counts[i]);
-      }
-      let cap = 0;
-      for (const [gid, rem] of remByGroup) {
-        let free = 0;
-        for (let d=0;d<D;d++) for (let s=0;s<S;s++) {
-          if (state.availability.groups[gid]?.[d]?.[s] === true && !gGrid[gid]?.[d]?.[s]) free++;
-        }
-        cap += Math.min(rem, free);
-      }
-      return cap;
-    };
-
-    async function dfs(placedCount, remainingTotal){
-      if (outOfTime(phaseEndMs)) return;
-      searchNodes++;
-
-      // Her düğümde kısmi çözüm de değerlidir; süre biterse kaybolmaz.
-      if (placedCount > phaseBestScore()) {
-        considerSolution(fixed.concat(added), placedCount, allowConsecutive, 'B&B');
-        if (placedCount >= totalNeedCount) return;
-      }
-
-      if (remainingTotal <= 0) return;
-      if (placedCount + remainingTotal <= phaseBestScore()) return;
-
-      // Belirli aralıklarla daha sıkı ama güvenli bir üst sınır kullan.
-      if ((searchNodes & 127) === 0) {
-        const upper = placedCount + groupCapacityUpper();
-        if (upper <= phaseBestScore()) return;
-      }
-
-      if ((searchNodes & 255) === 0) await cooperativeYield(true);
-      if (outOfTime(phaseEndMs)) return;
-
-      // MRV: en az adaylı kalan grup+branş ihtiyacını çöz.
-      let chosen = -1;
-      let chosenCand = null;
-      let minCand = Infinity;
-
-      for (let i=0;i<categories.length;i++) {
-        if (counts[i] <= 0) continue;
-        const cand = getCandidates(gGrid, tGrid, categories[i], allowConsecutive, false);
-        if (cand.length < minCand) {
-          minCand = cand.length;
-          chosen = i;
-          chosenCand = cand;
-          if (minCand === 0) break;
-        }
-      }
-
-      if (chosen < 0) return;
-      const cat = categories[chosen];
-      const originalCount = counts[chosen];
-
-      // Aday varsa önce yerleştirmeyi dene. Böylece mevcut en iyi skor hızla aşılır.
-      if (chosenCand && chosenCand.length) {
-        // Çok geniş dallarda aynı hücre/öğretmen kombinasyonlarının tamamını denemek süreyi tüketmesin;
-        // ancak yüksek başarı için makul bir üst sınır bırakıyoruz.
-        for (let ci=0; ci<chosenCand.length; ci++) {
-          if (outOfTime(phaseEndMs)) break;
-          const c = chosenCand[ci];
-          const a = { group:cat.gid, day:c.day, slot:c.slot, branch:cat.branch, teacherId:c.teacherId };
-
-          ensureGrid(gGrid, cat.gid)[c.day][c.slot] = a;
-          ensureGrid(tGrid, c.teacherId)[c.day][c.slot] = a;
-          added.push(a);
-          counts[chosen]--;
-
-          await dfs(placedCount + 1, remainingTotal - 1);
-
-          counts[chosen]++;
-          added.pop();
-          gGrid[cat.gid][c.day][c.slot] = null;
-          tGrid[c.teacherId][c.day][c.slot] = null;
-
-          if (phaseBestScore() >= totalNeedCount) return;
-        }
-      }
-
-      if (outOfTime(phaseEndMs)) return;
-
-      // Bu kategorinin kalanını atlamayı tek dal olarak dene.
-      // Aynı görevler özdeş olduğundan bu, gereksiz simetrik "tek tek skip" dallarını engeller.
-      counts[chosen] = 0;
-      await dfs(placedCount, remainingTotal - originalCount);
-      counts[chosen] = originalCount;
-    }
-
-    await dfs(0, totalNeedCount);
-  }
-
-  try {
-    // 1) Katı kural: önce güçlü MRV yapısı, ardından ayrılmış gerçek arama süresi.
-    const strictDeadline = RELAX_CONSECUTIVE_WHEN_TIGHT ? STRICT_SEARCH_UNTIL_MS : (TIME_LIMIT_MS - 500);
-    const strictGreedyEnd = Math.min(GREEDY_STRICT_MS, strictDeadline);
-    await runGreedyPhase(false, strictGreedyEnd);
-
-    if (bestStrictScore < totalNeedCount && !outOfTime(strictDeadline)) {
-      updateOverlay('Katı kurallarla branch & bound aranıyor…');
-      await runBranchAndBound(false, strictDeadline);
-    }
-
-    // Katı çözüm bütün ihtiyaçları doldurduysa optimum yerleşim sayısı zaten bulundu.
-    if (bestStrictScore >= totalNeedCount) {
-      updateOverlay(`Tüm ihtiyaçlar katı kurallarla yerleşti: ${totalNeedCount}/${totalNeedCount}`);
-    } else if (RELAX_CONSECUTIVE_WHEN_TIGHT && !outOfTime(TIME_LIMIT_MS - 500)) {
-      // 2) Esnetme yalnızca maksimum atama sayısını artırma ihtimali varsa devreye girer.
-      const relaxGreedyEnd = Math.min(TIME_LIMIT_MS - 8500, elapsedMs() + GREEDY_RELAX_MS);
-      updateOverlay('Sıkışan program için ardışık branş kuralı kontrollü esnetiliyor…');
-      await runGreedyPhase(true, relaxGreedyEnd);
-
-      if (bestRelaxScore < totalNeedCount && !outOfTime(TIME_LIMIT_MS - 600)) {
-        await runBranchAndBound(true, TIME_LIMIT_MS - 500);
+      backtrack(0);
+      // append found assignments
+      if (newAssignments.length > 0) {
+        state.assignments = state.assignments.concat(newAssignments);
       }
     }
 
-    // Son seçim: ders sayısı mutlak öncelik. Eşitse katı çözüm tercih edilir.
-    let chosenSolution = bestStrictSolution;
-    let chosenScore = bestStrictScore;
-    let usedRelax = false;
-
-    if (bestRelaxScore > bestStrictScore) {
-      chosenSolution = bestRelaxSolution;
-      chosenScore = bestRelaxScore;
-      usedRelax = true;
-    }
-
-    // Herhangi bir arama sonucu oluşmadıysa mevcut sabit atamaları koru.
-    if (!chosenSolution) {
-      chosenSolution = fixed.map(a=>({...a}));
-      chosenScore = 0;
-    }
-
-    // Mevcut davranışı koru: aynı grup slotu tek kayıt olsun.
-    // Öğretmen için özellikle ek bir son-filtre uygulamıyoruz; kullanıcı daha önce manuel
-    // çakışmaya onay verdiyse mevcut sabit atamasını otomatik motor sessizce silmemeli.
-    // Yeni otomatik atamalar zaten arama sırasında öğretmen çakışmasına izin vermez.
-    const groupSeen = new Set();
-    const merged = [];
-    for (const a of chosenSolution) {
-      const gk = `${a.group}|${a.day}|${a.slot}`;
-      if (groupSeen.has(gk)) continue;
-      groupSeen.add(gk);
-      merged.push({ group:a.group, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId });
-    }
-    state.assignments = merged;
+    // Attempt to fill any remaining unassigned needs deterministically
+    fillRemainingAssignments();
 
     renderAssignCards();
 
-    state.autoAssignMeta = {
-      prevCount: fixed.length,
-      lastRunAt: Date.now(),
-      engineVersion: 'V5.0 🔥',
-      bestNewCount: Math.max(0, chosenScore),
-      totalNeedCount,
-      usedConsecutiveRelaxation: usedRelax,
-      searchNodes,
-      attempts
-    };
+    // meta: son otomatik atama
+    state.autoAssignMeta = { prevCount: fixed.length, lastRunAt: Date.now() };
     const rep = buildAutoAssignReport(state.autoAssignMeta.prevCount);
     state.lastAutoAssignReport = rep;
 
-    // Mevcut Son Rapor / Atamasızlar akışını aynen koru.
+    // --- Raporu göster ---
     showAutoAssignReport(rep, state.autoAssignMeta.prevCount);
     const btnRpt = document.getElementById('btnAutoAssignReport');
     if (btnRpt) btnRpt.disabled = false;
@@ -3788,12 +3782,12 @@ async function autoAssign() {
     const btnUn = document.getElementById('btnUnassignedReport');
     if (btnUn) btnUn.disabled = false;
   } finally {
-    updateOverlay('Bitti. En yüksek bulunan atama uygulanıyor…');
+    // UI temizle
+    updateOverlay('Bitti. En iyi sonuç uygulanıyor…');
     hideOverlay();
     if (btnAuto) btnAuto.disabled = false;
   }
 }
-
 const exportAssgn = ()=>download('atamalar.json', state.assignments);
 const importAssgn = obj=>{
   if(!Array.isArray(obj)) return uiAlert('Geçersiz atamalar JSON.');
@@ -4015,7 +4009,7 @@ $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
 
-// Otomatik atama V5.0 🔥: 45 sn bütçede maksimum yerleşim odaklı CSP + branch & bound (async)
+// Otomatik atama: 45 sn boyunca farklı yerleşimler dener, en iyisini uygular (async)
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
 $("#btnAutoAssignReport").onclick = () => {
   if (!state.autoAssignMeta) return;
