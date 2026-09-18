@@ -1402,7 +1402,7 @@
       </div>
       <div class="title">
         <h1>Fenomen Eğitim Kurumları</h1>
-        <small>Grup dersleri planlama • Tablı • V4.2 🔥</small>
+        <small>Grup dersleri planlama • Tablı • V4.3 🔥</small>
       </div>
     </div>
     <div class="flex">
@@ -2959,11 +2959,158 @@ function listFreeTeachersAt(day, slot, max=5){
   res.sort((a,b)=>(a.name||'').localeCompare(b.name||'','tr'));
   return res.slice(0, max);
 }
-function performManualAssignFromReport(gid, day, slot, teacherId, branch){
+
+/* ===== V4.3: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
+ * Örnek aile: G1-8A, G2-8A, G3-8A -> "8A".
+ * Normal öğretmen çakışma kuralı değişmez. Yalnızca Elle Tamamlama içindeki
+ * açık bir birleşik ders önerisi seçilirse aynı öğretmen aynı slotta birden
+ * fazla kardeş gruba atanabilir.
+ */
+function getGroupFamilyKey(gid){
+  const parsed = parseGroupName(getGroupDisplayName(gid));
+  if (parsed && Number(parsed.grade) > 0 && parsed.sec) {
+    return `${Number(parsed.grade)}${String(parsed.sec).trim().toUpperCase()}`;
+  }
+  const raw = String(getGroupDisplayName(gid) || gid || '').trim().toUpperCase();
+  const m = raw.match(/^G\d+-(.+)$/i);
+  return m ? String(m[1]).replace(/\s+/g,'') : '';
+}
+
+function getJointLessonGroupNames(a){
+  if (!a?.jointLessonId) return [];
+  const ids = Array.from(new Set((state.assignments || [])
+    .filter(x => x?.jointLessonId && x.jointLessonId === a.jointLessonId)
+    .map(x => String(x.group))));
+  return ids
+    .map(id => state.groups?.[id] || Object.values(state.groups || {}).find(g => String(g?.id) === id) || {id, name:getGroupDisplayName(id)})
+    .sort(groupComparator)
+    .map(g => g?.name || g?.id)
+    .filter(Boolean);
+}
+
+function makeJointLessonId(teacherId, day, slot, branch, familyKey){
+  const safeBranch = String(branch || 'DERS').trim().toUpperCase().replace(/[^A-Z0-9ÇĞİÖŞÜ]+/g, '_');
+  return `JOINT|${familyKey}|${day}|${slot}|${String(teacherId)}|${safeBranch}`;
+}
+
+function findMergeSuggestionsForEmptySlot(gid, day, slot, neededBranches, max=6){
+  if (state.availability?.groups?.[gid]?.[day]?.[slot] !== true) return [];
+  const familyKey = getGroupFamilyKey(gid);
+  if (!familyKey) return [];
+
+  const needed = (neededBranches || []).map(String).filter(Boolean);
+  const neededSet = new Set(needed);
+  if (!neededSet.size) return [];
+
+  const atSlot = (state.assignments || []).filter(a => a && a.day === day && a.slot === slot);
+  const candidates = new Map();
+
+  for (const a of atSlot) {
+    if (String(a.group) === String(gid)) continue;
+    if (getGroupFamilyKey(a.group) !== familyKey) continue;
+    if (!neededSet.has(String(a.branch))) continue;
+
+    const tid = String(a.teacherId || '');
+    if (!tid) continue;
+    if (state.availability?.teachers?.[tid]?.[day]?.[slot] !== true) continue;
+
+    // Bu öğretmenin aynı anda başka, uyumsuz bir dersi varsa birleşik ders önermeyelim.
+    const teacherBusy = atSlot.filter(x => String(x.teacherId) === tid);
+    const compatible = teacherBusy.every(x =>
+      String(x.branch) === String(a.branch) && getGroupFamilyKey(x.group) === familyKey
+    );
+    if (!compatible) continue;
+
+    const key = `${tid}|${String(a.branch)}`;
+    if (!candidates.has(key)) {
+      candidates.set(key, {
+        id: tid,
+        name: teacherNameById(tid),
+        branch: String(a.branch),
+        familyKey,
+        sourceGroups: [],
+        jointLessonId: a.jointLessonId || ''
+      });
+    }
+    const rec = candidates.get(key);
+    teacherBusy
+      .filter(x => String(x.branch) === String(a.branch) && getGroupFamilyKey(x.group) === familyKey)
+      .forEach(x => {
+        const groupId = String(x.group);
+        if (!rec.sourceGroups.includes(groupId)) rec.sourceGroups.push(groupId);
+        if (!rec.jointLessonId && x.jointLessonId) rec.jointLessonId = x.jointLessonId;
+      });
+  }
+
+  const branchRank = new Map(needed.map((b,i)=>[b,i]));
+  return Array.from(candidates.values())
+    .sort((a,b) =>
+      ((branchRank.get(a.branch) ?? 999) - (branchRank.get(b.branch) ?? 999)) ||
+      String(a.name || '').localeCompare(String(b.name || ''), 'tr')
+    )
+    .slice(0, max);
+}
+
+function performManualAssignFromReport(gid, day, slot, teacherId, branch, options={}){
   if (state.availability.groups[gid]?.[day]?.[slot] !== true) { uiAlert('Grup bu saatte müsait değil.'); return false; }
   if (state.availability.teachers[teacherId]?.[day]?.[slot] !== true) { uiAlert('Öğretmen bu saatte müsait değil.'); return false; }
-  if (state.assignments.some(a=>a.group===gid && a.day===day && a.slot===slot)) { uiAlert('Bu slot dolu.'); return false; }
-  if (state.assignments.some(a=>a.teacherId===teacherId && a.day===day && a.slot===slot)) { uiAlert('Öğretmen bu saatte başka derste.'); return false; }
+  if (state.assignments.some(a=>String(a.group)===String(gid) && a.day===day && a.slot===slot)) { uiAlert('Bu slot dolu.'); return false; }
+
+  const mergeMode = options?.merge === true;
+  const busyAtSlot = state.assignments.filter(a => String(a.teacherId)===String(teacherId) && a.day===day && a.slot===slot);
+
+  if (mergeMode) {
+    if (!branch) { uiAlert('Birleşik ders için branş seçilemedi.'); return false; }
+
+    const familyKey = getGroupFamilyKey(gid);
+    if (!familyKey) { uiAlert('Grubun sınıf/şube bilgisi çözümlenemedi.'); return false; }
+
+    const sourceAssignments = busyAtSlot.filter(a =>
+      String(a.group) !== String(gid) &&
+      getGroupFamilyKey(a.group) === familyKey &&
+      String(a.branch) === String(branch)
+    );
+    if (!sourceAssignments.length) {
+      uiAlert('Birleştirilecek kardeş grupta bu ders/öğretmen ataması artık bulunmuyor. Listeyi yenileyin.');
+      return false;
+    }
+
+    // Aynı öğretmenin bu saatte farklı branş veya farklı sınıf ailesinde başka işi varsa izin verme.
+    const incompatible = busyAtSlot.some(a =>
+      getGroupFamilyKey(a.group) !== familyKey || String(a.branch) !== String(branch)
+    );
+    if (incompatible) {
+      uiAlert('Öğretmenin aynı saatte birleşik derse uygun olmayan başka bir ataması var.');
+      return false;
+    }
+
+    const stillNeeded = getMissingNeedsForGroup(gid).some(x => String(x.branch) === String(branch) && x.count > 0);
+    if (!stillNeeded) { uiAlert('Bu grubun seçilen dersten artık eksiği yok.'); return false; }
+
+    const jointLessonId =
+      sourceAssignments.find(a => a.jointLessonId)?.jointLessonId ||
+      options.jointLessonId ||
+      makeJointLessonId(teacherId, day, slot, branch, familyKey);
+
+    // Aynı birleşik derste olan mevcut kayıtları da işaretle. Böylece JSON/Firebase ve yazdırma tutarlı kalır.
+    busyAtSlot.forEach(a => {
+      if (getGroupFamilyKey(a.group) === familyKey && String(a.branch) === String(branch)) {
+        a.jointLessonId = jointLessonId;
+        a.assignmentMode = 'joint';
+      }
+    });
+
+    state.assignments.push({
+      group: gid, day, slot, branch, teacherId,
+      jointLessonId,
+      assignmentMode: 'joint'
+    });
+    onAssignmentsMutated();
+    return true;
+  }
+
+  // Normal elle atama davranışı değişmedi: öğretmen aynı saatte yalnızca bir grupta olabilir.
+  if (busyAtSlot.length) { uiAlert('Öğretmen bu saatte başka derste.'); return false; }
 
   if (!branch) {
     const tBranches = teacherBranchesById(teacherId);
@@ -2997,232 +3144,18 @@ function getGroupDisplayName(gid){
   return g?.name || g?.label || String(gid);
 }
 
-function maxBipartiteCapacity(slotOptions, tokenCounts){
-  // Her ihtiyaç bir "token"; her slot en fazla bir token karşılar.
-  // Küçük slot matrislerinde exact maksimum eşleşme hesaplanır.
-  const tokenKeys = [];
-  for (const [key, rawCount] of Object.entries(tokenCounts || {})) {
-    const count = Math.max(0, rawCount | 0);
-    for (let i=0; i<count; i++) tokenKeys.push(key);
-  }
-  if (!tokenKeys.length || !slotOptions?.length) return 0;
-
-  const tokenIndexesByKey = new Map();
-  tokenKeys.forEach((key, idx) => {
-    if (!tokenIndexesByKey.has(key)) tokenIndexesByKey.set(key, []);
-    tokenIndexesByKey.get(key).push(idx);
-  });
-
-  const adj = slotOptions.map(item => {
-    const out = [];
-    for (const key of (item.keys || [])) {
-      const ids = tokenIndexesByKey.get(key);
-      if (ids) out.push(...ids);
-    }
-    return Array.from(new Set(out));
-  });
-
-  const tokenMatch = Array(tokenKeys.length).fill(-1);
-  function trySlot(slotIdx, seenTokens){
-    for (const tokenIdx of adj[slotIdx]) {
-      if (seenTokens[tokenIdx]) continue;
-      seenTokens[tokenIdx] = true;
-      if (tokenMatch[tokenIdx] === -1 || trySlot(tokenMatch[tokenIdx], seenTokens)) {
-        tokenMatch[tokenIdx] = slotIdx;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  let matched = 0;
-  const order = slotOptions.map((_,i)=>i).sort((a,b)=>adj[a].length-adj[b].length);
-  for (const slotIdx of order) {
-    if (trySlot(slotIdx, Array(tokenKeys.length).fill(false))) matched++;
-  }
-  return matched;
-}
-
-function buildCapacityRecommendations(needsLeft, currentAssigned){
-  const D = state.program.days.length;
-  const S = state.program.slots;
-  const assignments = state.assignments || [];
-  const groups = Object.values(state.groups || {});
-  const teacherRecs = [];
-  const groupRecs = [];
-
-  const assignedGroupSlot = new Set(assignments.map(a => `${a.group}|${a.day}|${a.slot}`));
-  const assignedTeacherSlot = new Set(assignments.map(a => `${a.teacherId}|${a.day}|${a.slot}`));
-
-  const enumerateIntervals = (cells, tokenCounts, pushCandidate) => {
-    // Sadece art arda gelen ve gerçekten müsaitlik değişimi gerektiren slotlardan
-    // alt aralıkları dener. Aynı kapasitede daha kısa aralık daha üstte sıralanır.
-    const bySlot = new Map((cells || []).map(x => [x.slot, x]));
-    const slots = Array.from(bySlot.keys()).sort((a,b)=>a-b);
-    let run = [];
-    const flush = () => {
-      if (!run.length) return;
-      for (let i=0; i<run.length; i++) {
-        for (let j=i; j<run.length; j++) {
-          const interval = run.slice(i, j+1);
-          const gain = maxBipartiteCapacity(interval, tokenCounts);
-          if (gain <= 0) continue;
-          pushCandidate(interval, gain);
-        }
-      }
-      run = [];
-    };
-    for (const slot of slots) {
-      if (run.length && slot !== run[run.length-1].slot + 1) flush();
-      run.push(bySlot.get(slot));
-    }
-    flush();
-  };
-
-  // A) Öğretmen müsaitliği: tek öğretmenin aynı gün ardışık slotlarını açınca
-  // hangi karşılanmamış grup/branş ihtiyaçları doğrudan açılıyor?
-  for (const t of (state.teachers || [])) {
-    const branches = teacherBranchesById(t.id);
-    if (!branches.length) continue;
-
-    const tokenCounts = {};
-    for (const g of groups) {
-      const left = needsLeft?.[g.id] || {};
-      for (const b of branches) {
-        const cnt = +(left[b] || 0);
-        if (cnt > 0) tokenCounts[`${g.id}::${b}`] = cnt;
-      }
-    }
-    if (!Object.keys(tokenCounts).length) continue;
-
-    for (let d=0; d<D; d++) {
-      const cells = [];
-      for (let s=0; s<S; s++) {
-        if (state.availability.teachers?.[t.id]?.[d]?.[s] === true) continue; // değişiklik gerekmiyor
-        if (assignedTeacherSlot.has(`${t.id}|${d}|${s}`)) continue;
-
-        const keys = [];
-        for (const g of groups) {
-          if (state.availability.groups?.[g.id]?.[d]?.[s] !== true) continue;
-          if (assignedGroupSlot.has(`${g.id}|${d}|${s}`)) continue;
-          const left = needsLeft?.[g.id] || {};
-          for (const b of branches) {
-            if (+(left[b] || 0) > 0) keys.push(`${g.id}::${b}`);
-          }
-        }
-        if (keys.length) cells.push({ slot:s, keys:Array.from(new Set(keys)) });
-      }
-
-      enumerateIntervals(cells, tokenCounts, (interval, gain) => {
-        const touched = new Set();
-        for (const item of interval) for (const key of item.keys) touched.add(key);
-        teacherRecs.push({
-          type:'teacher', id:String(t.id), name:t.name || String(t.id), day:d,
-          startSlot:interval[0].slot, endSlot:interval[interval.length-1].slot,
-          changes:interval.length, gain,
-          projectedTotal:(currentAssigned||0)+gain,
-          affects:Array.from(touched).slice(0,6).map(key => {
-            const [gid,b] = key.split('::');
-            return `${getGroupDisplayName(gid)} / ${b}`;
-          })
-        });
-      });
-    }
-  }
-
-  // B) Sınıf/grup müsaitliği: tek grubun aynı gün ardışık slotlarını açınca
-  // mevcut öğretmen müsaitlikleriyle kaç ek ders doğrudan yerleşebilir?
-  for (const g of groups) {
-    const left = needsLeft?.[g.id] || {};
-    const tokenCounts = Object.fromEntries(Object.entries(left).filter(([,v]) => +v > 0).map(([b,v]) => [b, +v]));
-    if (!Object.keys(tokenCounts).length) continue;
-
-    for (let d=0; d<D; d++) {
-      const cells = [];
-      for (let s=0; s<S; s++) {
-        if (state.availability.groups?.[g.id]?.[d]?.[s] === true) continue; // değişiklik gerekmiyor
-        if (assignedGroupSlot.has(`${g.id}|${d}|${s}`)) continue;
-
-        const keys = [];
-        for (const [branch, cnt] of Object.entries(tokenCounts)) {
-          if (+cnt <= 0) continue;
-          const hasTeacher = (findTeacherOptions(branch) || []).some(t =>
-            state.availability.teachers?.[t.id]?.[d]?.[s] === true &&
-            !assignedTeacherSlot.has(`${t.id}|${d}|${s}`)
-          );
-          if (hasTeacher) keys.push(branch);
-        }
-        if (keys.length) cells.push({ slot:s, keys });
-      }
-
-      enumerateIntervals(cells, tokenCounts, (interval, gain) => {
-        const touched = new Set();
-        for (const item of interval) for (const key of item.keys) touched.add(key);
-        groupRecs.push({
-          type:'group', id:String(g.id), name:getGroupDisplayName(g.id), day:d,
-          startSlot:interval[0].slot, endSlot:interval[interval.length-1].slot,
-          changes:interval.length, gain,
-          projectedTotal:(currentAssigned||0)+gain,
-          affects:Array.from(touched).slice(0,6)
-        });
-      });
-    }
-  }
-
-  const rank = (a,b) =>
-    (b.gain - a.gain) ||
-    (a.changes - b.changes) ||
-    ((b.gain / b.changes) - (a.gain / a.changes)) ||
-    String(a.name).localeCompare(String(b.name), 'tr');
-
-  // Aynı hedef/gün/aralık için tekrarları temizle; en iyi kapasite + minimum değişim önde.
-  const uniqueTop = (arr, max=5) => {
-    const seen = new Set();
-    const out = [];
-    for (const x of arr.sort(rank)) {
-      const k = `${x.type}|${x.id}|${x.day}|${x.startSlot}|${x.endSlot}`;
-      if (seen.has(k)) continue;
-      seen.add(k);
-      out.push(x);
-      if (out.length >= max) break;
-    }
-    return out;
-  };
-
-  const bestOverall = uniqueTop([...teacherRecs, ...groupRecs], 1)[0] || null;
-  return {
-    teacher: uniqueTop(teacherRecs, 5),
-    group: uniqueTop(groupRecs, 5),
-    bestOverall
-  };
-}
-
-function buildAutoAssignReport(prevCount){
+function buildAutoAssignReport(_prevCount){
   const D = state.program.days.length;
   const S = state.program.slots;
   const groups = Object.values(state.groups);
-  const totalCells = groups.length * D * S;
 
-  // Grup müsaitliği
-  let availableCells = 0;
-  for (const g of groups) {
-    const mat = state.availability.groups[g.id] || [];
-    for (let d=0; d<D; d++) for (let s=0; s<S; s++) if (mat?.[d]?.[s] === true) availableCells++;
-  }
-  const blockedByGroup = totalCells - availableCells;
-
-  const totalAssigned = state.assignments.length;
-  const newlyAssigned = Math.max(0, totalAssigned - (prevCount||0));
-
-  // Kalan ihtiyaçlar
+  // Elle Tamamlama için yalnızca kalan ihtiyaçları hesapla.
   const needsLeft = {};
-  let remainingNeedTotal = 0;
   for (const g of groups) {
     const req = state.requests[g.id] || {};
     const left = Object.fromEntries((state.branches||[]).map(b => [b, +(req[b]||0)]));
     state.assignments.filter(a=>a.group===g.id).forEach(a => left[a.branch] = Math.max(0, (left[a.branch]||0)-1));
     needsLeft[g.id] = left;
-    remainingNeedTotal += Object.values(left).reduce((x,y)=>x+(+y||0),0);
   }
 
   const isAssigned = (gid,d,s) => state.assignments.some(a=>a.group===gid && a.day===d && a.slot===s);
@@ -3260,12 +3193,18 @@ function buildAutoAssignReport(prevCount){
         if (branchSuggestions.length>=2) break;
       }
 
+      const freeTeachers = branchSuggestions.length ? [] : listFreeTeachersAt(d,s,6);
+      const mergeSuggestions = (!branchSuggestions.length && !freeTeachers.length)
+        ? findMergeSuggestionsForEmptySlot(g.id, d, s, neededBranches, 6)
+        : [];
+
       details.push({
         group:g.id, day:d, slot:s,
-        kind: branchSuggestions.length ? 'onerili' : 'ogretmen-bulunamadi',
+        kind: branchSuggestions.length ? 'onerili' : (mergeSuggestions.length ? 'birlesik-onerili' : 'ogretmen-bulunamadi'),
         neededBranches,
         suggestions: branchSuggestions,
-        freeTeachers: branchSuggestions.length ? [] : listFreeTeachersAt(d,s,6)
+        freeTeachers,
+        mergeSuggestions
       });
     }
   }
@@ -3274,25 +3213,10 @@ function buildAutoAssignReport(prevCount){
     ? state.lastAvailabilityNormalization.removed.slice()
     : [];
 
-  const capacityRecommendations = buildCapacityRecommendations(needsLeft, totalAssigned);
 
   return {
-    totals: {
-      groups: groups.length,
-      days: D,
-      slotsPerDay: S,
-      totalCells,
-      availableCells,
-      blockedByGroup,
-      totalAssigned,
-      newlyAssigned,
-      remainingNeedTotal,
-      hiddenByTeacherAvailabilityOnLoad: removedOnLoad.filter(x => x.reason === 'ogretmen-musait-degil').length,
-      invalidRemovedOnLoad: removedOnLoad.filter(x => x.reason === 'gecersiz-kayit').length
-    },
     needsLeft,
     details,
-    capacityRecommendations,
     removedOnLoad,
     normalizationSource: state.lastAvailabilityNormalization?.source || null
   };
@@ -3308,7 +3232,7 @@ function showAutoAssignReport(report, prevCount){
     dlg.style.maxWidth = '1200px';
     dlg.style.width = 'min(98vw, 1200px)';
     dlg.innerHTML = `
-      <header style="font-weight:900;font-size:18px;margin-bottom:8px">🧾 Otomatik Atama Özeti</header>
+      <header style="font-weight:900;font-size:18px;margin-bottom:8px">Elle Tamamlama</header>
       <section id="autoAssignReportBody" style="max-height:60vh;overflow:auto"></section>
       <footer style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
         <button id="btnRptCopy" class="btn ghost">Metni Kopyala</button>
@@ -3329,7 +3253,15 @@ function showAutoAssignReport(report, prevCount){
       const row = e.target.closest('li.row-assign');
       if (!row) return;
       const selB = row.querySelector('select.sel-branch');
-      const teacherBranches = (e.target.selectedOptions?.[0]?.dataset.branches || '').split('|').filter(Boolean);
+      const selected = e.target.selectedOptions?.[0];
+      if (selected?.dataset.merge === '1') {
+        const mergeBranch = selected.dataset.mergeBranch || '';
+        selB.innerHTML = mergeBranch
+          ? `<option value="${escapeHtml(mergeBranch)}">${escapeHtml(mergeBranch)} • Birleşik ders</option>`
+          : `<option value="">(branş yok)</option>`;
+        return;
+      }
+      const teacherBranches = (selected?.dataset.branches || '').split('|').filter(Boolean);
       const needed = (row.dataset.needed || '').split('|').filter(Boolean);
       let options = teacherBranches.filter(b => needed.includes(b));
       let suffix = '';
@@ -3348,16 +3280,22 @@ function showAutoAssignReport(report, prevCount){
       const s = +row.dataset.slot;
       const selT = row.querySelector('select.sel-teacher');
       const selB = row.querySelector('select.sel-branch');
+      const selectedTeacherOpt = selT?.selectedOptions?.[0];
       const tid = selT?.value;
       let branch = selB?.value || '';
       if (!tid) { uiAlert('Lütfen öğretmen seçiniz.'); return; }
-      if (!branch) {
-        const tBranches = (selT.selectedOptions?.[0]?.dataset.branches || '').split('|').filter(Boolean);
+      if (selectedTeacherOpt?.dataset.merge === '1') {
+        branch = selectedTeacherOpt.dataset.mergeBranch || branch;
+      } else if (!branch) {
+        const tBranches = (selectedTeacherOpt?.dataset.branches || '').split('|').filter(Boolean);
         const needed = (row.dataset.needed || '').split('|').filter(Boolean);
         const inter = tBranches.filter(b => needed.includes(b));
         branch = inter[0] || tBranches[0] || state.branches?.[0] || 'GENEL';
       }
-      const ok = performManualAssignFromReport(gid, d, s, tid, branch);
+      const ok = performManualAssignFromReport(gid, d, s, tid, branch, {
+        merge: selectedTeacherOpt?.dataset.merge === '1',
+        jointLessonId: selectedTeacherOpt?.dataset.jointLessonId || ''
+      });
       if (!ok) return;
       const base = +(state.autoAssignMeta?.prevCount || 0);
       const refreshed = buildAutoAssignReport(base);
@@ -3370,7 +3308,6 @@ function showAutoAssignReport(report, prevCount){
 
   function renderReportBody(rep){
     const el = dlg.querySelector('#autoAssignReportBody');
-    const t = rep.totals;
 
     const fmtSlot = (d,s) => {
       const day = state.program.days[d];
@@ -3388,13 +3325,13 @@ function showAutoAssignReport(report, prevCount){
       needList.push(`<li><b>${escapeHtml(gid)}</b> → ${escapeHtml(txt)}</li>`);
     }
 
-    // Elle atama listesi: sadece grup müsait + talep var olanlardan
+    // Elle atama listesi: grup müsait + talep var. Boş öğretmen yoksa aynı sınıf ailesinde birleşik ders ara.
     const rows = rep.details
-      .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi')
+      .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi' || x.kind==='birlesik-onerili')
       .slice(0, 30)
       .map(x => {
         const neededPipe = (x.neededBranches||[]).join('|');
-        // öğretmen seçenekleri: önce önerilen branşların öğretmenleri, yoksa boşta öğretmenler
+        // Öğretmen seçenekleri: önce uygun boş branş öğretmenleri, sonra mevcut eski fallback.
         let teachers = [];
         if (x.suggestions?.length) {
           const seen = new Set();
@@ -3408,12 +3345,25 @@ function showAutoAssignReport(report, prevCount){
         } else {
           teachers = (x.freeTeachers||[]);
         }
+
         const teacherOpts = teachers
           .map(tt => {
             const branches = (tt.branches||[]).join('|');
             const label = `${tt.name || tt.id}${(tt.branches?.length ? ' ('+tt.branches.join(', ')+')' : '')}`;
             return `<option value="${escapeHtml(String(tt.id))}" data-branches="${escapeAttr(branches)}">${escapeHtml(label)}</option>`;
           }).join('');
+
+        const mergeOpts = (!teachers.length ? (x.mergeSuggestions || []) : [])
+          .map(ms => {
+            const groupNames = (ms.sourceGroups || []).map(getGroupDisplayName).join(' + ');
+            const label = `Birleştir → ${ms.name || ms.id} • ${groupNames} • ${ms.branch}`;
+            return `<option value="${escapeHtml(String(ms.id))}" data-merge="1" data-merge-branch="${escapeAttr(ms.branch)}" data-joint-lesson-id="${escapeAttr(ms.jointLessonId || '')}">${escapeHtml(label)}</option>`;
+          }).join('');
+
+        const teacherGroups = [
+          teacherOpts ? `<optgroup label="Boş öğretmenler">${teacherOpts}</optgroup>` : '',
+          mergeOpts ? `<optgroup label="Birleşik ders önerileri">${mergeOpts}</optgroup>` : ''
+        ].join('');
 
         const branchOpts = (x.neededBranches||[])
           .slice(0, 6)
@@ -3422,23 +3372,25 @@ function showAutoAssignReport(report, prevCount){
 
         const hint = x.kind==='onerili'
           ? `Öneri: ${escapeHtml(x.suggestions[0]?.branch||'')}`
-          : 'Uygun branş öğretmeni bulunamadı (boşta öğretmen seçebilirsiniz)';
+          : x.kind==='birlesik-onerili'
+            ? `${escapeHtml(getGroupFamilyKey(x.group))} grupları tarandı • boş öğretmen yok, birleşik ders adayı bulundu`
+            : 'Uygun boş öğretmen veya birleşik ders adayı bulunamadı';
 
         return `
           <li class="row-assign" data-gid="${escapeAttr(String(x.group))}" data-day="${x.day}" data-slot="${x.slot}" data-needed="${escapeAttr(neededPipe)}" style="margin:8px 0">
             <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
               <div style="min-width:280px">
                 <div><b>${escapeHtml(String(x.group))}</b> — ${escapeHtml(fmtSlot(x.day,x.slot))}</div>
-                <div class="mini2">${escapeHtml(hint)}</div>
+                <div class="mini2">${hint}</div>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
                 <label>Branş
                   <select class="sel-branch" style="min-width:170px">${branchOpts}</select>
                 </label>
                 <label>Öğretmen
-                  <select class="sel-teacher" style="min-width:240px">
+                  <select class="sel-teacher" style="min-width:280px">
                     <option value="">Seçiniz</option>
-                    ${teacherOpts}
+                    ${teacherGroups}
                   </select>
                 </label>
                 <button class="btn btn-assign">Ata</button>
@@ -3448,50 +3400,18 @@ function showAutoAssignReport(report, prevCount){
         `;
       }).join('');
 
-    const fmtInterval = (item) => {
-      const day = state.program.days[item.day] || `${item.day+1}. gün`;
-      const first = state.program.slotLabels?.[item.startSlot] || `${item.startSlot+1}. ders`;
-      const last = state.program.slotLabels?.[item.endSlot] || `${item.endSlot+1}. ders`;
-      return item.startSlot === item.endSlot ? `${day} • ${first}` : `${day} • ${first} → ${last}`;
-    };
-    const renderCapacityItems = (items) => {
-      if (!items?.length) return `<div class="muted">Tek bir müsaitlik aralığı değişikliğiyle doğrudan ek kapasite bulunamadı.</div>`;
-      return `<ol style="margin:8px 0 0 18px">${items.map(x => `
-        <li style="margin:8px 0">
-          <b>${escapeHtml(x.name)}</b> — ${escapeHtml(fmtInterval(x))}
-          <span class="tag">+${x.gain} ders</span>
-          <span class="mini2">${x.changes} slot değişikliği • tahmini toplam ${x.projectedTotal} atama</span>
-          ${x.affects?.length ? `<div class="mini2">Açılan ihtiyaç: ${escapeHtml(x.affects.join(', '))}</div>` : ''}
-        </li>`).join('')}</ol>`;
-    };
-    const teacherCapacityHtml = renderCapacityItems(rep.capacityRecommendations?.teacher);
-    const groupCapacityHtml = renderCapacityItems(rep.capacityRecommendations?.group);
-    const bestCapacity = rep.capacityRecommendations?.bestOverall;
-    const bestCapacityHtml = bestCapacity
-      ? `<div class="pill" style="margin-bottom:10px">En güçlü tek değişiklik: <b>${escapeHtml(bestCapacity.type === 'teacher' ? 'Öğretmen' : 'Sınıf / grup')} • ${escapeHtml(bestCapacity.name)}</b> • ${escapeHtml(fmtInterval(bestCapacity))} → <b>+${bestCapacity.gain} ders</b> • ${bestCapacity.changes} slot değişikliği • tahmini toplam <b>${bestCapacity.projectedTotal}</b></div>`
-      : `<div class="muted" style="margin-bottom:10px">Tek bir müsaitlik aralığı değişikliğiyle ek kapasite görünmüyor.</div>`;
 
     el.innerHTML = `
       <div class="grid" style="gap:10px">
-        <div class="pill">Toplam atama: <b>${t.totalAssigned}</b> • Bu çalıştırmada yeni: <b>${t.newlyAssigned}</b></div>
-        ${state.autoAssignMeta?.version ? `<div class="pill">Strateji: <b>20 sn katı</b> • <b>${state.autoAssignMeta?.relaxConsecutive ? '25 sn esnetilmiş' : '25 sn katı (esnetme kapalı)'}</b> • deneme adedi sınırsız</div>` : ''}
-        <div class="pill">Grup müsait kapasite: <b>${t.availableCells}</b> • Grup müsait değil: <b>${t.blockedByGroup}</b></div>
-        <div class="pill">Kalan toplam ihtiyaç (ders): <b>${t.remainingNeedTotal}</b></div>
-        <div class="pill">Yüklemede boş sayılan kayıt: <b>${t.hiddenByTeacherAvailabilityOnLoad}</b> • Geçersiz kayıt: <b>${t.invalidRemovedOnLoad}</b></div>
+        <div class="card">
+          <h3>Elle Tamamlama (ilk 30 uygun boş slot)</h3>
+          ${rows ? `<ol style="margin:6px 0 0 18px">${rows}</ol>` : `<div class="muted">Elle tamamlama için uygun boş slot kalmadı.</div>`}
+          <div class="muted" style="margin-top:8px">Boş öğretmen bulunamazsa sistem, örneğin <b>G1-8A</b> için <b>G2-8A / G3-8A / G4-8A</b> içindeki aynı ders ve saat atamalarını tarar. Uygun sonuç varsa öğretmen alanında <b>Birleştir</b> önerisi gösterilir.</div>
+        </div>
 
         <div class="card">
           <h3>Kalan İhtiyaçlar (talep - atanan)</h3>
           ${needList.length ? `<ul style="margin:6px 0 0 18px">${needList.join('')}</ul>` : `<div class="muted">Tüm talepler karşılanmış görünüyor ✅</div>`}
-        </div>
-
-        <div class="card">
-          <h3>📈 En Az Değişiklikle Atama Kapasitesini Artırma</h3>
-          <div class="mini2" style="margin-bottom:10px">Mevcut atamaları taşımadan, yalnızca tek bir öğretmen veya sınıf/grup için ardışık müsaitlik aralığı açılarak elde edilebilecek doğrudan ek kapasite hesaplanır. Aynı kazançta daha az slot değişikliği üstte gösterilir.</div>
-          ${bestCapacityHtml}
-          <div style="font-weight:900;margin-top:6px">Öğretmen müsaitliği önerileri</div>
-          ${teacherCapacityHtml}
-          <div style="font-weight:900;margin-top:14px">Sınıf / grup müsaitliği önerileri</div>
-          ${groupCapacityHtml}
         </div>
 
         <div class="card">
@@ -3510,18 +3430,12 @@ function showAutoAssignReport(report, prevCount){
             ${rep.removedOnLoad.length > 50 ? `<div class="mini2" style="margin-top:8px">İlk 50 kayıt gösterildi.</div>` : ''}
           ` : `<div class="muted">Yükleme sırasında boş sayılan atama yok.</div>`}
         </div>
-
-        <div class="card">
-          <h3>Elle Tamamlama (ilk 30 uygun boş slot)</h3>
-          ${rows ? `<ol style="margin:6px 0 0 18px">${rows}</ol>` : `<div class="muted">Elle tamamlama için uygun boş slot kalmadı.</div>`}
-          <div class="muted" style="margin-top:8px">Not: <b>Ata</b> dediğinizde modal kapanmaz; liste güncellenir.</div>
-        </div>
       </div>
     `;
   }
 }
 
-// index.html — Auto Assign (V4.2 🔥): 20 sn Katı + 25 sn Esnetilmiş, Süre Bazlı Sınırsız Deneme
+// index.html — Auto Assign (V4.3 🔥): 20 sn Katı + 25 sn Esnetilmiş, Süre Bazlı Sınırsız Deneme
 
 /**
  * Amaç: Öğretmen yük dengesini tamamen devre dışı bırakarak,
@@ -3531,7 +3445,7 @@ async function autoAssign() {
   const D = state.program.days.length;
   const S = state.program.slots;
 
-  // --------- Ayarlar (V4.2 🔥) ---------
+  // --------- Ayarlar (V4.3 🔥) ---------
   const STRICT_PHASE_MS = 20000;
   const RELAX_PHASE_MS = 25000;
   const TIME_LIMIT_MS = STRICT_PHASE_MS + RELAX_PHASE_MS;
@@ -3582,7 +3496,7 @@ async function autoAssign() {
   let totalNeedCount = 0; // needs hesaplandıktan sonra set edilir
 
   const shouldRelax = () => {
-    // V4.2 🔥: Tik açıksa ilk 20 sn katı, son 25 sn ardışık aynı branş kuralı esnetilmiş.
+    // V4.3 🔥: Tik açıksa ilk 20 sn katı, son 25 sn ardışık aynı branş kuralı esnetilmiş.
     // Tik kapalıysa 45 sn boyunca kural katı kalır.
     if (!RELAX_CONSECUTIVE_WHEN_TIGHT) return false;
     if (!totalNeedCount) return false;
@@ -3649,7 +3563,7 @@ async function autoAssign() {
     state.autoAssignMeta = {
       prevCount: fixed.length,
       lastRunAt: Date.now(),
-      version: 'V4.2 🔥',
+      version: 'V4.3 🔥',
       strictSeconds: 20,
       relaxedSeconds: RELAX_CONSECUTIVE_WHEN_TIGHT ? 25 : 0,
       relaxConsecutive: RELAX_CONSECUTIVE_WHEN_TIGHT
@@ -3863,7 +3777,7 @@ async function autoAssign() {
         const k = keyCell(a.group, a.day, a.slot);
         if (seen.has(k)) continue;
         seen.add(k);
-        merged.push({group:a.group, day:a.day, slot:a.slot, branch:a.branch, teacherId:a.teacherId});
+        merged.push({...a}); // V4.3: birleşik ders metadatasını koru
       }
       state.assignments = merged;
     }
@@ -3999,7 +3913,7 @@ async function autoAssign() {
     state.autoAssignMeta = {
       prevCount: fixed.length,
       lastRunAt: Date.now(),
-      version: 'V4.2 🔥',
+      version: 'V4.3 🔥',
       strictSeconds: 20,
       relaxedSeconds: RELAX_CONSECUTIVE_WHEN_TIGHT ? 25 : 0,
       relaxConsecutive: RELAX_CONSECUTIVE_WHEN_TIGHT
@@ -4117,7 +4031,15 @@ function renderPrintPreview(){
         let row=`<tr><td><b>${days[di]}</b></td>`;
         for(let s=0; s<S; s++){
           const a = aForG.find(x=>x.day===di && x.slot===s);
-          const txt = a ? `<div style="text-align:center"><b>${a.branch}</b><br/>👤 ${state.teachers.find(t=>t.id===a.teacherId)?.name||''}</div>` : '';
+          let txt = '';
+          if (a) {
+            const teacherName = state.teachers.find(t=>String(t.id)===String(a.teacherId))?.name || '';
+            const jointNames = getJointLessonGroupNames(a);
+            const jointNote = jointNames.length > 1
+              ? `<br/><span class="mini2">Birleşik: ${jointNames.map(escapeHtml).join(' + ')}</span>`
+              : '';
+            txt = `<div style="text-align:center"><b>${escapeHtml(a.branch)}</b><br/>👤 ${escapeHtml(teacherName)}${jointNote}</div>`;
+          }
           row += `<td>${txt}</td>`;
         }
         row+='</tr>'; body+=row;
@@ -4151,8 +4073,16 @@ function renderPrintPreview(){
       daysWith.forEach(d=>{
         let row=`<tr><td><b>${days[d]}</b></td>`;
         for(let s=0; s<S; s++){
-          const a = aForT.find(x=>x.day===d && x.slot===s);
-          row += a ? `<td style="text-align:center"><b>${a.branch}</b><br/>Grup: ${state.groups[a.group]?.name||''}</td>` : `<td></td>`;
+          const atSlot = aForT.filter(x=>x.day===d && x.slot===s);
+          if (atSlot.length) {
+            const branchNames = Array.from(new Set(atSlot.map(a=>String(a.branch || '')))).filter(Boolean);
+            const groupNames = Array.from(new Set(atSlot.map(a=>state.groups[a.group]?.name || a.group))).filter(Boolean);
+            const jointIds = Array.from(new Set(atSlot.map(a=>a.jointLessonId).filter(Boolean)));
+            const isJoint = atSlot.length > 1 && jointIds.length === 1 && atSlot.every(a=>a.jointLessonId === jointIds[0]);
+            row += `<td style="text-align:center"><b>${branchNames.map(escapeHtml).join(' / ')}</b><br/>Gruplar: ${groupNames.map(escapeHtml).join(' + ')}${isJoint ? '<br/><span class="mini2">Birleşik ders</span>' : ''}</td>`;
+          } else {
+            row += `<td></td>`;
+          }
         }
         row+='</tr>'; body+=row;
       });
@@ -5099,8 +5029,12 @@ function printAllGradesSelected(selectedGrades) {
         for (let s=0; s<S; s++) {
           const a = aForG.find(x => x.day === d && x.slot === s);
           if (a) {
-            const tname = state.teachers.find(t => t.id === a.teacherId)?.name || '';
-            row += `<td><div style="text-align:center"><b>${esc(a.branch)}</b><br><span class="mini">${esc(tname)}</span></div></td>`;
+            const tname = state.teachers.find(t => String(t.id) === String(a.teacherId))?.name || '';
+            const jointNames = getJointLessonGroupNames(a);
+            const jointNote = jointNames.length > 1
+              ? `<br><span class="mini">Birleşik: ${jointNames.map(esc).join(' + ')}</span>`
+              : '';
+            row += `<td><div style="text-align:center"><b>${esc(a.branch)}</b><br><span class="mini">${esc(tname)}</span>${jointNote}</div></td>`;
           } else {
             row += `<td></td>`;
           }
@@ -5455,13 +5389,17 @@ function renderSchedTableForWindow(days, labels, byDay, S, start, end){
     const list = byDay.get(dIdx) || [];
     const cells = [];
     for(let s=start; s<end; s++){
-      const a = list.find(x=>x.slot===s);
-      if(!a){ cells.push('<td></td>'); continue; }
-      const g = getGroup(a.group);
-      const br = esc(a.branch || '');
-      const gname = esc(g.name || g.id);
-      const room = g.room ? ` • ${esc(g.room)}` : '';
-      cells.push(`<td><b>${gname}</b><small>${br}${room}</small></td>`);
+      const matches = list.filter(x=>x.slot===s);
+      if(!matches.length){ cells.push('<td></td>'); continue; }
+      const groups = matches.map(a=>getGroup(a.group));
+      const groupNames = Array.from(new Set(groups.map(g=>g.name || g.id))).map(esc);
+      const branches = Array.from(new Set(matches.map(a=>a.branch || ''))).filter(Boolean).map(esc);
+      const rooms = Array.from(new Set(groups.map(g=>g.room).filter(Boolean))).map(esc);
+      const jointIds = Array.from(new Set(matches.map(a=>a.jointLessonId).filter(Boolean)));
+      const isJoint = matches.length > 1 && jointIds.length === 1 && matches.every(a=>a.jointLessonId === jointIds[0]);
+      const room = rooms.length ? ` • ${rooms.join(' + ')}` : '';
+      const joint = isJoint ? ' • Birleşik ders' : '';
+      cells.push(`<td><b>${groupNames.join(' + ')}</b><small>${branches.join(' / ')}${room}${joint}</small></td>`);
     }
     return `<tr><td><b>${esc(dName)}</b></td>${cells.join('')}</tr>`;
   }).join('');
