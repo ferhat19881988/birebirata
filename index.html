@@ -5,7 +5,7 @@
   <link rel="icon" href="data:,">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</title>
+<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</title>
 <style>
   :root{
     /* Light, modern palette */
@@ -1402,7 +1402,7 @@
       </div>
       <div class="title">
         <h1>Fenomen Eğitim Kurumları</h1>
-        <small>Grup dersleri planlama • Tablı • V4.6</small>
+        <small>Grup dersleri planlama • Tablı • V4.7</small>
       </div>
     </div>
     <div class="flex">
@@ -2759,7 +2759,7 @@ function teacherBranchesById(tid){
   const t=state.teachers.find(t=>String(t.id)===String(tid));
   return t?.branch?[t.branch]:[];
 }
-function listFreeTeachersAt(day, slot, max=5){
+function listFreeTeachersAt(day, slot, max=Infinity){
   // Not: Sadece state.teachers içindeki öğretmenleri listele (why: availability içinde "hayalet" id kalabiliyor)
   const tAvail = state.availability?.teachers || {};
   const busy = new Set((state.assignments||[]).filter(a=>a.day===day && a.slot===slot).map(a=>String(a.teacherId)));
@@ -2771,10 +2771,10 @@ function listFreeTeachersAt(day, slot, max=5){
     }
   }
   res.sort((a,b)=>(a.name||'').localeCompare(b.name||'','tr'));
-  return res.slice(0, max);
+  return Number.isFinite(max) ? res.slice(0, Math.max(0, max)) : res;
 }
 
-/* ===== V4.6: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
+/* ===== V4.7: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
  * Örnek aile: G1-8A, G2-8A, G3-8A -> "8A".
  * Otomatik birleşme seçeneği veya açık manuel öneriyle en fazla iki kardeş
  * grup aynı branş ve öğretmende birleşebilir; farklı ders ihtiyacı kapanmaz.
@@ -2806,7 +2806,7 @@ function makeJointLessonId(teacherId, day, slot, branch, familyKey){
   return `JOINT|${familyKey}|${day}|${slot}|${String(teacherId)}|${safeBranch}`;
 }
 
-function findMergeSuggestionsForEmptySlot(gid, day, slot, neededBranches, max=6, options={}){
+function findMergeSuggestionsForEmptySlot(gid, day, slot, neededBranches, max=Infinity, options={}){
   if (state.availability?.groups?.[gid]?.[day]?.[slot] !== true) return [];
   const familyKey = getGroupFamilyKey(gid);
   if (!familyKey) return [];
@@ -2869,13 +2869,13 @@ function findMergeSuggestionsForEmptySlot(gid, day, slot, neededBranches, max=6,
   }
 
   const branchRank = new Map(needed.map((b,i)=>[b,i]));
-  return Array.from(candidates.values())
+  const sorted = Array.from(candidates.values())
     .sort((a,b) =>
       ((branchRank.get(a.branch) ?? 999) - (branchRank.get(b.branch) ?? 999)) ||
       String(a.branch || '').localeCompare(String(b.branch || ''), 'tr') ||
       String(a.name || '').localeCompare(String(b.name || ''), 'tr')
-    )
-    .slice(0, max);
+    );
+  return Number.isFinite(max) ? sorted.slice(0, Math.max(0, max)) : sorted;
 }
 
 function performManualAssignFromReport(gid,day,slot,teacherId,branch,options={}){
@@ -2945,24 +2945,37 @@ function buildAutoAssignReport(_prevCount){
         .sort((a,b)=>b[1]-a[1])
         .map(([b])=>b);
 
+      // V4.7: Elle Tamamlama'da seçenekleri birbirinin alternatifi olarak gizleme.
+      // Aynı slot için mümkün olan TÜM kategoriler birlikte üretilir:
+      // 1) talebi karşılayan normal ders, 2) birleşik ders,
+      // 3) ihtiyaç dışı / ders dışı normal ders, 4) farklı dersle birleşik seçenek.
       const branchSuggestions = [];
       for (const b of neededBranches) {
         const teachers = (findTeacherOptions(b)||[])
           .filter(t => state.availability.teachers[t.id]?.[d]?.[s] === true)
-          .filter(t => !state.assignments.some(a=>a.teacherId===t.id && a.day===d && a.slot===s))
-          .filter(t=>!engine.check({group:g.id,day:d,slot:s,teacherId:t.id,branch:b},context,{allowJoint:false,allowConsecutive:currentAssignmentRules().allowConsecutive}))
-          .map(t => ({id:t.id, name:t.name}));
-        if (teachers.length) branchSuggestions.push({branch:b, teachers: teachers.slice(0,4)});
-        if (branchSuggestions.length>=2) break;
+          .filter(t => !state.assignments.some(a=>String(a.teacherId)===String(t.id) && a.day===d && a.slot===s))
+          .filter(t=>!engine.check({group:g.id,day:d,slot:s,teacherId:String(t.id),branch:b},context,{allowJoint:false,allowConsecutive:currentAssignmentRules().allowConsecutive}))
+          .map(t => ({id:String(t.id), name:t.name}));
+        if (teachers.length) branchSuggestions.push({branch:b, teachers});
       }
 
-      const mergeSuggestions = !branchSuggestions.length
-        ? findMergeSuggestionsForEmptySlot(g.id, d, s, neededBranches, 6) : [];
-      const freeTeachers = branchSuggestions.length || mergeSuggestions.length ? [] : listFreeTeachersAt(d,s,6)
-        .filter(t=>t.branches.some(branch=>!engine.check({group:g.id,day:d,slot:s,teacherId:t.id,branch,countsTowardNeed:false},context,{allowJoint:false,allowConsecutive:currentAssignmentRules().allowConsecutive})));
-      const fallbackMergeSuggestions = (!branchSuggestions.length && !freeTeachers.length && !mergeSuggestions.length)
-        ? findMergeSuggestionsForEmptySlot(g.id, d, s, neededBranches, 6, {allowDifferentBranch:true})
-        : [];
+      const neededSet = new Set(neededBranches);
+      const mergeSuggestions = findMergeSuggestionsForEmptySlot(g.id, d, s, neededBranches, Infinity);
+
+      // İhtiyaç dışı / ders dışı seçenekler: öğretmen ve grup bu saatte uygunsa,
+      // öğretmenin branşı kalan ihtiyaçlardan biri olmasa bile gösterilir.
+      // Bu atamalar countsTowardNeed=false olarak kaydedilir ve talebi kapatmaz.
+      const freeTeachers = listFreeTeachersAt(d, s, Infinity)
+        .filter(t => (t.branches || []).some(branch =>
+          !neededSet.has(branch) &&
+          !engine.check({group:g.id,day:d,slot:s,teacherId:String(t.id),branch,countsTowardNeed:false},context,{allowJoint:false,allowConsecutive:currentAssignmentRules().allowConsecutive})
+        ));
+
+      // Farklı branştaki birleşik dersler de artık sadece "son çare" olduğunda değil,
+      // kullanıcı tüm seçenekleri görebilsin diye her zaman ayrıca listelenir.
+      const fallbackMergeSuggestions = findMergeSuggestionsForEmptySlot(
+        g.id, d, s, neededBranches, Infinity, {allowDifferentBranch:true}
+      );
 
       details.push({
         group:g.id, day:d, slot:s,
@@ -2970,7 +2983,9 @@ function buildAutoAssignReport(_prevCount){
           ? 'onerili'
           : (mergeSuggestions.length
               ? 'birlesik-onerili'
-              : (fallbackMergeSuggestions.length ? 'birlesik-farkli-ders' : 'ogretmen-bulunamadi')),
+              : (freeTeachers.length
+                  ? 'ders-disi-onerili'
+                  : (fallbackMergeSuggestions.length ? 'birlesik-farkli-ders' : 'ogretmen-bulunamadi'))),
         neededBranches,
         suggestions: branchSuggestions,
         freeTeachers,
@@ -3067,7 +3082,9 @@ function showAutoAssignReport(report, prevCount){
         branch = inter[0] || tBranches[0] || state.branches?.[0] || 'GENEL';
       }
       const isMerge = selectedTeacherOpt?.dataset.merge === '1';
-      const countsTowardNeed = selectedTeacherOpt?.dataset.mergeCounts !== '0';
+      const countsTowardNeed = isMerge
+        ? selectedTeacherOpt?.dataset.mergeCounts !== '0'
+        : selectedTeacherOpt?.dataset.counts !== '0';
       const requestedBranch = (row.dataset.needed || '').split('|').filter(Boolean)[0] || '';
       const ok = performManualAssignFromReport(gid, d, s, tid, branch, {
         merge: isMerge,
@@ -3105,64 +3122,74 @@ function showAutoAssignReport(report, prevCount){
       needList.push(`<li><b>${escapeHtml(gid)}</b> → ${escapeHtml(txt)}</li>`);
     }
 
-    // Elle atama listesi: grup müsait + talep var. Boş öğretmen yoksa aynı sınıf ailesinde birleşik ders ara.
+    // Elle atama listesi: talebi olan ve grubun müsait olduğu tüm boş slotlar.
+    // V4.7: Her satırda bütün uygun öneri kategorileri aynı anda görünür.
     const rows = rep.details
-      .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi' || x.kind==='birlesik-onerili' || x.kind==='birlesik-farkli-ders')
-      .slice(0, 30)
+      .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi' || x.kind==='birlesik-onerili' || x.kind==='ders-disi-onerili' || x.kind==='birlesik-farkli-ders')
       .map(x => {
         const neededPipe = (x.neededBranches||[]).join('|');
-        // Öğretmen seçenekleri: önce uygun boş branş öğretmenleri, sonra mevcut eski fallback.
-        let teachers = [];
-        if (x.suggestions?.length) {
-          const seen = new Set();
-          for (const sug of x.suggestions) {
-            for (const tt of (sug.teachers||[])) {
-              if (seen.has(tt.id)) continue;
-              seen.add(tt.id);
-              teachers.push({ id: tt.id, name: tt.name, branches: teacherBranchesById(tt.id) });
-            }
+
+        // 1) Talebi karşılayan normal ders öğretmenleri
+        const normalTeachers = [];
+        const seenNormal = new Set();
+        for (const sug of (x.suggestions || [])) {
+          for (const tt of (sug.teachers || [])) {
+            const tid = String(tt.id);
+            if (seenNormal.has(tid)) continue;
+            seenNormal.add(tid);
+            normalTeachers.push({ id:tid, name:tt.name, branches:teacherBranchesById(tid) });
           }
-        } else {
-          teachers = (x.freeTeachers||[]);
         }
+        const normalTeacherOpts = normalTeachers.map(tt => {
+          const branches = (tt.branches||[]).join('|');
+          const label = `${tt.name || tt.id}${(tt.branches?.length ? ' ('+tt.branches.join(', ')+')' : '')}`;
+          return `<option value="${escapeHtml(String(tt.id))}" data-branches="${escapeAttr(branches)}" data-counts="1">${escapeHtml(label)}</option>`;
+        }).join('');
 
-        const teacherOpts = teachers
-          .map(tt => {
-            const branches = (tt.branches||[]).join('|');
-            const label = `${tt.name || tt.id}${(tt.branches?.length ? ' ('+tt.branches.join(', ')+')' : '')}`;
-            return `<option value="${escapeHtml(String(tt.id))}" data-branches="${escapeAttr(branches)}">${escapeHtml(label)}</option>`;
-          }).join('');
+        // 2) İhtiyaç dışı / ders dışı normal ders öğretmenleri
+        const outsideTeacherOpts = (x.freeTeachers || []).map(tt => {
+          const branches = (tt.branches||[]).join('|');
+          const label = `${tt.name || tt.id}${(tt.branches?.length ? ' ('+tt.branches.join(', ')+')' : '')} • ihtiyaç dışı`;
+          return `<option value="${escapeHtml(String(tt.id))}" data-branches="${escapeAttr(branches)}" data-counts="0" data-outside-need="1">${escapeHtml(label)}</option>`;
+        }).join('');
 
-        const mergeCandidates = !teachers.length
-          ? ((x.mergeSuggestions?.length ? x.mergeSuggestions : x.fallbackMergeSuggestions) || [])
-          : [];
-        const mergeOpts = mergeCandidates
-          .map(ms => {
-            const groupNames = (ms.sourceGroups || []).map(getGroupDisplayName).join(' + ');
-            const isFallback = ms.countsTowardNeed === false || ms.fallbackDifferentBranch === true;
-            const label = isFallback
-              ? `SON SEÇENEK → ${ms.name || ms.id} • ${groupNames} • ${ms.branch} (kalan ihtiyaç kapanmaz)`
-              : `Birleştir → ${ms.name || ms.id} • ${groupNames} • ${ms.branch}`;
-            return `<option value="${escapeHtml(String(ms.id))}" data-merge="1" data-merge-branch="${escapeAttr(ms.branch)}" data-merge-counts="${isFallback ? '0' : '1'}" data-joint-lesson-id="${escapeAttr(ms.jointLessonId || '')}">${escapeHtml(label)}</option>`;
-          }).join('');
+        // 3) Kalan ihtiyacı karşılayan birleşik dersler
+        const mergeSameOpts = (x.mergeSuggestions || []).map(ms => {
+          const groupNames = (ms.sourceGroups || []).map(getGroupDisplayName).join(' + ');
+          const label = `Birleştir → ${ms.name || ms.id} • ${groupNames} • ${ms.branch}`;
+          return `<option value="${escapeHtml(String(ms.id))}" data-merge="1" data-merge-branch="${escapeAttr(ms.branch)}" data-merge-counts="1" data-joint-lesson-id="${escapeAttr(ms.jointLessonId || '')}">${escapeHtml(label)}</option>`;
+        }).join('');
+
+        // 4) Farklı dersle birleşik / ihtiyaç dışı seçenekler
+        const mergeOtherOpts = (x.fallbackMergeSuggestions || []).map(ms => {
+          const groupNames = (ms.sourceGroups || []).map(getGroupDisplayName).join(' + ');
+          const label = `Ders dışı birleştir → ${ms.name || ms.id} • ${groupNames} • ${ms.branch} (talebi karşılamaz)`;
+          return `<option value="${escapeHtml(String(ms.id))}" data-merge="1" data-merge-branch="${escapeAttr(ms.branch)}" data-merge-counts="0" data-joint-lesson-id="${escapeAttr(ms.jointLessonId || '')}">${escapeHtml(label)}</option>`;
+        }).join('');
 
         const teacherGroups = [
-          teacherOpts ? `<optgroup label="Boş öğretmenler">${teacherOpts}</optgroup>` : '',
-          mergeOpts ? `<optgroup label="${x.kind==='birlesik-farkli-ders' ? 'Son seçenek — farklı dersle birleştir' : 'Birleşik ders önerileri'}">${mergeOpts}</optgroup>` : ''
+          normalTeacherOpts ? `<optgroup label="Talebi karşılayan normal dersler">${normalTeacherOpts}</optgroup>` : '',
+          mergeSameOpts ? `<optgroup label="Birleşik ders önerileri">${mergeSameOpts}</optgroup>` : '',
+          outsideTeacherOpts ? `<optgroup label="Ders dışı / ihtiyaç dışı öneriler">${outsideTeacherOpts}</optgroup>` : '',
+          mergeOtherOpts ? `<optgroup label="Ders dışı birleşik öneriler">${mergeOtherOpts}</optgroup>` : ''
         ].join('');
 
         const branchOpts = (x.neededBranches||[])
-          .slice(0, 6)
           .map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`)
           .join('') || `<option value="">(branş yok)</option>`;
 
-        const hint = x.kind==='onerili'
-          ? `Öneri: ${escapeHtml(x.suggestions[0]?.branch||'')}`
-          : x.kind==='birlesik-onerili'
-            ? `${escapeHtml(getGroupFamilyKey(x.group))} grupları tarandı • aynı branşta 2 gruplu birleşik ders adayı bulundu`
-            : x.kind==='birlesik-farkli-ders'
-              ? `Son seçenek • aynı sınıf/şube ailesinde farklı derse katılabilir; mevcut kalan ihtiyaç KAPANMAZ`
-              : 'Uygun boş öğretmen veya birleşik ders adayı bulunamadı';
+        const normalCount = normalTeachers.length;
+        const mergeCount = (x.mergeSuggestions || []).length;
+        const outsideCount = (x.freeTeachers || []).length;
+        const mergeOtherCount = (x.fallbackMergeSuggestions || []).length;
+        const hintParts = [];
+        if (normalCount) hintParts.push(`Normal ders: ${normalCount}`);
+        if (mergeCount) hintParts.push(`Birleşik ders: ${mergeCount}`);
+        if (outsideCount) hintParts.push(`Ders dışı: ${outsideCount}`);
+        if (mergeOtherCount) hintParts.push(`Ders dışı birleşik: ${mergeOtherCount}`);
+        const hint = hintParts.length
+          ? `${hintParts.join(' • ')} • Kalan: ${escapeHtml((x.neededBranches||[]).join(', '))}`
+          : 'Bu slot için geçerli öğretmen veya birleşik ders seçeneği bulunamadı';
 
         return `
           <li class="row-assign" data-gid="${escapeAttr(String(x.group))}" data-day="${x.day}" data-slot="${x.slot}" data-needed="${escapeAttr(neededPipe)}" style="margin:8px 0">
@@ -3177,7 +3204,7 @@ function showAutoAssignReport(report, prevCount){
                 </label>
                 <label>Öğretmen
                   <select class="sel-teacher" style="min-width:280px">
-                    <option value="">Seçiniz</option>
+                    <option value="">${teacherGroups ? 'Seçiniz' : 'Uygun seçenek yok'}</option>
                     ${teacherGroups}
                   </select>
                 </label>
@@ -3193,9 +3220,9 @@ function showAutoAssignReport(report, prevCount){
       ${assignmentSummaryHtml()}
       <div class="grid" style="gap:10px">
         <div class="card">
-          <h3>Elle Tamamlama (ilk 30 uygun boş slot) • V4.6</h3>
+          <h3>Elle Tamamlama (tüm uygun boş slotlar) • V4.7</h3>
           ${rows ? `<ol style="margin:6px 0 0 18px">${rows}</ol>` : `<div class="muted">Elle tamamlama için uygun boş slot kalmadı.</div>`}
-          <div class="muted" style="margin-top:8px">Öncelik normal atamadır. Çözüm yoksa sistem yalnızca aynı sınıf/şube ailesinde (ör. <b>G1-8A ↔ G2-8A</b>) aynı branşta birleşme arar. Birleşik ders <b>en fazla 2 grup</b> olabilir. Aynı branşta da çözüm yoksa <b>Son seçenek — farklı ders</b> önerilebilir; bu seçim grubu boş bırakmaz fakat asıl kalan ders ihtiyacını <b>kapatmaz</b>.</div>
+          <div class="muted" style="margin-top:8px">Her uygun slotta sistem artık <b>tüm seçenekleri birlikte</b> gösterir: talebi karşılayan normal dersler, <b>birleşik ders önerileri</b>, boş öğretmenlerden <b>ders dışı / ihtiyaç dışı öneriler</b> ve aynı sınıf/şube ailesindeki <b>ders dışı birleşik öneriler</b>. Birleşik ders en fazla <b>2 grup</b> olabilir. “Ders dışı / ihtiyaç dışı” olarak işaretlenen seçimler grubu boş bırakmaz ancak kalan ders talebini <b>kapatmaz</b>.</div>
         </div>
 
         <div class="card">
@@ -3224,7 +3251,7 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-/* V4.6 — one rule engine, shared by the UI, imports and the worker. */
+/* V4.7 — one rule engine, shared by the UI, imports and the worker. */
 function createAssignmentEngine(input) {
   const D = input.program.days.length, S = input.program.slots;
   if (!D || !Number.isInteger(S) || S < 1 || S > 12) throw Error('Program gün ve saatlerini kontrol edin.');
@@ -3609,7 +3636,7 @@ function assignmentSummaryHtml() {
   if(!meta?.solver) return '';
   const stale=meta.fingerprint!==assignmentFingerprint();
   return `<div class="card" style="border-left:4px solid ${stale?'#d97706':'#4f46e5'};padding:14px">
-    <b>V4.6${stale?' • Program değişti':''}</b>
+    <b>V4.7${stale?' • Program değişti':''}</b>
     <div style="margin-top:8px"><b>${meta.score} / ${meta.totalNeed}</b> ders talebi karşılandı • Eksik: <b>${Math.max(0,meta.totalNeed-meta.score)}</b></div>
   </div>`;
 }
@@ -3659,8 +3686,8 @@ async function autoAssign() {
       if(!verified.assignments.some(b=>engine.placementKey(engine.clean(a))===engine.placementKey(b))) throw Error('Kilitli ders korunamadı; mevcut program korundu.');
     }
     state.assignments=verified.assignments;
-    state.lastAvailabilityNormalization={source:'v4.6-on-dogrulama',removed:result.removed,removedCount:result.removed.length,at:Date.now()};
-    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.6',
+    state.lastAvailabilityNormalization={source:'v4.7-on-dogrulama',removed:result.removed,removedCount:result.removed.length,at:Date.now()};
+    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.7',
       prevCount:data.assignments.length,lastRunAt:Date.now(),relaxConsecutive:options.allowConsecutive,
       allowJoint:options.allowJoint,fingerprint:assignmentFingerprint()};
     onAssignmentsMutated();syncReportButtons();
@@ -3906,7 +3933,7 @@ $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
 
-// V4.6: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
+// V4.7: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
 for(const id of ['chkRelaxConsecutive','chkAutoJoint']){
   document.getElementById(id).addEventListener('change',()=>{renderAssignCards();refreshAutoAssignReportIfOpen();});
@@ -4863,7 +4890,7 @@ function openPrintWindow(title, html){
   </head><body>
     ${html}
     <script>window.onload=()=>{ setTimeout(()=>window.print(), 50); }<\/script>
-  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</footer>
+  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</footer>
 </body></html>`);
   doc.close();
 }
@@ -5130,7 +5157,7 @@ function printAllGradesSelected(selectedGrades) {
     w.document.write(`</section>`);
   });
 
-  w.document.write(`<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</footer>
+  w.document.write(`<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</footer>
 </body></html>`);
   w.document.close();
   w.focus();
@@ -5599,7 +5626,7 @@ function printTeachersV2(){
   </style>
 </head>
 <body class="print-teacher-v2">
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</footer>
 </body></html>`);
 
   const addPage = (html)=> w.document.body.insertAdjacentHTML('beforeend', `<section class="page">${html}</section>`);
@@ -6002,6 +6029,6 @@ if (btnAssgnDeleteFb) {
 
 </script>
 
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</footer>
 </body>
 </html>
