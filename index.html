@@ -5,7 +5,7 @@
   <link rel="icon" href="data:,">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</title>
+<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.8</title>
 <style>
   :root{
     /* Light, modern palette */
@@ -619,7 +619,9 @@
     .att-grid-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
     .att-mini{border:1px solid #000;border-radius:10px;padding:6px 8px;break-inside:avoid;page-break-inside:avoid}
     .att-mini-head{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(0,0,0,.15);padding-bottom:4px;margin-bottom:4px}
+    .att-title-block{min-width:0;display:flex;flex-direction:column;gap:1px}
     .att-g{font-weight:900}
+    .att-time{font-size:9px;line-height:1.1;color:#475569;font-weight:700;white-space:nowrap}
     .att-legend{display:flex;gap:12px;font-weight:800;font-size:10px;color:#334155}
     .att-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0;border-bottom:1px dotted rgba(0,0,0,.25)}
     .att-row:last-child{border-bottom:0}
@@ -1402,7 +1404,7 @@
       </div>
       <div class="title">
         <h1>Fenomen Eğitim Kurumları</h1>
-        <small>Grup dersleri planlama • Tablı • V4.7</small>
+        <small>Grup dersleri planlama • Tablı • V4.8</small>
       </div>
     </div>
     <div class="flex">
@@ -2774,7 +2776,7 @@ function listFreeTeachersAt(day, slot, max=Infinity){
   return Number.isFinite(max) ? res.slice(0, Math.max(0, max)) : res;
 }
 
-/* ===== V4.7: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
+/* ===== V4.8: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
  * Örnek aile: G1-8A, G2-8A, G3-8A -> "8A".
  * Otomatik birleşme seçeneği veya açık manuel öneriyle en fazla iki kardeş
  * grup aynı branş ve öğretmende birleşebilir; farklı ders ihtiyacı kapanmaz.
@@ -2945,7 +2947,7 @@ function buildAutoAssignReport(_prevCount){
         .sort((a,b)=>b[1]-a[1])
         .map(([b])=>b);
 
-      // V4.7: Elle Tamamlama'da seçenekleri birbirinin alternatifi olarak gizleme.
+      // V4.8: Elle Tamamlama'da seçenekleri birbirinin alternatifi olarak gizleme.
       // Aynı slot için mümkün olan TÜM kategoriler birlikte üretilir:
       // 1) talebi karşılayan normal ders, 2) birleşik ders,
       // 3) ihtiyaç dışı / ders dışı normal ders, 4) farklı dersle birleşik seçenek.
@@ -3123,7 +3125,7 @@ function showAutoAssignReport(report, prevCount){
     }
 
     // Elle atama listesi: talebi olan ve grubun müsait olduğu tüm boş slotlar.
-    // V4.7: Her satırda bütün uygun öneri kategorileri aynı anda görünür.
+    // V4.8: Her satırda bütün uygun öneri kategorileri aynı anda görünür.
     const rows = rep.details
       .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi' || x.kind==='birlesik-onerili' || x.kind==='ders-disi-onerili' || x.kind==='birlesik-farkli-ders')
       .map(x => {
@@ -3220,7 +3222,7 @@ function showAutoAssignReport(report, prevCount){
       ${assignmentSummaryHtml()}
       <div class="grid" style="gap:10px">
         <div class="card">
-          <h3>Elle Tamamlama (tüm uygun boş slotlar) • V4.7</h3>
+          <h3>Elle Tamamlama (tüm uygun boş slotlar) • V4.8</h3>
           ${rows ? `<ol style="margin:6px 0 0 18px">${rows}</ol>` : `<div class="muted">Elle tamamlama için uygun boş slot kalmadı.</div>`}
           <div class="muted" style="margin-top:8px">Her uygun slotta sistem artık <b>tüm seçenekleri birlikte</b> gösterir: talebi karşılayan normal dersler, <b>birleşik ders önerileri</b>, boş öğretmenlerden <b>ders dışı / ihtiyaç dışı öneriler</b> ve aynı sınıf/şube ailesindeki <b>ders dışı birleşik öneriler</b>. Birleşik ders en fazla <b>2 grup</b> olabilir. “Ders dışı / ihtiyaç dışı” olarak işaretlenen seçimler grubu boş bırakmaz ancak kalan ders talebini <b>kapatmaz</b>.</div>
         </div>
@@ -3251,7 +3253,7 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-/* V4.7 — one rule engine, shared by the UI, imports and the worker. */
+/* V4.8 — one rule engine, shared by the UI, imports and the worker. */
 function createAssignmentEngine(input) {
   const D = input.program.days.length, S = input.program.slots;
   if (!D || !Number.isInteger(S) || S < 1 || S > 12) throw Error('Program gün ve saatlerini kontrol edin.');
@@ -3636,7 +3638,7 @@ function assignmentSummaryHtml() {
   if(!meta?.solver) return '';
   const stale=meta.fingerprint!==assignmentFingerprint();
   return `<div class="card" style="border-left:4px solid ${stale?'#d97706':'#4f46e5'};padding:14px">
-    <b>V4.7${stale?' • Program değişti':''}</b>
+    <b>V4.8${stale?' • Program değişti':''}</b>
     <div style="margin-top:8px"><b>${meta.score} / ${meta.totalNeed}</b> ders talebi karşılandı • Eksik: <b>${Math.max(0,meta.totalNeed-meta.score)}</b></div>
   </div>`;
 }
@@ -3686,8 +3688,8 @@ async function autoAssign() {
       if(!verified.assignments.some(b=>engine.placementKey(engine.clean(a))===engine.placementKey(b))) throw Error('Kilitli ders korunamadı; mevcut program korundu.');
     }
     state.assignments=verified.assignments;
-    state.lastAvailabilityNormalization={source:'v4.7-on-dogrulama',removed:result.removed,removedCount:result.removed.length,at:Date.now()};
-    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.7',
+    state.lastAvailabilityNormalization={source:'v4.8-on-dogrulama',removed:result.removed,removedCount:result.removed.length,at:Date.now()};
+    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.8',
       prevCount:data.assignments.length,lastRunAt:Date.now(),relaxConsecutive:options.allowConsecutive,
       allowJoint:options.allowJoint,fingerprint:assignmentFingerprint()};
     onAssignmentsMutated();syncReportButtons();
@@ -3849,25 +3851,21 @@ function renderPrintPreview(){
       });
       tTbl.innerHTML = `<thead>${thead}</thead><tbody>${body}</tbody>`; wr.appendChild(tTbl);
 
-      // Yoklama (mini kartlar) — 20 grup / A4
-      const groupsForT = Array.from(new Set(aForT.map(a=>a.group)))
-        .map(gid=>state.groups[gid])
-        .filter(Boolean)
-        .sort(groupComparator);
-
-      const chunks = chunkInto(groupsForT, 20);
-      const total = chunks.length || 0;
+      // Yoklama (mini kartlar) — grup bazında değil, ders oturumu bazında.
+      // Böylece aynı grup farklı gün/saatlerde tekrar ediyorsa her ders için ayrı yoklama çıkar.
+      const attendanceEntries = buildTeacherAttendanceEntries(aForT, days, labels);
+      const attendancePages = renderAttendancePages(attendanceEntries);
+      const total = attendancePages.length;
       const extraPages = [];
 
       if(total){
-        // 1. sayfaya ilk 20 grup
-        const html0 = renderAttendanceChunk(chunks[0], 1, total);
+        // 1. sayfaya ilk 20 ders oturumu
         const att0 = document.createElement('div');
-        att0.innerHTML = html0;
+        att0.innerHTML = attendancePages[0];
         wr.appendChild(att0);
 
-        // 21. grup ve sonrası için ek sayfalar
-        for(let i=1;i<chunks.length;i++){
+        // 21. ders oturumu ve sonrası için ek sayfalar
+        for(let i=1;i<attendancePages.length;i++){
           const page2=document.createElement('div'); page2.className='print-page';
           const wr2 = document.createElement('div'); wr2.className='print-wrapper avoid-break';
 
@@ -3876,7 +3874,7 @@ function renderPrintPreview(){
           wr2.appendChild(head2);
 
           const attX = document.createElement('div');
-          attX.innerHTML = renderAttendanceChunk(chunks[i], i+1, total);
+          attX.innerHTML = attendancePages[i];
           wr2.appendChild(attX);
 
           page2.appendChild(wr2); extraPages.push(page2);
@@ -3933,7 +3931,7 @@ $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
 
-// V4.7: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
+// V4.8: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
 for(const id of ['chkRelaxConsecutive','chkAutoJoint']){
   document.getElementById(id).addEventListener('change',()=>{renderAssignCards();refreshAutoAssignReportIfOpen();});
@@ -4890,7 +4888,7 @@ function openPrintWindow(title, html){
   </head><body>
     ${html}
     <script>window.onload=()=>{ setTimeout(()=>window.print(), 50); }<\/script>
-  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</footer>
+  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.8</footer>
 </body></html>`);
   doc.close();
 }
@@ -5157,7 +5155,7 @@ function printAllGradesSelected(selectedGrades) {
     w.document.write(`</section>`);
   });
 
-  w.document.write(`<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</footer>
+  w.document.write(`<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.8</footer>
 </body></html>`);
   w.document.close();
   w.focus();
@@ -5513,16 +5511,58 @@ function chunkInto(arr, size){
   return out;
 }
 
-// Öğrenci yoklama: A4'e sığacak mini kartlar (Var/Yok)
-// 20 birebir grup = 1 A4, 21. grup = 2. sayfa
-function renderAttendancePages(groups){
-  if(!Array.isArray(groups) || groups.length===0) return [];
-  const chunks = chunkInto(groups, 20);
+// Öğrenci yoklama: her ders oturumu için ayrı yoklama kartı üretir.
+// Aynı grup öğretmenin programında farklı gün/saatlerde tekrar ediyorsa her oturum ayrı görünür.
+function buildTeacherAttendanceEntries(assignments, days, labels){
+  if(!Array.isArray(assignments) || assignments.length===0) return [];
+
+  const seen = new Set();
+  return assignments
+    .slice()
+    .sort((a,b)=>{
+      const dayDiff = (+a.day || 0) - (+b.day || 0);
+      if(dayDiff) return dayDiff;
+      const slotDiff = (+a.slot || 0) - (+b.slot || 0);
+      if(slotDiff) return slotDiff;
+      const n1 = state.groups?.[a.group]?.name || a.group || '';
+      const n2 = state.groups?.[b.group]?.name || b.group || '';
+      return String(n1).localeCompare(String(n2), 'tr');
+    })
+    .filter(a=>{
+      // Aynı öğretmen/grup/gün/saat için veri içinde kazara birebir kopya varsa tek kart bırak.
+      // Farklı gün veya saatlerdeki aynı grup ise kesinlikle korunur.
+      const key = `${a.group}::${a.day}::${a.slot}`;
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map(a=>{
+      const group = getGroup(a.group);
+      const dayIndex = Number(a.day);
+      const slotIndex = Number(a.slot);
+      return {
+        group,
+        groupId: a.group,
+        day: dayIndex,
+        slot: slotIndex,
+        dayLabel: days?.[dayIndex] || `${dayIndex + 1}. Gün`,
+        slotLabel: labels?.[slotIndex] || `${slotIndex + 1}. Ders`,
+        branch: a.branch || ''
+      };
+    });
+}
+
+// A4'e sığacak mini kartlar (Var/Yok): 20 ders oturumu = 1 A4.
+function renderAttendancePages(entries){
+  if(!Array.isArray(entries) || entries.length===0) return [];
+  const chunks = chunkInto(entries, 20);
   return chunks.map((ch, ix)=> renderAttendanceChunk(ch, ix+1, chunks.length));
 }
 
-function renderAttendanceChunk(groupsChunk, pageIndex, total){
-  const cards = groupsChunk.map(g=>{
+function renderAttendanceChunk(entriesChunk, pageIndex, total){
+  const cards = entriesChunk.map(entry=>{
+    // Geriye dönük uyumluluk: doğrudan grup nesnesi verilirse de çalışır.
+    const g = entry?.group || entry;
     const students = (state.students || []).filter(s=>s.group===g.id);
     const rows = (students.length
       ? students.map(st=>`
@@ -5536,10 +5576,17 @@ function renderAttendanceChunk(groupsChunk, pageIndex, total){
       : `<div class="muted" style="padding:6px 8px">Öğrenci yok</div>`
     );
 
+    const when = entry?.dayLabel && entry?.slotLabel
+      ? `<div class="att-time">${esc(entry.dayLabel)} • ${esc(entry.slotLabel)}</div>`
+      : '';
+
     return `
       <div class="att-mini">
         <div class="att-mini-head">
-          <div class="att-g">${esc(g.name || g.id)}</div>
+          <div class="att-title-block">
+            <div class="att-g">${esc(g.name || g.id)}</div>
+            ${when}
+          </div>
           <div class="att-legend"><span>Var</span><span>Yok</span></div>
         </div>
         <div class="att-mini-body">${rows}</div>
@@ -5600,7 +5647,9 @@ function printTeachersV2(){
     padding: 2px 4px 6px 4px;
     border-bottom:1px solid rgba(15,23,42,.14);
   }
+  .print-teacher-v2 .att-title-block{ min-width:0; display:flex; flex-direction:column; gap:1px; }
   .print-teacher-v2 .att-g{ font-weight:900; }
+  .print-teacher-v2 .att-time{ font-size:.78em; line-height:1.1; color:#475569; font-weight:800; white-space:nowrap; }
   .print-teacher-v2 .att-legend{ display:flex; gap:10px; font-weight:800; font-size:.9em; color:#334155; }
   .print-teacher-v2 .att-legend span{ display:inline-flex; align-items:center; gap:6px; }
   .print-teacher-v2 .att-mini-body{ padding: 6px 4px 2px 4px; }
@@ -5626,7 +5675,7 @@ function printTeachersV2(){
   </style>
 </head>
 <body class="print-teacher-v2">
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.8</footer>
 </body></html>`);
 
   const addPage = (html)=> w.document.body.insertAdjacentHTML('beforeend', `<section class="page">${html}</section>`);
@@ -5640,29 +5689,14 @@ function printTeachersV2(){
   teacherIds.forEach(tId=>{
     const asgList = asgByTeacher.get(tId) || [];
 
-    // öğretmene ait gruplar (sıralama: ilk ders zamanı, sonra isim)
-    const groupFirstSlot = new Map();
-    asgList.forEach(a => {
-      const score = a.day * 100 + a.slot;
-      const prev = groupFirstSlot.get(a.group);
-      if (prev == null || score < prev) groupFirstSlot.set(a.group, score);
-    });
-    const groups = uniq(asgList.map(a=>a.group))
-      .sort((g1,g2)=>{
-        const k1 = groupFirstSlot.get(g1) ?? 999999;
-        const k2 = groupFirstSlot.get(g2) ?? 999999;
-        if(k1!==k2) return k1-k2;
-        const n1 = (state.groups?.[g1]?.name || g1);
-        const n2 = (state.groups?.[g2]?.name || g2);
-        return String(n1).localeCompare(String(n2), 'tr');
-      })
-      .map(getGroup);
-
-    const attPages = renderAttendancePages(groups); // 20'şer
-    const extraAtt = Math.max(0, attPages.length - 1); // ilk parça zaten son sayfaya
+    // Yoklama sırası doğrudan öğretmenin ders programındaki gün + saat sırasıdır.
+    // Aynı grup kaç farklı ders oturumunda yer alıyorsa o kadar ayrı yoklama kartı oluşur.
+    const attendanceEntries = buildTeacherAttendanceEntries(asgList, days, labels);
+    const attPages = renderAttendancePages(attendanceEntries); // 20 ders oturumu / sayfa
+    const extraAtt = Math.max(0, attPages.length - 1); // ilk parça zaten son program sayfasına eklenir
     const pagesThisTeacher = windowsPerTeacher + extraAtt;
 
-    teacherMeta.set(tId, { groups, attPages, groupFirstSlot, pagesThisTeacher });
+    teacherMeta.set(tId, { attendanceEntries, attPages, pagesThisTeacher });
     totalPages += pagesThisTeacher;
   });
 
@@ -5674,8 +5708,7 @@ function printTeachersV2(){
     const t = getTeacher(tId);
     const byDay = groupBy(asgList, a=>a.day);
 
-    const meta = teacherMeta.get(tId) || { groups:[], attPages:[] };
-    const groups = meta.groups || [];
+    const meta = teacherMeta.get(tId) || { attendanceEntries:[], attPages:[] };
     const attPages = meta.attPages || [];
 
     // Program pencereleri
@@ -6029,6 +6062,6 @@ if (btnAssgnDeleteFb) {
 
 </script>
 
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.7</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.8</footer>
 </body>
 </html>
