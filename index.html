@@ -5,7 +5,7 @@
   <link rel="icon" href="data:,">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.5</title>
+<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</title>
 <style>
   :root{
     /* Light, modern palette */
@@ -1402,7 +1402,7 @@
       </div>
       <div class="title">
         <h1>Fenomen Eğitim Kurumları</h1>
-        <small>Grup dersleri planlama • Tablı • V4.5</small>
+        <small>Grup dersleri planlama • Tablı • V4.6</small>
       </div>
     </div>
     <div class="flex">
@@ -1675,7 +1675,6 @@
             <span>Daha fazla ders karşılamak için ardışık branş kuralını esnet</span>
           </label>
           <label class="assign-option-label"><input type="checkbox" id="chkAutoJoint" checked><span>Aynı sınıf/şubede en fazla 2 grubu birleştir</span></label>
-          <label class="assign-option-label"><input type="checkbox" id="chkPreserveAll"><span>Tüm mevcut atamaları koru</span></label>
         </div>
         <div class="btn-group" aria-label="Grup filtresi">
           <span class="gtitle">Filtre</span>
@@ -1708,7 +1707,6 @@
       </div>
     </div>
 
-    <p class="muted">Kilitli dersler korunur; diğer atamalar daha fazla ihtiyacı karşılamak için yeniden düzenlenebilir. Bir derse tıklayarak kilidini değiştirebilirsiniz.</p>
     <div id="assignmentSummary" aria-live="polite"></div>
     <div id="assignCards" class="cards"></div>
 
@@ -1775,8 +1773,7 @@
       <div class="aa-title">⏳ Otomatik atama çalışıyor…</div>
       <div class="aa-sub" id="aaSub">Denemeler yapılıyor, lütfen bekleyin.</div>
       <div class="aa-bar"><div class="aa-bar-in" id="aaBarIn"></div></div>
-      <div class="aa-metrics" id="aaMetrics">Kalan süre: 45.0 sn</div>
-      <div class="aa-mini muted">En fazla 45 sn aranır. Maksimum ders sayısı kanıtlanırsa erken tamamlanır.</div>
+      <div class="aa-metrics" id="aaMetrics">Hazırlanıyor</div>
       <button class="btn ghost" id="btnStopAutoAssign" style="margin-top:12px">Durdur ve en iyiyi uygula</button>
     </div>
   </div>
@@ -2777,7 +2774,7 @@ function listFreeTeachersAt(day, slot, max=5){
   return res.slice(0, max);
 }
 
-/* ===== V4.5: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
+/* ===== V4.6: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
  * Örnek aile: G1-8A, G2-8A, G3-8A -> "8A".
  * Otomatik birleşme seçeneği veya açık manuel öneriyle en fazla iki kardeş
  * grup aynı branş ve öğretmende birleşebilir; farklı ders ihtiyacı kapanmaz.
@@ -3196,7 +3193,7 @@ function showAutoAssignReport(report, prevCount){
       ${assignmentSummaryHtml()}
       <div class="grid" style="gap:10px">
         <div class="card">
-          <h3>Elle Tamamlama (ilk 30 uygun boş slot) • V4.5</h3>
+          <h3>Elle Tamamlama (ilk 30 uygun boş slot) • V4.6</h3>
           ${rows ? `<ol style="margin:6px 0 0 18px">${rows}</ol>` : `<div class="muted">Elle tamamlama için uygun boş slot kalmadı.</div>`}
           <div class="muted" style="margin-top:8px">Öncelik normal atamadır. Çözüm yoksa sistem yalnızca aynı sınıf/şube ailesinde (ör. <b>G1-8A ↔ G2-8A</b>) aynı branşta birleşme arar. Birleşik ders <b>en fazla 2 grup</b> olabilir. Aynı branşta da çözüm yoksa <b>Son seçenek — farklı ders</b> önerilebilir; bu seçim grubu boş bırakmaz fakat asıl kalan ders ihtiyacını <b>kapatmaz</b>.</div>
         </div>
@@ -3227,7 +3224,7 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-/* V4.5 — one rule engine, shared by the UI, imports and the worker. */
+/* V4.6 — one rule engine, shared by the UI, imports and the worker. */
 function createAssignmentEngine(input) {
   const D = input.program.days.length, S = input.program.slots;
   if (!D || !Number.isInteger(S) || S < 1 || S > 12) throw Error('Program gün ve saatlerini kontrol edin.');
@@ -3319,16 +3316,21 @@ function createAssignmentEngine(input) {
     return {assignments:canonical(c),removed,score:c.score};
   }
   function quality(c) {
-    let violations=0,joints=0;
+    let violations=0,joints=0,unmetPairs=0;
+    const unmetGroups=new Set();
     for(const a of c.list) if(a.slot+1<S && c.g.get(key(a.group,a.day,a.slot+1))?.branch===a.branch) violations++;
     for(const busy of c.t.values()) if(busy.length===2) joints++;
-    return {violations,joints};
+    for(const p of pairs) {
+      const rem=p.need-(c.have.get(pairKey(p))||0);
+      if(rem>0){unmetPairs++;unmetGroups.add(p.group);}
+    }
+    return {violations,joints,unmetPairs,unmetGroups:unmetGroups.size};
   }
   async function solve(options={}, report=()=>{}, cancelled=()=>false) {
     if(options.allowConsecutive && !options.singlePhase) {
       const start=performance.now(), totalBudget=Math.max(20,Number(options.timeLimitMs)||45000);
       const base=normalize(input.assignments||[]);
-      const fixed=base.assignments.filter(a=>options.preserveAll || a.locked);
+      const fixed=base.assignments.filter(a=>a.locked);
       const strictPossible=normalize(fixed,{allowConsecutive:false}).removed.length===0;
       let strict=null;
       if(strictPossible) strict=await solve({...options,singlePhase:true,allowConsecutive:false,timeLimitMs:totalBudget*0.35},p=>report({...p,phase:'Katı kurallar • '+p.phase}),cancelled);
@@ -3344,13 +3346,12 @@ function createAssignmentEngine(input) {
     const started=performance.now(), budget=Math.max(20,Number(options.timeLimitMs)||45000), deadline=started+budget;
     const rule={allowJoint:options.allowJoint===true,allowConsecutive:options.allowConsecutive===true};
     const normalized=normalize(input.assignments || []);
-    const fixedRaw=normalized.assignments.filter(a=>options.preserveAll || a.locked);
+    const fixedRaw=normalized.assignments.filter(a=>a.locked);
     const fixedCheck=normalize(fixedRaw,{allowConsecutive:rule.allowConsecutive});
     if (fixedCheck.removed.length) throw Error('Kilitli atamalar seçilen kurallarla çelişiyor: '+fixedCheck.removed[0].detail+'. Kilidi veya kuralı düzenleyin.');
-    if(normalized.removed.some(x=>options.preserveAll || x.assignment?.locked)) throw Error('Geçersiz kilitli atama var. Önce müsaitlik, branş, talep ve çakışmaları düzeltin.');
+    if(normalized.removed.some(x=>x.assignment?.locked)) throw Error('Geçersiz kilitli atama var. Önce müsaitlik, branş, talep ve çakışmaları düzeltin.');
     const fixed=fixedCheck.assignments;
     const fixedKeys=new Set(fixed.map(placementKey));
-    const seedKeys=new Set(normalized.assignments.map(placementKey));
     const seedContext=()=>{const c=context();fixed.forEach(a=>add(c,{...a}));return c;};
     let seed=Number(options.seed)||4517;
     const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
@@ -3378,13 +3379,20 @@ function createAssignmentEngine(input) {
       }
       upperBound+=Math.min(maxByNeeds,cells.size);
     }
-    let best=canonical(root), bestScore=root.score, bestQ=quality(root), bestChanges=Infinity;
+    let best=canonical(root), bestScore=root.score, bestQ=quality(root);
     let nodes=0, rounds=0, lastYield=performance.now(),lastReport=-Infinity, timedOut=false, exhausted=false;
     function consider(c) {
-      const q=quality(c), changes=c.list.reduce((n,a)=>n+!seedKeys.has(placementKey(a)),0);
-      if(c.score>bestScore || (c.score===bestScore && (q.violations<bestQ.violations ||
-        (q.violations===bestQ.violations && (q.joints<bestQ.joints || (q.joints===bestQ.joints && changes<bestChanges)))))) {
-        best=canonical(c);bestScore=c.score;bestQ=q;bestChanges=changes;
+      const q=quality(c);
+      const needsRemain=c.score<totalNeed;
+      const betterSameScore = q.violations<bestQ.violations ||
+        (q.violations===bestQ.violations && (
+          (needsRemain && q.joints>bestQ.joints) ||
+          (q.joints===bestQ.joints && (q.unmetGroups<bestQ.unmetGroups ||
+            (q.unmetGroups===bestQ.unmetGroups && q.unmetPairs<bestQ.unmetPairs))) ||
+          (!needsRemain && q.joints<bestQ.joints)
+        ));
+      if(c.score>bestScore || (c.score===bestScore && betterSameScore)) {
+        best=canonical(c);bestScore=c.score;bestQ=q;
       }
     }
     async function checkpoint(phase, force=false) {
@@ -3394,11 +3402,25 @@ function createAssignmentEngine(input) {
       return !cancelled() && performance.now()<deadline;
     }
     function candidates(p,c) { return (domains.get(pairKey(p))||[]).filter(a=>!check(a,c,rule)); }
+    function jointOpportunity(a,c) {
+      if(!rule.allowJoint) return 0;
+      const family=families[a.group];
+      if(!family) return 0;
+      let n=0;
+      for(const p of pairs) {
+        if(p.group===a.group || p.branch!==a.branch || families[p.group]!==family) continue;
+        if(p.need-(c.have.get(pairKey(p))||0)<=0) continue;
+        const sibling={...a,group:p.group};
+        if(!check(sibling,c,rule)) n++;
+      }
+      return n;
+    }
     function order(list,c,jitter) {
       return list.map(a=>{
         const adj=[a.slot-1,a.slot+1].reduce((n,s)=>n+(c.g.get(key(a.group,a.day,s))?.branch===a.branch?1:0),0);
         const join=c.t.has(teacherCell(a))?1:0;
-        return {a,rank:adj*100000+join*1000+(pressure.get('g'+groupCell(a))||0)+(pressure.get('t'+teacherCell(a))||0)+random()*jitter};
+        const mergeChance=jointOpportunity(a,c);
+        return {a,rank:adj*100000-join*6000-mergeChance*900+(pressure.get('g'+groupCell(a))||0)+(pressure.get('t'+teacherCell(a))||0)+random()*jitter};
       }).sort((a,b)=>a.rank-b.rank).map(x=>x.a);
     }
     async function greedy(c,jitter=0) {
@@ -3416,17 +3438,20 @@ function createAssignmentEngine(input) {
       }
       consider(c);return c;
     }
-    // Start from the current valid schedule, then also build from unlocked space.
+    // First rebuild freely from locks only. Existing unlocked automatic placements are
+    // evaluated later, but they do not receive any retention preference.
+    const fresh=seedContext();
+    await greedy(fresh);
     const current=seedContext();
     for(const a of normalized.assignments) if(!fixedKeys.has(placementKey(a)) && !check(a,current,{...rule,allowJoint:true})) add(current,{...a});
     consider(current);
+    if(bestScore<upperBound) await greedy(current);
     if(options.warmStart) {
       const warm=seedContext();
       for(const a of options.warmStart) if(!fixedKeys.has(placementKey(a)) && !check(a,warm,{...rule,allowJoint:true})) add(warm,{...a});
       consider(warm);
+      if(bestScore<upperBound) await greedy(warm);
     }
-    await greedy(current);
-    if(bestScore<upperBound) await greedy(seedContext());
     const remaining=pairs.reduce((n,p)=>n+Math.max(0,p.need-(root.have.get(pairKey(p))||0)),0);
     const domainCount=Array.from(domains.values()).reduce((n,a)=>n+a.length,0);
     // Small instances get a complete branch-and-bound search, including the
@@ -3465,10 +3490,17 @@ function createAssignmentEngine(input) {
       rounds++;
       const c=seedContext();
       const have=new Map();best.forEach(a=>{if(a.countsTowardNeed!==false)have.set(pairKey(a),(have.get(pairKey(a))||0)+1);});
-      const unmet=pairs.filter(p=>(have.get(pairKey(p))||0)<p.need);
-      const focus=unmet[Math.floor(random()*unmet.length)];
+      const unmet=pairs.filter(p=>(have.get(pairKey(p))||0)<p.need)
+        .sort((a,b)=>(domains.get(pairKey(a))||[]).length-(domains.get(pairKey(b))||[]).length || b.need-a.need);
+      const focus=unmet.length ? (random()<0.75 ? unmet[0] : unmet[Math.floor(random()*unmet.length)]) : null;
       const focusOptions=focus?(domains.get(pairKey(focus))||[]):[];
-      const target=focusOptions[Math.floor(random()*focusOptions.length)];
+      const targetPool=focusOptions.slice().sort((a,b)=>{
+        const af=families[a.group],bf=families[b.group];
+        const ap=af?pairs.filter(p=>p.group!==a.group&&p.branch===a.branch&&families[p.group]===af).length:0;
+        const bp=bf?pairs.filter(p=>p.group!==b.group&&p.branch===b.branch&&families[p.group]===bf).length:0;
+        return bp-ap;
+      });
+      const target=targetPool.length?targetPool[Math.floor(random()*Math.min(4,targetPool.length))]:null;
       const release=0.15+(rounds%5)*0.13;
       for(const a of best) {
         if(fixedKeys.has(placementKey(a))) continue;
@@ -3478,6 +3510,35 @@ function createAssignmentEngine(input) {
         if(!check(a,c,{...rule,allowJoint:true})) add(c,{...a});
       }
       await greedy(c,rounds%2?20:80);
+    }
+    // Once the best assignment count is reached, spend a short remaining window
+    // rearranging only unlocked lessons so unresolved needs are concentrated around
+    // same-family/same-branch merge opportunities. The assignment count may not drop.
+    if(bestScore<totalNeed && (bestScore===upperBound || exhausted) && !cancelled() && performance.now()<deadline) {
+      const refineDeadline=Math.min(deadline,performance.now()+Math.min(10000,budget*0.20));
+      let refineRound=0;
+      while(performance.now()<refineDeadline && !cancelled() && refineRound<80) {
+        refineRound++;
+        const have=new Map();best.forEach(a=>{if(a.countsTowardNeed!==false)have.set(pairKey(a),(have.get(pairKey(a))||0)+1);});
+        const unmet=pairs.filter(p=>(have.get(pairKey(p))||0)<p.need)
+          .sort((a,b)=>(domains.get(pairKey(a))||[]).length-(domains.get(pairKey(b))||[]).length);
+        if(!unmet.length) break;
+        const focus=unmet[(refineRound-1)%unmet.length], family=families[focus.group];
+        const c=seedContext();
+        const focusOpts=domains.get(pairKey(focus))||[];
+        const target=focusOpts.length?focusOpts[Math.floor(random()*focusOpts.length)]:null;
+        for(const a of best) {
+          if(fixedKeys.has(placementKey(a))) continue;
+          const mergeNeighborhood=family && families[a.group]===family && a.branch===focus.branch;
+          const near=target && (teacherCell(a)===teacherCell(target) ||
+            (a.group===target.group && a.day===target.day && Math.abs(a.slot-target.slot)<=1));
+          if(mergeNeighborhood || near || random()<0.10+(refineRound%4)*0.05) continue;
+          if(!check(a,c,{...rule,allowJoint:true})) add(c,{...a});
+        }
+        await greedy(c,12);
+        rounds++;
+        if(!(await checkpoint('Boş kalan ihtiyaçlar için yeniden düzenleme'))) break;
+      }
     }
     timedOut=performance.now()>=deadline;
     const optimal=bestScore===upperBound || exhausted;
@@ -3502,7 +3563,7 @@ function getAssignmentInput() {
 function assignmentFingerprint() {
   return JSON.stringify({data:getAssignmentInput(),rules:{
     allowConsecutive:$('#chkRelaxConsecutive')?.checked===true,
-    allowJoint:$('#chkAutoJoint')?.checked===true,preserveAll:$('#chkPreserveAll')?.checked===true}});
+    allowJoint:$('#chkAutoJoint')?.checked===true}});
 }
 function currentAssignmentRules() {
   return {allowConsecutive:$('#chkRelaxConsecutive')?.checked===true,allowJoint:true,requireJointTag:true};
@@ -3547,13 +3608,9 @@ function assignmentSummaryHtml() {
   const meta=state.autoAssignMeta;
   if(!meta?.solver) return '';
   const stale=meta.fingerprint!==assignmentFingerprint();
-  const label=stale?'Program değişti; yeniden hesaplama gerekli':meta.optimal?'Maksimum ders sayısı kanıtlandı':'Süre içinde bulunan en iyi geçerli sonuç';
   return `<div class="card" style="border-left:4px solid ${stale?'#d97706':'#4f46e5'};padding:14px">
-    <b>V4.5 • ${label}</b>
-    <div style="margin-top:8px">${stale?'Son çalıştırma: ':''}<b>${meta.score} / ${meta.totalNeed}</b> ders talebi karşılandı.
-    Üst sınır: <b>${meta.upperBound}</b> • Eksik: <b>${Math.max(0,meta.totalNeed-meta.score)}</b></div>
-    <div class="mini2" style="margin-top:6px">${meta.lockedCount} korunan atama • ${meta.jointLessons} birleşik ders • ${meta.violations} ardışık branş tekrarı • ${(meta.elapsedMs/1000).toFixed(1)} sn${meta.stopped?' • Kullanıcı durdurdu':''}</div>
-    ${!stale&&!meta.optimal?'<div class="mini2">Daha fazla atamanın mümkün olup olmadığı henüz kanıtlanmadı. Üst sınır bir kapasite tahminidir.</div>':''}
+    <b>V4.6${stale?' • Program değişti':''}</b>
+    <div style="margin-top:8px"><b>${meta.score} / ${meta.totalNeed}</b> ders talebi karşılandı • Eksik: <b>${Math.max(0,meta.totalNeed-meta.score)}</b></div>
   </div>`;
 }
 let assignmentRunActive=false;
@@ -3562,8 +3619,8 @@ async function autoAssign() {
   if(!state.teachers.length || !Object.keys(state.groups).length) {uiAlert('Önce öğretmen ve grup verilerini yükleyin.');return;}
   const data=getAssignmentInput(), fingerprint=assignmentFingerprint();
   const options={allowConsecutive:$('#chkRelaxConsecutive').checked,
-    allowJoint:$('#chkAutoJoint').checked,preserveAll:$('#chkPreserveAll').checked,
-    timeLimitMs:45000,seed:Date.now()>>>0};
+    allowJoint:$('#chkAutoJoint').checked,
+    timeLimitMs:60000,seed:Date.now()>>>0};
   const overlay=$('#autoAssignOverlay'),btn=$('#btnAutoAssign'),stop=$('#btnStopAutoAssign');
   let stopped=false,worker=null,url=null;
   const update=p=>{
@@ -3598,14 +3655,14 @@ async function autoAssign() {
     const engine=createAssignmentEngine(data);
     const verified=engine.normalize(result.assignments,{allowJoint:true,allowConsecutive:options.allowConsecutive,requireJointTag:true});
     if(verified.removed.length || verified.score!==result.score) throw Error('Sonuç doğrulaması başarısız; mevcut program korundu.');
-    for(const a of data.assignments.filter(a=>options.preserveAll || a.locked)) {
+    for(const a of data.assignments.filter(a=>a.locked)) {
       if(!verified.assignments.some(b=>engine.placementKey(engine.clean(a))===engine.placementKey(b))) throw Error('Kilitli ders korunamadı; mevcut program korundu.');
     }
     state.assignments=verified.assignments;
-    state.lastAvailabilityNormalization={source:'v4.5-on-dogrulama',removed:result.removed,removedCount:result.removed.length,at:Date.now()};
-    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.5',
+    state.lastAvailabilityNormalization={source:'v4.6-on-dogrulama',removed:result.removed,removedCount:result.removed.length,at:Date.now()};
+    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.6',
       prevCount:data.assignments.length,lastRunAt:Date.now(),relaxConsecutive:options.allowConsecutive,
-      allowJoint:options.allowJoint,preserveAll:options.preserveAll,fingerprint:assignmentFingerprint()};
+      allowJoint:options.allowJoint,fingerprint:assignmentFingerprint()};
     onAssignmentsMutated();syncReportButtons();
     const rep=buildAutoAssignReport(data.assignments.length);state.lastAutoAssignReport=rep;
     showAutoAssignReport(rep,data.assignments.length);
@@ -3849,9 +3906,9 @@ $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
 
-// V4.5: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
+// V4.6: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
-for(const id of ['chkRelaxConsecutive','chkAutoJoint','chkPreserveAll']){
+for(const id of ['chkRelaxConsecutive','chkAutoJoint']){
   document.getElementById(id).addEventListener('change',()=>{renderAssignCards();refreshAutoAssignReportIfOpen();});
 }
 $("#btnAutoAssignReport").onclick = () => {
@@ -4806,7 +4863,7 @@ function openPrintWindow(title, html){
   </head><body>
     ${html}
     <script>window.onload=()=>{ setTimeout(()=>window.print(), 50); }<\/script>
-  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.5</footer>
+  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</footer>
 </body></html>`);
   doc.close();
 }
@@ -5073,7 +5130,7 @@ function printAllGradesSelected(selectedGrades) {
     w.document.write(`</section>`);
   });
 
-  w.document.write(`<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.5</footer>
+  w.document.write(`<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</footer>
 </body></html>`);
   w.document.close();
   w.focus();
@@ -5542,7 +5599,7 @@ function printTeachersV2(){
   </style>
 </head>
 <body class="print-teacher-v2">
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.5</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</footer>
 </body></html>`);
 
   const addPage = (html)=> w.document.body.insertAdjacentHTML('beforeend', `<section class="page">${html}</section>`);
@@ -5945,6 +6002,6 @@ if (btnAssgnDeleteFb) {
 
 </script>
 
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.5</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.6</footer>
 </body>
 </html>
