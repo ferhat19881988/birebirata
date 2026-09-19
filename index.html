@@ -1402,7 +1402,7 @@
       </div>
       <div class="title">
         <h1>Fenomen Eğitim Kurumları</h1>
-        <small>Grup dersleri planlama • Tablı • V4.3 🔥</small>
+        <small>Grup dersleri planlama • Tablı • V4.4 🔥</small>
       </div>
     </div>
     <div class="flex">
@@ -2665,6 +2665,7 @@ function getMissingNeedsForGroup(gid){
   const left = {};
   (state.branches || []).forEach(b => { left[b] = +(req[b] || 0); });
   (state.assignments || []).filter(a => a.group === gid).forEach(a => {
+    if (a.countsTowardNeed === false) return;
     if (typeof left[a.branch] === 'number') left[a.branch] = Math.max(0, left[a.branch] - 1);
   });
   return Object.entries(left).filter(([,v]) => v > 0).map(([branch, count]) => ({ branch, count }));
@@ -2960,7 +2961,7 @@ function listFreeTeachersAt(day, slot, max=5){
   return res.slice(0, max);
 }
 
-/* ===== V4.3: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
+/* ===== V4.4: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
  * Örnek aile: G1-8A, G2-8A, G3-8A -> "8A".
  * Normal öğretmen çakışma kuralı değişmez. Yalnızca Elle Tamamlama içindeki
  * açık bir birleşik ders önerisi seçilirse aynı öğretmen aynı slotta birden
@@ -2993,7 +2994,7 @@ function makeJointLessonId(teacherId, day, slot, branch, familyKey){
   return `JOINT|${familyKey}|${day}|${slot}|${String(teacherId)}|${safeBranch}`;
 }
 
-function findMergeSuggestionsForEmptySlot(gid, day, slot, neededBranches, max=6){
+function findMergeSuggestionsForEmptySlot(gid, day, slot, neededBranches, max=6, options={}){
   if (state.availability?.groups?.[gid]?.[day]?.[slot] !== true) return [];
   const familyKey = getGroupFamilyKey(gid);
   if (!familyKey) return [];
@@ -3002,39 +3003,51 @@ function findMergeSuggestionsForEmptySlot(gid, day, slot, neededBranches, max=6)
   const neededSet = new Set(needed);
   if (!neededSet.size) return [];
 
+  // Varsayılan: sadece kalan ihtiyaçla aynı branşı öner.
+  // allowDifferentBranch=true yalnızca "hiç çare yok" son seçeneğinde kullanılır.
+  const allowDifferentBranch = options?.allowDifferentBranch === true;
   const atSlot = (state.assignments || []).filter(a => a && a.day === day && a.slot === slot);
   const candidates = new Map();
 
   for (const a of atSlot) {
     if (String(a.group) === String(gid)) continue;
     if (getGroupFamilyKey(a.group) !== familyKey) continue;
-    if (!neededSet.has(String(a.branch))) continue;
+
+    const sourceBranch = String(a.branch || '');
+    const isNeededBranch = neededSet.has(sourceBranch);
+    if (!allowDifferentBranch && !isNeededBranch) continue;
+    if (allowDifferentBranch && isNeededBranch) continue; // fallback listesi gerçekten farklı ders olsun
 
     const tid = String(a.teacherId || '');
     if (!tid) continue;
     if (state.availability?.teachers?.[tid]?.[day]?.[slot] !== true) continue;
 
-    // Bu öğretmenin aynı anda başka, uyumsuz bir dersi varsa birleşik ders önermeyelim.
     const teacherBusy = atSlot.filter(x => String(x.teacherId) === tid);
     const compatible = teacherBusy.every(x =>
-      String(x.branch) === String(a.branch) && getGroupFamilyKey(x.group) === familyKey
+      String(x.branch) === sourceBranch && getGroupFamilyKey(x.group) === familyKey
     );
     if (!compatible) continue;
 
-    const key = `${tid}|${String(a.branch)}`;
+    // Birleşik derste EN FAZLA 2 grup: öğretmen bu slotta zaten iki gruba bağlıysa üçüncü grubu önerme.
+    const busyGroups = Array.from(new Set(teacherBusy.map(x => String(x.group))));
+    if (busyGroups.length >= 2) continue;
+
+    const key = `${tid}|${sourceBranch}`;
     if (!candidates.has(key)) {
       candidates.set(key, {
         id: tid,
         name: teacherNameById(tid),
-        branch: String(a.branch),
+        branch: sourceBranch,
         familyKey,
         sourceGroups: [],
-        jointLessonId: a.jointLessonId || ''
+        jointLessonId: a.jointLessonId || '',
+        countsTowardNeed: isNeededBranch,
+        fallbackDifferentBranch: !isNeededBranch
       });
     }
     const rec = candidates.get(key);
     teacherBusy
-      .filter(x => String(x.branch) === String(a.branch) && getGroupFamilyKey(x.group) === familyKey)
+      .filter(x => String(x.branch) === sourceBranch && getGroupFamilyKey(x.group) === familyKey)
       .forEach(x => {
         const groupId = String(x.group);
         if (!rec.sourceGroups.includes(groupId)) rec.sourceGroups.push(groupId);
@@ -3046,6 +3059,7 @@ function findMergeSuggestionsForEmptySlot(gid, day, slot, neededBranches, max=6)
   return Array.from(candidates.values())
     .sort((a,b) =>
       ((branchRank.get(a.branch) ?? 999) - (branchRank.get(b.branch) ?? 999)) ||
+      String(a.branch || '').localeCompare(String(b.branch || ''), 'tr') ||
       String(a.name || '').localeCompare(String(b.name || ''), 'tr')
     )
     .slice(0, max);
@@ -3057,6 +3071,7 @@ function performManualAssignFromReport(gid, day, slot, teacherId, branch, option
   if (state.assignments.some(a=>String(a.group)===String(gid) && a.day===day && a.slot===slot)) { uiAlert('Bu slot dolu.'); return false; }
 
   const mergeMode = options?.merge === true;
+  const countsTowardNeed = options?.countsTowardNeed !== false;
   const busyAtSlot = state.assignments.filter(a => String(a.teacherId)===String(teacherId) && a.day===day && a.slot===slot);
 
   if (mergeMode) {
@@ -3075,7 +3090,7 @@ function performManualAssignFromReport(gid, day, slot, teacherId, branch, option
       return false;
     }
 
-    // Aynı öğretmenin bu saatte farklı branş veya farklı sınıf ailesinde başka işi varsa izin verme.
+    // Aynı öğretmenin bu saatte farklı sınıf ailesinde veya başka bir eşzamanlı derste işi varsa birleştirme yapma.
     const incompatible = busyAtSlot.some(a =>
       getGroupFamilyKey(a.group) !== familyKey || String(a.branch) !== String(branch)
     );
@@ -3084,26 +3099,42 @@ function performManualAssignFromReport(gid, day, slot, teacherId, branch, option
       return false;
     }
 
-    const stillNeeded = getMissingNeedsForGroup(gid).some(x => String(x.branch) === String(branch) && x.count > 0);
-    if (!stillNeeded) { uiAlert('Bu grubun seçilen dersten artık eksiği yok.'); return false; }
+    // Kullanıcı kuralı: birleşik ders en fazla 2 grup olabilir.
+    const currentGroupCount = new Set(sourceAssignments.map(a => String(a.group))).size;
+    if (currentGroupCount >= 2) {
+      uiAlert('Birleşik derste en fazla 2 grup olabilir. Bu ders zaten iki grupla birleşmiş.');
+      return false;
+    }
+
+    const missingNow = getMissingNeedsForGroup(gid);
+    if (countsTowardNeed) {
+      const stillNeeded = missingNow.some(x => String(x.branch) === String(branch) && x.count > 0);
+      if (!stillNeeded) { uiAlert('Bu grubun seçilen dersten artık eksiği yok.'); return false; }
+    } else if (!missingNow.length) {
+      uiAlert('Bu grubun artık kalan ders ihtiyacı yok.');
+      return false;
+    }
 
     const jointLessonId =
       sourceAssignments.find(a => a.jointLessonId)?.jointLessonId ||
       options.jointLessonId ||
       makeJointLessonId(teacherId, day, slot, branch, familyKey);
 
-    // Aynı birleşik derste olan mevcut kayıtları da işaretle. Böylece JSON/Firebase ve yazdırma tutarlı kalır.
+    // Kaynak dersi de aynı birleşik ders kimliğiyle işaretle.
     busyAtSlot.forEach(a => {
       if (getGroupFamilyKey(a.group) === familyKey && String(a.branch) === String(branch)) {
         a.jointLessonId = jointLessonId;
-        a.assignmentMode = 'joint';
+        if (!a.assignmentMode || a.assignmentMode === 'manual') a.assignmentMode = 'joint';
       }
     });
 
+    const requestedBranch = options?.requestedBranch || missingNow[0]?.branch || '';
     state.assignments.push({
       group: gid, day, slot, branch, teacherId,
       jointLessonId,
-      assignmentMode: 'joint'
+      assignmentMode: countsTowardNeed ? 'joint' : 'joint-fallback',
+      countsTowardNeed,
+      requestedBranch: countsTowardNeed ? branch : requestedBranch
     });
     onAssignmentsMutated();
     return true;
@@ -3115,9 +3146,8 @@ function performManualAssignFromReport(gid, day, slot, teacherId, branch, option
   if (!branch) {
     const tBranches = teacherBranchesById(teacherId);
     const req = state.requests[gid] || {};
-    // kalan ihtiyaçlardan seç
     const remaining = Object.fromEntries((state.branches||[]).map(b => [b, +(req[b]||0)]));
-    state.assignments.filter(a=>a.group===gid).forEach(a => remaining[a.branch] = Math.max(0, (remaining[a.branch]||0)-1));
+    state.assignments.filter(a=>a.group===gid && a.countsTowardNeed !== false).forEach(a => remaining[a.branch] = Math.max(0, (remaining[a.branch]||0)-1));
     const needed = Object.entries(remaining).filter(([,v])=>v>0).map(([b])=>b);
     const inter = tBranches.filter(b => needed.includes(b));
     branch = inter[0] || tBranches[0] || (state.branches?.[0]||'GENEL');
@@ -3154,7 +3184,7 @@ function buildAutoAssignReport(_prevCount){
   for (const g of groups) {
     const req = state.requests[g.id] || {};
     const left = Object.fromEntries((state.branches||[]).map(b => [b, +(req[b]||0)]));
-    state.assignments.filter(a=>a.group===g.id).forEach(a => left[a.branch] = Math.max(0, (left[a.branch]||0)-1));
+    state.assignments.filter(a=>a.group===g.id && a.countsTowardNeed !== false).forEach(a => left[a.branch] = Math.max(0, (left[a.branch]||0)-1));
     needsLeft[g.id] = left;
   }
 
@@ -3197,14 +3227,22 @@ function buildAutoAssignReport(_prevCount){
       const mergeSuggestions = (!branchSuggestions.length && !freeTeachers.length)
         ? findMergeSuggestionsForEmptySlot(g.id, d, s, neededBranches, 6)
         : [];
+      const fallbackMergeSuggestions = (!branchSuggestions.length && !freeTeachers.length && !mergeSuggestions.length)
+        ? findMergeSuggestionsForEmptySlot(g.id, d, s, neededBranches, 6, {allowDifferentBranch:true})
+        : [];
 
       details.push({
         group:g.id, day:d, slot:s,
-        kind: branchSuggestions.length ? 'onerili' : (mergeSuggestions.length ? 'birlesik-onerili' : 'ogretmen-bulunamadi'),
+        kind: branchSuggestions.length
+          ? 'onerili'
+          : (mergeSuggestions.length
+              ? 'birlesik-onerili'
+              : (fallbackMergeSuggestions.length ? 'birlesik-farkli-ders' : 'ogretmen-bulunamadi')),
         neededBranches,
         suggestions: branchSuggestions,
         freeTeachers,
-        mergeSuggestions
+        mergeSuggestions,
+        fallbackMergeSuggestions
       });
     }
   }
@@ -3229,11 +3267,13 @@ function showAutoAssignReport(report, prevCount){
     dlg.id = 'dlgAutoAssignReport';
     dlg.style.padding = '16px';
     dlg.style.borderRadius = '14px';
-    dlg.style.maxWidth = '1200px';
-    dlg.style.width = 'min(98vw, 1200px)';
+    dlg.style.maxWidth = '1580px';
+    dlg.style.width = 'min(97vw, 1580px)';
+    dlg.style.maxHeight = '92vh';
+    dlg.style.boxSizing = 'border-box';
     dlg.innerHTML = `
       <header style="font-weight:900;font-size:18px;margin-bottom:8px">Elle Tamamlama</header>
-      <section id="autoAssignReportBody" style="max-height:60vh;overflow:auto"></section>
+      <section id="autoAssignReportBody" style="max-height:78vh;overflow:auto;padding-right:6px"></section>
       <footer style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
         <button id="btnRptCopy" class="btn ghost">Metni Kopyala</button>
         <button id="btnRptClose" class="btn">Kapat</button>
@@ -3256,8 +3296,9 @@ function showAutoAssignReport(report, prevCount){
       const selected = e.target.selectedOptions?.[0];
       if (selected?.dataset.merge === '1') {
         const mergeBranch = selected.dataset.mergeBranch || '';
+        const counts = selected.dataset.mergeCounts !== '0';
         selB.innerHTML = mergeBranch
-          ? `<option value="${escapeHtml(mergeBranch)}">${escapeHtml(mergeBranch)} • Birleşik ders</option>`
+          ? `<option value="${escapeHtml(mergeBranch)}">${escapeHtml(mergeBranch)} • ${counts ? 'Birleşik ders' : 'Son seçenek — ihtiyaç kapanmaz'}</option>`
           : `<option value="">(branş yok)</option>`;
         return;
       }
@@ -3292,8 +3333,13 @@ function showAutoAssignReport(report, prevCount){
         const inter = tBranches.filter(b => needed.includes(b));
         branch = inter[0] || tBranches[0] || state.branches?.[0] || 'GENEL';
       }
+      const isMerge = selectedTeacherOpt?.dataset.merge === '1';
+      const countsTowardNeed = selectedTeacherOpt?.dataset.mergeCounts !== '0';
+      const requestedBranch = (row.dataset.needed || '').split('|').filter(Boolean)[0] || '';
       const ok = performManualAssignFromReport(gid, d, s, tid, branch, {
-        merge: selectedTeacherOpt?.dataset.merge === '1',
+        merge: isMerge,
+        countsTowardNeed,
+        requestedBranch,
         jointLessonId: selectedTeacherOpt?.dataset.jointLessonId || ''
       });
       if (!ok) return;
@@ -3327,7 +3373,7 @@ function showAutoAssignReport(report, prevCount){
 
     // Elle atama listesi: grup müsait + talep var. Boş öğretmen yoksa aynı sınıf ailesinde birleşik ders ara.
     const rows = rep.details
-      .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi' || x.kind==='birlesik-onerili')
+      .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi' || x.kind==='birlesik-onerili' || x.kind==='birlesik-farkli-ders')
       .slice(0, 30)
       .map(x => {
         const neededPipe = (x.neededBranches||[]).join('|');
@@ -3353,16 +3399,22 @@ function showAutoAssignReport(report, prevCount){
             return `<option value="${escapeHtml(String(tt.id))}" data-branches="${escapeAttr(branches)}">${escapeHtml(label)}</option>`;
           }).join('');
 
-        const mergeOpts = (!teachers.length ? (x.mergeSuggestions || []) : [])
+        const mergeCandidates = !teachers.length
+          ? ((x.mergeSuggestions?.length ? x.mergeSuggestions : x.fallbackMergeSuggestions) || [])
+          : [];
+        const mergeOpts = mergeCandidates
           .map(ms => {
             const groupNames = (ms.sourceGroups || []).map(getGroupDisplayName).join(' + ');
-            const label = `Birleştir → ${ms.name || ms.id} • ${groupNames} • ${ms.branch}`;
-            return `<option value="${escapeHtml(String(ms.id))}" data-merge="1" data-merge-branch="${escapeAttr(ms.branch)}" data-joint-lesson-id="${escapeAttr(ms.jointLessonId || '')}">${escapeHtml(label)}</option>`;
+            const isFallback = ms.countsTowardNeed === false || ms.fallbackDifferentBranch === true;
+            const label = isFallback
+              ? `SON SEÇENEK → ${ms.name || ms.id} • ${groupNames} • ${ms.branch} (kalan ihtiyaç kapanmaz)`
+              : `Birleştir → ${ms.name || ms.id} • ${groupNames} • ${ms.branch}`;
+            return `<option value="${escapeHtml(String(ms.id))}" data-merge="1" data-merge-branch="${escapeAttr(ms.branch)}" data-merge-counts="${isFallback ? '0' : '1'}" data-joint-lesson-id="${escapeAttr(ms.jointLessonId || '')}">${escapeHtml(label)}</option>`;
           }).join('');
 
         const teacherGroups = [
           teacherOpts ? `<optgroup label="Boş öğretmenler">${teacherOpts}</optgroup>` : '',
-          mergeOpts ? `<optgroup label="Birleşik ders önerileri">${mergeOpts}</optgroup>` : ''
+          mergeOpts ? `<optgroup label="${x.kind==='birlesik-farkli-ders' ? 'Son seçenek — farklı dersle birleştir' : 'Birleşik ders önerileri'}">${mergeOpts}</optgroup>` : ''
         ].join('');
 
         const branchOpts = (x.neededBranches||[])
@@ -3373,8 +3425,10 @@ function showAutoAssignReport(report, prevCount){
         const hint = x.kind==='onerili'
           ? `Öneri: ${escapeHtml(x.suggestions[0]?.branch||'')}`
           : x.kind==='birlesik-onerili'
-            ? `${escapeHtml(getGroupFamilyKey(x.group))} grupları tarandı • boş öğretmen yok, birleşik ders adayı bulundu`
-            : 'Uygun boş öğretmen veya birleşik ders adayı bulunamadı';
+            ? `${escapeHtml(getGroupFamilyKey(x.group))} grupları tarandı • aynı branşta 2 gruplu birleşik ders adayı bulundu`
+            : x.kind==='birlesik-farkli-ders'
+              ? `Son seçenek • aynı sınıf/şube ailesinde farklı derse katılabilir; mevcut kalan ihtiyaç KAPANMAZ`
+              : 'Uygun boş öğretmen veya birleşik ders adayı bulunamadı';
 
         return `
           <li class="row-assign" data-gid="${escapeAttr(String(x.group))}" data-day="${x.day}" data-slot="${x.slot}" data-needed="${escapeAttr(neededPipe)}" style="margin:8px 0">
@@ -3404,9 +3458,9 @@ function showAutoAssignReport(report, prevCount){
     el.innerHTML = `
       <div class="grid" style="gap:10px">
         <div class="card">
-          <h3>Elle Tamamlama (ilk 30 uygun boş slot)</h3>
+          <h3>Elle Tamamlama (ilk 30 uygun boş slot) • V4.4</h3>
           ${rows ? `<ol style="margin:6px 0 0 18px">${rows}</ol>` : `<div class="muted">Elle tamamlama için uygun boş slot kalmadı.</div>`}
-          <div class="muted" style="margin-top:8px">Boş öğretmen bulunamazsa sistem, örneğin <b>G1-8A</b> için <b>G2-8A / G3-8A / G4-8A</b> içindeki aynı ders ve saat atamalarını tarar. Uygun sonuç varsa öğretmen alanında <b>Birleştir</b> önerisi gösterilir.</div>
+          <div class="muted" style="margin-top:8px">Öncelik normal atamadır. Çözüm yoksa sistem yalnızca aynı sınıf/şube ailesinde (ör. <b>G1-8A ↔ G2-8A</b>) aynı branşta birleşme arar. Birleşik ders <b>en fazla 2 grup</b> olabilir. Aynı branşta da çözüm yoksa <b>Son seçenek — farklı ders</b> önerilebilir; bu seçim grubu boş bırakmaz fakat asıl kalan ders ihtiyacını <b>kapatmaz</b>.</div>
         </div>
 
         <div class="card">
@@ -3435,7 +3489,7 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-// index.html — Auto Assign (V4.3 🔥): 20 sn Katı + 25 sn Esnetilmiş, Süre Bazlı Sınırsız Deneme
+// index.html — Auto Assign (V4.4 🔥): 20 sn Katı + 25 sn Esnetilmiş, Süre Bazlı Sınırsız Deneme
 
 /**
  * Amaç: Öğretmen yük dengesini tamamen devre dışı bırakarak,
@@ -3445,7 +3499,7 @@ async function autoAssign() {
   const D = state.program.days.length;
   const S = state.program.slots;
 
-  // --------- Ayarlar (V4.3 🔥) ---------
+  // --------- Ayarlar (V4.4 🔥) ---------
   const STRICT_PHASE_MS = 20000;
   const RELAX_PHASE_MS = 25000;
   const TIME_LIMIT_MS = STRICT_PHASE_MS + RELAX_PHASE_MS;
@@ -3496,7 +3550,7 @@ async function autoAssign() {
   let totalNeedCount = 0; // needs hesaplandıktan sonra set edilir
 
   const shouldRelax = () => {
-    // V4.3 🔥: Tik açıksa ilk 20 sn katı, son 25 sn ardışık aynı branş kuralı esnetilmiş.
+    // V4.4 🔥: Tik açıksa ilk 20 sn katı, son 25 sn ardışık aynı branş kuralı esnetilmiş.
     // Tik kapalıysa 45 sn boyunca kural katı kalır.
     if (!RELAX_CONSECUTIVE_WHEN_TIGHT) return false;
     if (!totalNeedCount) return false;
@@ -3546,7 +3600,7 @@ async function autoAssign() {
   for (const g of Object.values(state.groups)) {
     const req = state.requests[g.id] || {};
     const have = {};
-    fixed.forEach(a => { if (a.group === g.id) have[a.branch] = (have[a.branch]||0) + 1; });
+    fixed.forEach(a => { if (a.group === g.id && a.countsTowardNeed !== false) have[a.branch] = (have[a.branch]||0) + 1; });
     const list = [];
     for (const [b, cnt] of Object.entries(req)) {
       const need = Math.max(0, (cnt|0) - (have[b]||0));
@@ -3563,7 +3617,7 @@ async function autoAssign() {
     state.autoAssignMeta = {
       prevCount: fixed.length,
       lastRunAt: Date.now(),
-      version: 'V4.3 🔥',
+      version: 'V4.4 🔥',
       strictSeconds: 20,
       relaxedSeconds: RELAX_CONSECUTIVE_WHEN_TIGHT ? 25 : 0,
       relaxConsecutive: RELAX_CONSECUTIVE_WHEN_TIGHT
@@ -3777,7 +3831,7 @@ async function autoAssign() {
         const k = keyCell(a.group, a.day, a.slot);
         if (seen.has(k)) continue;
         seen.add(k);
-        merged.push({...a}); // V4.3: birleşik ders metadatasını koru
+        merged.push({...a}); // V4.4: birleşik ders metadatasını koru
       }
       state.assignments = merged;
     }
@@ -3811,7 +3865,7 @@ async function autoAssign() {
         // Count existing assignments per branch for this group
         const have = {};
         for (const a of state.assignments) {
-          if (a.group === g.id) have[a.branch] = (have[a.branch] || 0) + 1;
+          if (a.group === g.id && a.countsTowardNeed !== false) have[a.branch] = (have[a.branch] || 0) + 1;
         }
         for (const [b, cnt] of Object.entries(req)) {
           const needed = Math.max(0, (cnt | 0) - (have[b] || 0));
@@ -3913,7 +3967,7 @@ async function autoAssign() {
     state.autoAssignMeta = {
       prevCount: fixed.length,
       lastRunAt: Date.now(),
-      version: 'V4.3 🔥',
+      version: 'V4.4 🔥',
       strictSeconds: 20,
       relaxedSeconds: RELAX_CONSECUTIVE_WHEN_TIGHT ? 25 : 0,
       relaxConsecutive: RELAX_CONSECUTIVE_WHEN_TIGHT
