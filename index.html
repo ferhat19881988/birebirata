@@ -5,7 +5,7 @@
   <link rel="icon" href="data:,">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.9</title>
+<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.10</title>
 <style>
   :root{
     /* Light, modern palette */
@@ -1389,10 +1389,10 @@
 
 
 /* ===========================================================
-   V4.9 / BİLEŞEN MİMARİSİ
+   V4.10 / BİLEŞEN MİMARİSİ
    1. Önceki çizelge ve yazdırma stilleri yukarıda korunur.
    2. Branş renkleri ve öğretmen yazdırma stilleri bu bölümde.
-   3. Tasarım sistemi: tek ve kapsama alınmış V4.9 stil katmanı.
+   3. Tasarım sistemi: tek ve kapsama alınmış V4.10 stil katmanı.
    Başka yerde genel .btn/.card !important teması bulunmaz.
    =========================================================== */
 
@@ -1513,7 +1513,7 @@
 
 
 
-/* ============ V4.9: TASARIM SİSTEMİ ============ */
+/* ============ V4.10: TASARIM SİSTEMİ ============ */
 :root{
   --bg:#f2f5fa; --panel:#fff; --ink:#172439; --muted:#66768c;
   --pri:#2454d4; --pri-ink:#183e9c; --acc:#0d9488;
@@ -1638,6 +1638,53 @@ tbody tr:hover td{background:#f8fbff}
 @media print{.v49-overview,.v49-header-actions,.v49-edit-dialog{display:none!important}.content{border:0;box-shadow:none;padding:0}body{background:#fff}.app{padding:0;max-width:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
+
+
+/* V4.10: Kopayalama, iskele yönetimi, yazdır ve grup dönüşü */
+.v410-clipboard-status,.v410-status{padding:10px 13px;border:1px solid #d5e2f1;border-radius:11px;background:#f6f9ff;color:#27384f;font-size:12px}
+#step3 .avGrid .card .flex{gap:7px}#step3 .avGrid .card .right{flex-wrap:wrap;justify-content:flex-end}
+#step3 .avGrid .card .btn.xs.sec{background:#173659;color:#fff;border-color:#173659;padding:6px 9px;font-size:11px}
+.v410-scaffold{padding:17px!important;background:#fbfcff}
+.v410-scaffold-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+.v410-scaffold-columns{display:grid;grid-template-columns:minmax(210px,1.25fr) minmax(140px,.65fr) minmax(260px,1.5fr);gap:16px}
+.v410-s-title{font-weight:800;color:#182c48;margin-bottom:10px;font-size:13px}
+.v410-day-choices{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.v410-day-chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #d1ddec;border-radius:9px;padding:7px 9px;font-size:12px;font-weight:700;cursor:pointer}
+.v410-day-chip:has(input:checked){background:#eaf2ff;color:#143f73;border-color:#87aee4}
+.v410-day-chip input{accent-color:#21539c}
+.v410-inline{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.v410-inline input[type=text]{min-width:130px;flex:1}
+.v410-inline output{font-weight:900;padding:9px 13px;min-width:83px;text-align:center;background:#fff;border:1px solid #d4e0ee;border-radius:10px}
+.v410-time-inputs label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:700}
+.v410-time-inputs input{width:95px;min-width:0;padding:9px;border:1px solid #c9d6e7;border-radius:8px;background:#fff;color:#162942}
+#v410GenerateTimes{margin-top:9px}.v410-status{margin-top:13px}
+.v410-print-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.v410-print-choice{padding:19px;border:1px solid #d5dfeb;border-radius:14px;background:#fff}
+.v410-print-choice strong{font-size:16px}.v410-print-choice p{font-size:13px;color:#65758b;min-height:54px}
+.v410-print-warning{background:#fff3f3;border:1px solid #dc3d3d;color:#a01515;padding:10px;border-radius:9px;font-weight:700}
+.v410-print-warning[hidden]{display:none!important}
+.v410-students-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.v410-students-heading h3{margin:0}
+[hidden]{display:none!important}
+@media(max-width:1000px){.v410-scaffold-columns{grid-template-columns:1fr 1fr}.v410-scaffold-columns>div:last-child{grid-column:span 2}}
+@media(max-width:620px){.v410-scaffold-columns,.v410-print-actions{grid-template-columns:1fr}.v410-scaffold-columns>div:last-child{grid-column:auto}}
+
+/* V4.10: net, keskin ve modern siyah-beyaz öğretmen yazdırması */
+.print-teacher-v2{--tpv2-ink:#080808;--tpv2-muted:#353535;--tpv2-gold:#111;--tpv2-gold-ink:#111;--tpv2-grid:#222;color:#111}
+.print-teacher-v2 .brandbar{border-bottom:2px solid #111}
+.print-teacher-v2 .brandbar .chip{background:#fff;color:#111;border:1px solid #222;border-radius:5px}
+.print-teacher-v2 .sched{border:1.5px solid #111;border-collapse:collapse;border-radius:0}
+.print-teacher-v2 .sched th,.print-teacher-v2 .sched td{border:1.2px solid #222;background:#fff;color:#0b0b0b}
+.print-teacher-v2 .sched thead th{background:#eaeaea;font-weight:900;border-bottom:2px solid #111}
+.print-teacher-v2 .sched th:first-child,.print-teacher-v2 .sched td:first-child{background:#f3f3f3;border-right:2px solid #111}
+.print-teacher-v2 .sched small{color:#2c2c2c}
+.print-teacher-v2 .att-mini{border:1.4px solid #171717!important;border-radius:5px!important;box-shadow:none!important}
+.print-teacher-v2 .att-mini-head{border-bottom:1.2px solid #222!important}
+.print-teacher-v2 .att-row{border-bottom:1px dotted #555!important}
+.print-teacher-v2 .att-head{border-top:2px solid #111!important}
+.print-teacher-v2 .foot{color:#333}
+@media print{.print-teacher-v2 .page{break-inside:avoid;page-break-inside:avoid}.print-teacher-v2 .page:last-child{break-after:auto!important;page-break-after:auto!important}}
+
 </style>
 </head>
 <body>
@@ -1662,7 +1709,7 @@ tbody tr:hover td{background:#f8fbff}
     </div>
     <div class="v49-header-actions">
       <button class="v49-density" id="btnDensity" type="button" aria-pressed="false" title="Ders çizelgelerinde daha fazla hücre göster">▦ Kompakt görünüm</button>
-      <span class="v49-version">SÜRÜM V4.9</span>
+      <span class="v49-version">SÜRÜM V4.10</span>
     </div>
   </div>
 
@@ -1676,7 +1723,7 @@ tbody tr:hover td{background:#f8fbff}
     <button class="tab" data-panel="step6" role="tab"><span class="nav-step">06</span><span class="nav-label">Yazdır</span></button>
   </div>
 
-  <!-- V4.9: Salt-okunur özet; Firebase ve ders atama kayıtlarını değiştirmez. -->
+  <!-- V4.10: Salt-okunur özet; Firebase ve ders atama kayıtlarını değiştirmez. -->
   <div class="v49-overview no-print" id="v49Overview" aria-label="Planlama özeti">
     <div class="v49-stat"><div><div class="v49-stat-label">ÖĞRETMEN</div><div class="v49-stat-value" id="v49TeacherCount">0</div></div><span class="v49-stat-icon" aria-hidden="true">♙</span></div>
     <div class="v49-stat"><div><div class="v49-stat-label">AKTİF GRUP</div><div class="v49-stat-value" id="v49GroupCount">0</div></div><span class="v49-stat-icon" aria-hidden="true">▦</span></div>
@@ -1707,12 +1754,13 @@ tbody tr:hover td{background:#f8fbff}
         <h3>Öğretmenler (filtreli)</h3>
         <table id="tblTeachers"><thead><tr><th>#</th><th>Öğretmen</th><th>Branş</th></tr></thead><tbody></tbody></table>
       </div>
-      <div class="card">
+      <div class="card" id="v410GroupsCard">
         <h3>Gruplar</h3>
         <div id="groupSummary" class="chips"></div>
       </div>
       <div class="card">
-        <h3>Öğrenciler (Grubu dolu olanlar)</h3>
+        <div class="v410-students-heading"><h3>Öğrenciler (Grubu dolu olanlar)</h3>
+          <button type="button" class="btn ghost sm" id="v410BackToGroups" hidden>← Grup Seçimine Dön</button></div>
         <table id="tblStudents"><thead><tr><th>NO</th><th>Ad Soyad</th><th>Sınıf</th><th>Grup</th></tr></thead><tbody></tbody></table>
       </div>
     </div>
@@ -1769,6 +1817,32 @@ tbody tr:hover td{background:#f8fbff}
     </div>
 
 
+    <div class="v410-scaffold card" id="v410Scaffold" aria-label="Hızlı gün ve ders saati yönetimi">
+      <div class="v410-scaffold-top"><h3>Hızlı Program Düzenleyici</h3><span class="mini muted">Seçenekler üstte hazırlanır; “Oluştur/Güncelle” ile programa uygulanır.</span></div>
+      <div class="v410-scaffold-columns">
+        <div>
+          <div class="v410-s-title">Gün seçimi</div>
+          <div id="v410DayChoices" class="v410-day-choices"></div>
+          <div class="v410-inline"><input type="text" id="v410CustomDay" placeholder="Özel gün adı" aria-label="Özel gün adı"><button type="button" class="btn ghost sm" id="v410AddCustomDay">+ Gün Ekle</button></div>
+        </div>
+        <div>
+          <div class="v410-s-title">Haftalık ders saati sayısı</div>
+          <div class="v410-inline"><button type="button" class="btn ghost" id="v410RemoveSlot" aria-label="Bir ders saati azalt">−</button><output id="v410SlotCount">8 ders</output><button type="button" class="btn ghost" id="v410AddSlot" aria-label="Bir ders saati artır">+</button></div>
+          <div class="mini muted">1–12 ders arasında değiştirilebilir.</div>
+        </div>
+        <div>
+          <div class="v410-s-title">Otomatik saat oluşturma</div>
+          <div class="v410-inline v410-time-inputs">
+            <label>Başlangıç <input id="v410StartTime" type="time" value="16:00"></label>
+            <label>Ders (dk) <input id="v410Duration" type="number" value="40" min="5" max="180"></label>
+            <label>Ara (dk) <input id="v410Break" type="number" value="10" min="0" max="90"></label>
+          </div>
+          <button type="button" class="btn ghost sm" id="v410GenerateTimes">Saatleri Otomatik Oluştur</button>
+        </div>
+      </div>
+      <div id="v410ScaffoldStatus" class="v410-status" role="status" aria-live="polite">Mevcut program korunuyor.</div>
+    </div>
+
     <!-- Saat etiketleri düzenleyici -->
     <div id="slotLabelsWrap" class="card"></div>
 
@@ -1783,11 +1857,12 @@ tbody tr:hover td{background:#f8fbff}
     <div class="section-title">
       <h2>3) Müsaitlikler</h2>
       <div class="legend">
-        <span>● Öğretmen Müsaitliği (çift tık gün başlığı: günü kopyala)</span>
-        <span>● Grup Müsaitliği (çift tık gün başlığı: günü kopyala)</span>
+        <span>✓ Öğretmen ve grup müsaitliklerini hücrelerden düzenleyin.</span>
+        <span>▤ Bir kişinin veya grubun tüm haftalık müsaitliğini kopyalayıp diğerine yapıştırın.</span>
       </div>
     </div>
 
+    <div class="v410-clipboard-status" id="availClipboardStatus" role="status" aria-live="polite">Kopyalanmış program yok. Her kartın üstündeki “Programı Kopyala” düğmesini kullanın.</div>
     <div class="tabs no-print" role="tablist" aria-label="Müsaitlik Sekmeleri">
       <button class="tab" id="tabTeach" role="tab" aria-selected="true">Öğretmen Müsaitlik</button>
       <button class="tab" id="tabGroup" role="tab" aria-selected="false">Grup Müsaitlik</button>
@@ -1986,8 +2061,8 @@ tbody tr:hover td{background:#f8fbff}
             <label>Branş<br/><select id="dlgBranch"></select></label>
             <label>Öğretmen<br/><select id="dlgTeacher"></select></label>
           </div><div>
-            <label><input type="checkbox" id="dlgLocked" checked> Bu atamayı kilitle</label>
-            <label style="display:block;margin-top:8px"><input type="checkbox" id="dlgFallback"> İhtiyaç dışı ders (talebi karşılamaz)</label>
+            <label><input type="checkbox" id="dlgLocked"> Bu atamayı kilitle</label>
+            <p class="muted mini" style="margin:8px 0 0">Manuel atama talep miktarından bağımsızdır; müsaitlik ve çakışma kontrolleri devam eder.</p>
           </div>
         </div>
       </section>
@@ -2008,24 +2083,22 @@ tbody tr:hover td{background:#f8fbff}
     <div class="section-title">
       <h2>Yazdır / Rapor</h2>
       <div class="chips no-print">
-        <span class="pill">A4 çıktı, sayfa başı öğretmen/grup</span>
+        <span class="pill">A4 • Net siyah-beyaz baskı</span>
         <span class="pill">Sadece atama varsa</span>
       </div>
     </div>
-    <div class="row no-print">
-      <label>Görünüm<br/>
-        <select id="printMode">
-          <option value="group">Gruba göre</option>
-          <option value="teacher">Öğretmene göre</option>
-        </select>
-      </label>
-      <label>Filtre<br/>
-        <select id="printFilter"></select>
-      </label>
-      <button class="btn" id="btnRenderPrint">Önizleme</button>
-      <button class="btn sec" id="btnPrint" onclick="window.print()">Yazdır</button>
+    <div class="v410-print-actions no-print">
+      <div class="v410-print-choice">
+        <strong>Tüm listeyi yazdır</strong>
+        <p>İstediğiniz sınıf düzeylerini seçin; liste küçükten büyüğe sıralanır ve sayfa alanına göre yerleştirilir.</p>
+        <button type="button" class="btn" id="btnPrintAll">Sınıfları Seç ve Yazdır</button>
+      </div>
+      <div class="v410-print-choice">
+        <strong>Öğretmene göre (Yeni Tasarım)</strong>
+        <p>Öğretmenlerin haftalık ders çizelgesi ve yoklama alanları net siyah-beyaz baskı düzeninde hazırlanır.</p>
+        <button type="button" class="btn ghost" id="btnTeacherV2">Öğretmene Göre Yazdır</button>
+      </div>
     </div>
-    <div id="printPreview" class="grid printable"></div>
   </section>
 </div>
 
@@ -2216,6 +2289,11 @@ function printTempArea(html){
 
 // ========== Grup -> Öğrenci Odak & Vurgu ==========
 let __activeGroupChipId = null;
+document.getElementById('v410BackToGroups')?.addEventListener('click',()=>{
+  clearStudentHighlights();setActiveGroupChip(null);
+  document.getElementById('v410GroupsCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+  uiToast('Grup seçimine dönüldü. Başka bir grup seçebilirsiniz.','info','Gruplar');
+});
 
 function clearStudentHighlights(){
   $$('#tblStudents tbody tr').forEach(tr=> tr.classList.remove('hl'));
@@ -2227,6 +2305,7 @@ function setActiveGroupChip(groupId){
     el.classList.toggle('active', isActive);
   });
   __activeGroupChipId = groupId;
+  const back=$('#v410BackToGroups'); if(back)back.hidden=!groupId;
 }
 
 function focusGroupStudents(groupId){
@@ -2311,7 +2390,7 @@ function showTopTab(panelId){
   if(panelId==='step3'){ renderAvailGrids(); }
   if(panelId==='step4'){ refreshReqFilterOptions(); renderRequests(); }
   if(panelId==='step5'){ renderAssignCards(); }
-  if(panelId==='step6'){ refreshPrintFilters(); renderPrintPreview(); }
+  
   updateV49Overview();
 }
 function bindTopTabs(){ $$('#topTabs .tab').forEach(tab=> tab.addEventListener('click', ()=> showTopTab(tab.dataset.panel))); }
@@ -2401,6 +2480,8 @@ function renderGroupSummary(){
   }else{
     // seçim yoksa aktif sınıfı temizle
     $$('#groupSummary .group-chip').forEach(el=>el.classList.remove('active'));
+    __activeGroupChipId=null;
+    const back=$('#v410BackToGroups');if(back)back.hidden=true;
   }
 }
 async function fetchAll(){
@@ -2510,9 +2591,82 @@ function renderSlotLabels(){
   $("#btnClearLabels").onclick = ()=>{ state.program.slotLabels = Array(S).fill(''); renderSlotLabels(); };
 }
 
+/* V4.10 hızlı iskele paneli: mevcut state.program/JSON/Firebase şeması değiştirilmez. */
+const V410_WEEK=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+function v410DraftDays(){return $('#daysInput').value.split(',').map(x=>x.trim()).filter(Boolean);}
+function v410ScaffoldStatus(message){ const el=$('#v410ScaffoldStatus');if(el)el.textContent=message; }
+function renderV410Scaffold(){
+  const wrap=$('#v410DayChoices'); if(!wrap)return;
+  const chosen=new Set(v410DraftDays().map(x=>x.toLocaleLowerCase('tr-TR')));
+  const choices=[...V410_WEEK,...v410DraftDays().filter(x=>!V410_WEEK.some(d=>d.toLocaleLowerCase('tr-TR')===x.toLocaleLowerCase('tr-TR')))];
+  wrap.replaceChildren();
+  for(const day of choices){
+    const label=document.createElement('label');label.className='v410-day-chip';
+    const input=document.createElement('input');input.type='checkbox';input.checked=chosen.has(day.toLocaleLowerCase('tr-TR'));
+    const text=document.createElement('span');text.textContent=day;
+    input.addEventListener('change',()=>{
+      const current=v410DraftDays(); const norm=d=>d.toLocaleLowerCase('tr-TR');
+      if(input.checked){if(!current.some(d=>norm(d)===norm(day)))current.push(day);}
+      else {if(current.length===1){uiAlert('Program en az bir gün içermelidir.');input.checked=true;return;} const idx=current.findIndex(d=>norm(d)===norm(day));if(idx>=0)current.splice(idx,1);}
+      $('#daysInput').value=current.join(',');
+      v410ScaffoldStatus('Gün seçimi hazır. “Oluştur/Güncelle” düğmesine basınca mevcut veriler gün adlarına göre korunur.');
+      renderV410Scaffold();
+    });
+    label.append(input,text);wrap.appendChild(label);
+  }
+  $('#v410SlotCount').textContent=$('#slotsInput').value+' ders';
+}
+function initV410Scaffold(){
+  $('#daysInput').addEventListener('input',renderV410Scaffold);
+  $('#slotsInput').addEventListener('input',renderV410Scaffold);
+  $('#v410AddCustomDay').addEventListener('click',()=>{
+    const input=$('#v410CustomDay'),day=input.value.trim();
+    if(!day) return uiAlert('Eklemek istediğiniz günün adını girin.');
+    if(day.includes(',')) return uiAlert('Gün adında virgül kullanmayın.');
+    if(v410DraftDays().some(x=>x.toLocaleLowerCase('tr-TR')===day.toLocaleLowerCase('tr-TR')))return uiAlert('Bu gün zaten seçili.');
+    $('#daysInput').value=[...v410DraftDays(),day].join(',');input.value='';renderV410Scaffold();
+    v410ScaffoldStatus('Yeni gün taslağa eklendi. “Oluştur/Güncelle” ile uygulayın.');
+  });
+  for(const [id,delta] of [['#v410AddSlot',1],['#v410RemoveSlot',-1]]){
+    $(id).addEventListener('click',()=>{
+      const next=Number($('#slotsInput').value)+delta;
+      if(next<1 || next>12) return uiAlert('Ders sayısı 1 ile 12 arasında olmalıdır.');
+      $('#slotsInput').value=next;renderV410Scaffold();
+      v410ScaffoldStatus('Ders sayısı taslakta değişti. “Oluştur/Güncelle” ile uygulayın.');
+    });
+  }
+  $('#v410GenerateTimes').addEventListener('click',async()=>{
+    // Önce bekleyen gün/saat sayı değişiklikleri uygulanır.
+    const start=$('#v410StartTime').value;
+    const duration=Number($('#v410Duration').value),gap=Number($('#v410Break').value);
+    const parts=/^(\d{2}):(\d{2})$/.exec(start);
+    if(!parts || !Number.isInteger(duration)||duration<5||duration>180 ||!Number.isInteger(gap)||gap<0||gap>90)
+      return uiAlert('Başlangıç saati, ders süresi (5–180 dk) ve ara (0–90 dk) değerlerini kontrol edin.');
+    if(v410DraftDays().join(',')!==state.program.days.join(',') || Number($('#slotsInput').value)!==state.program.slots){
+      const apply=await uiConfirm('Önce yeni gün ve ders sayısı uygulansın mı?',{title:'Program iskeleti',okText:'Güncelle',cancelText:'Vazgeç'});
+      if(!apply)return;
+      if(!applyProgramDefinition())return;
+    }
+    if(state.program.slotLabels.some(s=>String(s).trim())){
+      const ok=await uiConfirm('Mevcut saat etiketleri yeni otomatik saatlerle değiştirilecek. Onaylıyor musunuz?',
+        {title:'Saat etiketlerini oluştur',okText:'Oluştur',cancelText:'Vazgeç'});
+      if(!ok)return;
+    }
+    const HHMM=min=>String(Math.floor(min/60)%24).padStart(2,'0')+':'+String(min%60).padStart(2,'0');
+    const begin=Number(parts[1])*60+Number(parts[2]);
+    if(begin+duration*state.program.slots+gap*(state.program.slots-1)>1440) return uiAlert('Saatler aynı gün içinde tamamlanamıyor. Başlangıcı veya süreleri değiştirin.');
+    state.program.slotLabels=Array.from({length:state.program.slots},(_,i)=>{
+      const from=begin+i*(duration+gap);return HHMM(from)+'-'+HHMM(from+duration);
+    });
+    renderSlotLabels();buildProgramGrid(true);refreshProgramDependentViews();
+    v410ScaffoldStatus('Saat etiketleri otomatik oluşturuldu. JSON/Firebase kaydı için mevcut Kaydet düğmelerini kullanabilirsiniz.');
+    uiToast('Ders saatleri otomatik oluşturuldu.','success','Saatler hazır');
+  });
+  renderV410Scaffold();
+}
 /* Programla uyum */
 function reconcileAllToProgram(policy='keep', options={}){
-  // V4.9: reset yalnızca açık program güncelleme eyleminde etkin.
+  // V4.10: reset yalnızca açık program güncelleme eyleminde etkin.
   const shouldReset = policy === 'reset' && options.explicitProgramChange === true;
   const D = state.program.days.length, S = state.program.slots;
 
@@ -2534,7 +2688,7 @@ function reconcileAllToProgram(policy='keep', options={}){
   else state.assignments = state.assignments.filter(a=> a.day<D && a.slot<S);
 }
 
-/* V4.9 / Program güncelleme işlemi: gün sırasını anahtarlarla eşleştir.
+/* V4.10 / Program güncelleme işlemi: gün sırasını anahtarlarla eşleştir.
    Bu fonksiyon salt çizim sırasında çağrılmaz; yalnızca Güncelle düğmesi çalıştırır. */
 function applyProgramDefinition(){
   const old = state.program;
@@ -2585,6 +2739,7 @@ function applyProgramDefinition(){
   reconcileAllToProgram('keep');
   buildProgramGrid(true);
   renderSlotLabels();
+  renderV410Scaffold();
   refreshProgramDependentViews();
   if(before>state.assignments.length) uiToast(`${before-state.assignments.length} atama program güncellemesi nedeniyle çıkarıldı.`, 'warn','Program güncellendi');
   else uiToast('Program güncellendi; aynı günlere ait kayıtlar korundu.','success','Program güncellendi');
@@ -2593,7 +2748,6 @@ function applyProgramDefinition(){
 function refreshProgramDependentViews(){
   if(typeof renderAvailGrids==='function') renderAvailGrids();
   if(typeof renderAssignCards==='function') renderAssignCards();
-  if(typeof refreshPrintFilters==='function') refreshPrintFilters();
   updateV49Overview();
 }
 
@@ -2608,7 +2762,44 @@ function slotHeadCells(container,S){
 }
 function bulkSet(matrix, val){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=val; }
 function bulkToggle(matrix){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=!matrix[d][s]; }
-function copyDayPattern(matrix, fromDay){ const row = matrix[fromDay].slice(); for(let d=0; d<matrix.length; d++){ matrix[d] = row.slice(); } }
+/* V4.10: Gün kopyalaması yerine, öğretmen veya grubun tam müsaitlik çizelgesi taşınır. */
+let availabilityClipboard = null;
+function availabilityMatrixFor(type,id){ return state.availability?.[type]?.[id] || null; }
+function updateAvailabilityClipboardStatus(){
+  const el=$('#availClipboardStatus'); if(!el) return;
+  el.textContent=availabilityClipboard
+    ? `Kopyalanan: ${availabilityClipboard.name} (${availabilityClipboard.days.length} gün × ${availabilityClipboard.slots} ders). Hedef kartta “Programı Yapıştır” seçin.`
+    : 'Kopyalanmış program yok. Her kartın üstündeki “Programı Kopyala” düğmesini kullanın.';
+}
+function copyAvailabilityProgram(type,id,name){
+  const matrix=availabilityMatrixFor(type,id);
+  if(!matrix) return uiAlert('Kopyalanacak müsaitlik bulunamadı.');
+  availabilityClipboard={name,days:state.program.days.slice(),slots:state.program.slots,
+    matrix:matrix.map(row=>row.map(v=>v===true))};
+  updateAvailabilityClipboardStatus(); renderAvailGrids();
+  uiToast(`${name} programı kopyalandı. Hedef öğretmen veya gruba yapıştırabilirsiniz.`, 'success','Program kopyalandı');
+}
+async function pasteAvailabilityProgram(type,id,name){
+  if(!availabilityClipboard) return uiAlert('Önce bir öğretmen veya grubun tüm programını kopyalayın.');
+  const norm=d=>String(d).trim().toLocaleLowerCase('tr-TR');
+  const sourceIndex=new Map(availabilityClipboard.days.map((d,i)=>[norm(d),i]));
+  const matching=state.program.days.filter(d=>sourceIndex.has(norm(d)));
+  if(!matching.length) return uiAlert('Kopyalanan çizelgede mevcut programla eşleşen gün yok.');
+  const ok=await uiConfirm(`${availabilityClipboard.name} programı, ${name} üzerine yapıştırılacak. ${matching.length} ortak günün dersleri güncellenecek; diğer günler korunacak. Devam edilsin mi?`,
+    {title:'Tüm programı yapıştır',okText:'Yapıştır',cancelText:'Vazgeç'});
+  if(!ok) return;
+  const target=availabilityMatrixFor(type,id);
+  if(!target) return uiAlert('Hedef müsaitlik bulunamadı.');
+  let changed=0;
+  state.program.days.forEach((day,d)=>{
+    const from=sourceIndex.get(norm(day)); if(from===undefined) return;
+    for(let slot=0;slot<Math.min(state.program.slots,availabilityClipboard.slots);slot++){
+      target[d][slot]=availabilityClipboard.matrix[from]?.[slot]===true; changed++;
+    }
+  });
+  renderAvailGrids();
+  uiToast(`${name} için ${changed} hücre yapıştırıldı.`, 'success','Yapıştırma tamamlandı');
+}
 
 /* ===== 4) Talepler ===== */
 function ensureRequests(){
@@ -2911,8 +3102,6 @@ function onAssignmentsMutated(){
   // 2) Yazdır sekmesi açıksa anında tazele
   const printPanel = $('#step6');
   if (printPanel && !printPanel.hasAttribute('hidden')) {
-    refreshPrintFilters();
-    renderPrintPreview();
   }
 
   // 3) Otomatik atama raporu açıksa güncelle
@@ -2979,8 +3168,7 @@ function openAssignDialog(group, day, slot) {
     $("#dlgDelete").hidden = true;
   }
 
-  $('#dlgLocked').checked=current?current.locked===true:true;
-  $('#dlgFallback').checked=current?.countsTowardNeed===false;
+  $('#dlgLocked').checked=current ? current.locked===true : false;
   dlg.showModal();
 }
 $("#dlgDelete").onclick = async () => {
@@ -3092,7 +3280,7 @@ $("#dlgOk").onclick = async () => {
   const previous=state.assignments.find(a=>a.group===group && a.day===day && a.slot===slot);
   const branch=$('#dlgBranch').value,teacherId=$('#dlgTeacher').value;
   const a={group,day,slot,branch,teacherId,locked:$('#dlgLocked').checked,
-    countsTowardNeed:!$('#dlgFallback').checked,assignmentMode:'manual',origin:'manual'};
+    assignmentMode:'manual',origin:'manual'};
   if(previous?.jointLessonId && previous.branch===branch && previous.teacherId===teacherId) a.jointLessonId=previous.jointLessonId;
   if(commitManualAssignment(a,{replace:true})) dlg.close();
 };
@@ -3120,7 +3308,7 @@ function listFreeTeachersAt(day, slot, max=Infinity){
   return Number.isFinite(max) ? res.slice(0, Math.max(0, max)) : res;
 }
 
-/* ===== V4.9: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
+/* ===== V4.10: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
  * Örnek aile: G1-8A, G2-8A, G3-8A -> "8A".
  * Otomatik birleşme seçeneği veya açık manuel öneriyle en fazla iki kardeş
  * grup aynı branş ve öğretmende birleşebilir; farklı ders ihtiyacı kapanmaz.
@@ -3291,7 +3479,7 @@ function buildAutoAssignReport(_prevCount){
         .sort((a,b)=>b[1]-a[1])
         .map(([b])=>b);
 
-      // V4.9: Elle Tamamlama'da seçenekleri birbirinin alternatifi olarak gizleme.
+      // V4.10: Elle Tamamlama'da seçenekleri birbirinin alternatifi olarak gizleme.
       // Aynı slot için mümkün olan TÜM kategoriler birlikte üretilir:
       // 1) talebi karşılayan normal ders, 2) birleşik ders,
       // 3) ihtiyaç dışı / ders dışı normal ders, 4) farklı dersle birleşik seçenek.
@@ -3469,7 +3657,7 @@ function showAutoAssignReport(report, prevCount){
     }
 
     // Elle atama listesi: talebi olan ve grubun müsait olduğu tüm boş slotlar.
-    // V4.9: Her satırda bütün uygun öneri kategorileri aynı anda görünür.
+    // V4.10: Her satırda bütün uygun öneri kategorileri aynı anda görünür.
     const rows = rep.details
       .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi' || x.kind==='birlesik-onerili' || x.kind==='ders-disi-onerili' || x.kind==='birlesik-farkli-ders')
       .map(x => {
@@ -3566,7 +3754,7 @@ function showAutoAssignReport(report, prevCount){
       ${assignmentSummaryHtml()}
       <div class="grid" style="gap:10px">
         <div class="card">
-          <h3>Elle Tamamlama (tüm uygun boş slotlar) • V4.9</h3>
+          <h3>Elle Tamamlama (tüm uygun boş slotlar) • V4.10</h3>
           ${rows ? `<ol style="margin:6px 0 0 18px">${rows}</ol>` : `<div class="muted">Elle tamamlama için uygun boş slot kalmadı.</div>`}
           <div class="muted" style="margin-top:8px">Her uygun slotta sistem artık <b>tüm seçenekleri birlikte</b> gösterir: talebi karşılayan normal dersler, <b>birleşik ders önerileri</b>, boş öğretmenlerden <b>ders dışı / ihtiyaç dışı öneriler</b> ve aynı sınıf/şube ailesindeki <b>ders dışı birleşik öneriler</b>. Birleşik ders en fazla <b>2 grup</b> olabilir. “Ders dışı / ihtiyaç dışı” olarak işaretlenen seçimler grubu boş bırakmaz ancak kalan ders talebini <b>kapatmaz</b>.</div>
         </div>
@@ -3597,7 +3785,7 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-/* V4.9 — one rule engine, shared by the UI, imports and the worker. */
+/* V4.10 — one rule engine, shared by the UI, imports and the worker. */
 function createAssignmentEngine(input) {
   const D = input.program.days.length, S = input.program.slots;
   if (!D || !Number.isInteger(S) || S < 1 || S > 12) throw Error('Program gün ve saatlerini kontrol edin.');
@@ -3683,7 +3871,12 @@ function createAssignmentEngine(input) {
   function normalize(list, options={}) {
     const c=context(), removed=[];
     for (const raw of (Array.isArray(list)?list:[])) {
-      const a=clean(raw), reason=check(a,c,{allowJoint:true,allowConsecutive:true,requireJointTag:true,...options});
+      const a=clean(raw);
+      // Manuel atamalar talep yokken veya talep doluyken de geçerlidir.
+      // Talebi geçen ders, sayacı şişirmeden programda korunur.
+      if(a && (a.origin==='manual' || a.assignmentMode==='manual') &&
+        (c.have.get(pairKey(a)) || 0) >= (requests.get(pairKey(a)) || 0)) a.countsTowardNeed=false;
+      const reason=check(a,c,{allowJoint:true,allowConsecutive:true,requireJointTag:true,...options});
       if (reason) removed.push({assignment:raw,reason,detail:reasons[reason]}); else add(c,a);
     }
     return {assignments:canonical(c),removed,score:c.score};
@@ -3947,8 +4140,6 @@ function getValidatedAssignmentSnapshot() {
 }
 function normalizeAssignmentsAgainstAvailability(list, source='unknown') {
   if(!state.teachers.length || !Object.keys(state.groups).length) return {error:'Önce öğretmen ve grup verilerini yükleyin.',assignments:[],removed:[]};
-  if(list.some(a=>a?.countsTowardNeed!==false) && !Object.values(state.requests||{}).some(r=>Object.values(r||{}).some(n=>Number(n)>0)))
-    return {error:'Atamalardan önce grup ders taleplerini yükleyin.',assignments:[],removed:[]};
   try {
     const result=createAssignmentEngine(getAssignmentInput()).normalize(list,currentAssignmentRules());
     state.lastAvailabilityNormalization={source,keptCount:result.assignments.length,removedCount:result.removed.length,removed:result.removed,at:Date.now()};
@@ -3961,6 +4152,10 @@ function commitManualAssignment(a, {replace=false,merge=false}={}) {
     const next=data.assignments.filter(x=>!(replace && String(x.group)===String(a.group) && x.day===a.day && x.slot===a.slot));
     const candidate=engine.clean(a);
     if(!candidate) {uiAlert('Geçersiz atama.');return false;}
+    // Talep sayacı motor tarafından normalize edilir; ek manuel dersler reddedilmez.
+    const currentNeed=Number(data.requests?.[candidate.group]?.[candidate.branch] || 0);
+    const currentHave=next.filter(x=>x.group===candidate.group && x.branch===candidate.branch && x.countsTowardNeed!==false).length;
+    candidate.countsTowardNeed=currentHave < currentNeed;
     if(merge) {
       const source=next.filter(x=>String(x.teacherId)===candidate.teacherId && x.day===candidate.day && x.slot===candidate.slot);
       if(source.length!==1 || source[0].branch!==candidate.branch ||
@@ -3982,7 +4177,7 @@ function assignmentSummaryHtml() {
   if(!meta?.solver) return '';
   const stale=meta.fingerprint!==assignmentFingerprint();
   return `<div class="card" style="border-left:4px solid ${stale?'#d97706':'#4f46e5'};padding:14px">
-    <b>V4.9${stale?' • Program değişti':''}</b>
+    <b>V4.10${stale?' • Program değişti':''}</b>
     <div style="margin-top:8px"><b>${meta.score} / ${meta.totalNeed}</b> ders talebi karşılandı • Eksik: <b>${Math.max(0,meta.totalNeed-meta.score)}</b></div>
   </div>`;
 }
@@ -4033,7 +4228,7 @@ async function autoAssign() {
     }
     state.assignments=verified.assignments;
     state.lastAvailabilityNormalization={source:'v4.9-on-dogrulama',removed:result.removed,removedCount:result.removed.length,at:Date.now()};
-    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.9',
+    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.10',
       prevCount:data.assignments.length,lastRunAt:Date.now(),relaxConsecutive:options.allowConsecutive,
       allowJoint:options.allowJoint,fingerprint:assignmentFingerprint()};
     onAssignmentsMutated();syncReportButtons();
@@ -4071,166 +4266,7 @@ const importAssgn = obj=>{
   }
 };
 
-/* ===== 6) Yazdır ===== */
-function refreshPrintFilters(){
-  const mode = $("#printMode").value;
-  const sel = $("#printFilter"); sel.innerHTML='';
-  if(mode==='group'){
-    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='(Tüm Gruplar)'; sel.appendChild(opt0);
-    Object.values(state.groups).sort(groupComparator).forEach(g=>{
-      const opt=document.createElement('option'); opt.value=g.id; opt.textContent=g.name; sel.appendChild(opt);
-    });
-  }else{
-    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='(Tüm Öğretmenler)'; sel.appendChild(opt0);
-    state.teachers.forEach(t=>{
-      const opt=document.createElement('option'); opt.value=t.id; opt.textContent=`${t.name} — ${t.branch}`; sel.appendChild(opt);
-    });
-  }
-}
-function renderPrintPreview(){
-  const div = $("#printPreview"); div.innerHTML='';
-  const mode = $("#printMode").value;
-  const filter = $("#printFilter").value;
-  const S = state.program.slots, days = state.program.days, labels = state.program.slotLabels || [];
-
-  if(!hasAnyAssignments()){
-    div.innerHTML = '<div class="muted">Atama yok. Önce atama yapın.</div>';
-    $("#btnPrint").disabled = true; return;
-  }
-  $("#btnPrint").disabled = false;
-
-  const hdr = document.createElement('div'); hdr.className='print-header';
-  hdr.innerHTML = `<h2>Fenomen Eğitim Kurumları — ${mode==='group'?'Grup':'Öğretmen'} Ders Planı</h2>`;
-  div.appendChild(hdr);
-
-  if(mode==='group'){
-    const groups = (filter ? [state.groups[filter]] : Object.values(state.groups))
-      .filter(Boolean)
-      .filter(g=>state.assignments.some(a=>a.group===g.id))
-      .sort(groupComparator);
-
-    groups.forEach(g=>{
-      const aForG = state.assignments.filter(a=>a.group===g.id);
-      const daysWith = Array.from(new Set(aForG.map(a=>a.day))).sort((a,b)=>a-b);
-      if(daysWith.length===0) return;
-
-      const page=document.createElement('div'); page.className='print-page';
-      const wr = document.createElement('div'); wr.className='print-wrapper avoid-break';
-
-      // Öğrenciler – iki sütun 👤
-      const students = state.students.filter(st=>st.group===g.id).map(s=>s.name);
-      const title = document.createElement('div'); title.className='print-sub';
-      title.innerHTML = `<b>${g.name}</b> • Öğrenciler:`;
-      wr.appendChild(title);
-
-      const stCol = document.createElement('div'); stCol.className='students-2col';
-      const ul = document.createElement('ul');
-      students.forEach(n=>{
-        const li=document.createElement('li'); li.innerHTML=`👤 ${n}`; ul.appendChild(li);
-      });
-      stCol.appendChild(ul); wr.appendChild(stCol);
-
-      // Tablo – ortalı öğretmen isimleri
-      const t = document.createElement('table'); t.className='print-table tight';
-      const thead = `<tr><th>Gün / Saat</th>${Array.from({length:S},(_,i)=>`<th>${labels[i]||''}</th>`).join('')}</tr>`;
-      let body='';
-      days.forEach((d,di)=>{
-        let row=`<tr><td><b>${days[di]}</b></td>`;
-        for(let s=0; s<S; s++){
-          const a = aForG.find(x=>x.day===di && x.slot===s);
-          let txt = '';
-          if (a) {
-            const teacherName = state.teachers.find(t=>String(t.id)===String(a.teacherId))?.name || '';
-            const jointNames = getJointLessonGroupNames(a);
-            const jointNote = jointNames.length > 1
-              ? `<br/><span class="mini2">Birleşik: ${jointNames.map(escapeHtml).join(' + ')}</span>`
-              : '';
-            txt = `<div style="text-align:center"><b>${escapeHtml(a.branch)}</b><br/>👤 ${escapeHtml(teacherName)}${jointNote}</div>`;
-          }
-          row += `<td>${txt}</td>`;
-        }
-        row+='</tr>'; body+=row;
-      });
-      t.innerHTML = `<thead>${thead}</thead><tbody>${body}</tbody>`; wr.appendChild(t);
-
-      // Bu görünüm (Gruba göre) her grup için tek sayfa üretir.
-      // Not: Önceki sürümde burada tanımlı olmayan `extraPages` değişkeni
-      // kullanıldığı için JS hata veriyor ve önizleme yarıda kesiliyordu.
-      page.appendChild(wr); div.appendChild(page);
-    });
-
-  } else {
-    const teachers = (filter ? [state.teachers.find(t=>t.id===filter)] : state.teachers)
-      .filter(Boolean)
-      .filter(t=>state.assignments.some(a=>a.teacherId===t.id));
-
-    teachers.forEach(t=>{
-      const aForT = state.assignments.filter(a=>a.teacherId===t.id);
-      const daysWith = Array.from(new Set(aForT.map(a=>a.day))).sort((a,b)=>a-b);
-      if(daysWith.length===0) return;
-
-      const page=document.createElement('div'); page.className='print-page';
-      const wr = document.createElement('div'); wr.className='print-wrapper avoid-break';
-
-      // Üst tablo — öğretmene göre, ortalı
-      const tTbl = document.createElement('table'); tTbl.className='print-table tight';
-      const thead = `<tr><th colspan="${S+1}" style="text-align:center">${t.name} — ${t.branch}</th></tr>
-                     <tr><th>Gün / Saat</th>${Array.from({length:S},(_,i)=>`<th>${labels[i]||''}</th>`).join('')}</tr>`;
-      let body='';
-      daysWith.forEach(d=>{
-        let row=`<tr><td><b>${days[d]}</b></td>`;
-        for(let s=0; s<S; s++){
-          const atSlot = aForT.filter(x=>x.day===d && x.slot===s);
-          if (atSlot.length) {
-            const branchNames = Array.from(new Set(atSlot.map(a=>String(a.branch || '')))).filter(Boolean);
-            const groupNames = Array.from(new Set(atSlot.map(a=>state.groups[a.group]?.name || a.group))).filter(Boolean);
-            const jointIds = Array.from(new Set(atSlot.map(a=>a.jointLessonId).filter(Boolean)));
-            const isJoint = atSlot.length > 1 && jointIds.length === 1 && atSlot.every(a=>a.jointLessonId === jointIds[0]);
-            row += `<td style="text-align:center"><b>${branchNames.map(escapeHtml).join(' / ')}</b><br/>Gruplar: ${groupNames.map(escapeHtml).join(' + ')}${isJoint ? '<br/><span class="mini2">Birleşik ders</span>' : ''}</td>`;
-          } else {
-            row += `<td></td>`;
-          }
-        }
-        row+='</tr>'; body+=row;
-      });
-      tTbl.innerHTML = `<thead>${thead}</thead><tbody>${body}</tbody>`; wr.appendChild(tTbl);
-
-      // Yoklama (mini kartlar) — grup bazında değil, ders oturumu bazında.
-      // Böylece aynı grup farklı gün/saatlerde tekrar ediyorsa her ders için ayrı yoklama çıkar.
-      const attendanceEntries = buildTeacherAttendanceEntries(aForT, days, labels);
-      const attendancePages = renderAttendancePages(attendanceEntries);
-      const total = attendancePages.length;
-      const extraPages = [];
-
-      if(total){
-        // 1. sayfaya ilk 20 ders oturumu
-        const att0 = document.createElement('div');
-        att0.innerHTML = attendancePages[0];
-        wr.appendChild(att0);
-
-        // 21. ders oturumu ve sonrası için ek sayfalar
-        for(let i=1;i<attendancePages.length;i++){
-          const page2=document.createElement('div'); page2.className='print-page';
-          const wr2 = document.createElement('div'); wr2.className='print-wrapper avoid-break';
-
-          const head2 = document.createElement('div'); head2.className='print-sub';
-          head2.innerHTML = `<b>${t.name} — ${t.branch}</b> • Yoklama (Devam)`;
-          wr2.appendChild(head2);
-
-          const attX = document.createElement('div');
-          attX.innerHTML = attendancePages[i];
-          wr2.appendChild(attX);
-
-          page2.appendChild(wr2); extraPages.push(page2);
-        }
-      }
-
-      page.appendChild(wr); div.appendChild(page);
-      (extraPages||[]).forEach(pg=>div.appendChild(pg));
-    });
-  }
-}
-
+/* V4.10: Yazdır bölümünde yalnızca iki bağımsız çıktı düğmesi kullanılır. */
 /* ===== Olaylar ===== */
 $("#btnFetch").onclick = fetchAll;
 $("#btnClear").onclick = ()=>{
@@ -4247,9 +4283,9 @@ $("#btnProgImport").onclick = ()=>openFile($("#fileProgImport"), obj=>{
   if(!obj || !Array.isArray(obj.days) || !obj.days.length || obj.days.some(d=>typeof d!=='string'||!d.trim()) || new Set(obj.days.map(d=>d.trim().toLocaleLowerCase('tr-TR'))).size!==obj.days.length || !Number.isInteger(obj.slots) || obj.slots<1 || obj.slots>12) return uiAlert('Geçersiz program JSON: günler ve 1-12 arası ders sayısı gerekli.');
   state.program = {...obj, days:obj.days.map(d=>d.trim()),cells:(obj.cells && typeof obj.cells==='object' && !Array.isArray(obj.cells))?obj.cells:{},slotLabels:Array.isArray(obj.slotLabels)?obj.slotLabels:[]};
   $("#daysInput").value = obj.days.join(','); $("#slotsInput").value = obj.slots;
-  buildProgramGrid(true); renderSlotLabels();
+  buildProgramGrid(true); renderSlotLabels(); renderV410Scaffold();
   reconcileAllToProgram(getAssignPolicy());
-  renderAvailGrids(); renderAssignCards(); refreshPrintFilters();
+  renderAvailGrids(); renderAssignCards();
 });
 
 $("#btnAvailExport").onclick = ()=>download('musaitlikler.json', state.availability);
@@ -4276,7 +4312,7 @@ $("#btnReqImport").onclick = ()=>openFile($("#fileReqImport"), importReq);
 $("#btnReqClear").onclick = ()=>{ state.requests={}; renderRequests(); };
 $("#reqGroupSelect").onchange = renderRequests;
 
-// V4.9: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
+// V4.10: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
 for(const id of ['chkRelaxConsecutive','chkAutoJoint']){
   document.getElementById(id).addEventListener('change',()=>{renderAssignCards();refreshAutoAssignReportIfOpen();});
@@ -4308,8 +4344,6 @@ $("#btnAssgnClear").onclick = ()=>{
   onAssignmentsMutated();
 };
 
-$("#printMode").onchange = ()=> { refreshPrintFilters(); renderPrintPreview(); };
-$("#btnRenderPrint").onclick = renderPrintPreview;
 
 // Yerel kaydet/yükle fonksiyonları kaldırıldı; Firebase tabanlı işlemler eklenecek
 
@@ -4460,7 +4494,12 @@ function renderAvailGrids(){
       b1.onclick=()=>{ bulkSet(state.availability.teachers[t.id], true); renderAvailGrids(); };
       b2.onclick=()=>{ bulkSet(state.availability.teachers[t.id], false); renderAvailGrids(); };
       b3.onclick=()=>{ bulkToggle(state.availability.teachers[t.id]); renderAvailGrids(); };
-      right.append(b1,b2,b3); head.appendChild(right); card.appendChild(head);
+      const copy=document.createElement('button'); copy.type='button'; copy.className='btn xs ghost'; copy.textContent='⧉ Programı Kopyala';
+      copy.onclick=()=>copyAvailabilityProgram('teachers',t.id,t.name);
+      const paste=document.createElement('button'); paste.type='button'; paste.className='btn xs sec'; paste.textContent='▣ Programı Yapıştır';
+      paste.disabled=!availabilityClipboard;
+      paste.onclick=()=>pasteAvailabilityProgram('teachers',t.id,t.name);
+      right.append(b1,b2,b3,copy,paste); head.appendChild(right); card.appendChild(head);
 
       const scrollWrap = document.createElement('div');
       scrollWrap.className = 'grid-scroll-wrapper';
@@ -4477,8 +4516,6 @@ function renderAvailGrids(){
       for(let d=0; d<D; d++){
         const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
         const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.className='head-cell';
-        dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
-        dayLbl.ondblclick=async()=>{ if(await uiConfirm(`"${days[d]}" gününü kopyala?`, {title:"Gün kopyala", okText:"Kopyala", cancelText:"Vazgeç"})){ copyDayPattern(state.availability.teachers[t.id], d); renderAvailGrids(); } };
         row.appendChild(dayLbl);
         for(let s=0;s<S;s++){
           const val = state.availability.teachers[t.id][d][s];
@@ -4519,7 +4556,12 @@ function renderAvailGrids(){
       b1.onclick=()=>{ bulkSet(state.availability.groups[g.id], true); renderAvailGrids(); };
       b2.onclick=()=>{ bulkSet(state.availability.groups[g.id], false); renderAvailGrids(); };
       b3.onclick=()=>{ bulkToggle(state.availability.groups[g.id]); renderAvailGrids(); };
-      right.append(b1,b2,b3); head.appendChild(right); card.appendChild(head);
+      const copy=document.createElement('button'); copy.type='button'; copy.className='btn xs ghost'; copy.textContent='⧉ Programı Kopyala';
+      copy.onclick=()=>copyAvailabilityProgram('groups',g.id,g.name);
+      const paste=document.createElement('button'); paste.type='button'; paste.className='btn xs sec'; paste.textContent='▣ Programı Yapıştır';
+      paste.disabled=!availabilityClipboard;
+      paste.onclick=()=>pasteAvailabilityProgram('groups',g.id,g.name);
+      right.append(b1,b2,b3,copy,paste); head.appendChild(right); card.appendChild(head);
 
       const scrollWrap = document.createElement('div');
       scrollWrap.className = 'grid-scroll-wrapper';
@@ -4536,8 +4578,6 @@ function renderAvailGrids(){
       for(let d=0; d<D; d++){
         const row = document.createElement('div'); row.className='kgrid'; row.style.setProperty('--cols', S); row.dataset.cols = S;
         const dayLbl = document.createElement('div'); dayLbl.textContent=days[d]; dayLbl.className='head-cell';
-        dayLbl.title='Çift tıkla: bu günü tüm günlere kopyala';
-        dayLbl.ondblclick=async()=>{ if(await uiConfirm(`"${days[d]}" gününü kopyala?`, {title:"Gün kopyala", okText:"Kopyala", cancelText:"Vazgeç"})){ copyDayPattern(state.availability.groups[g.id], d); renderAvailGrids(); } };
         row.appendChild(dayLbl);
         for(let s=0;s<S;s++){
           const val = state.availability.groups[g.id][d][s];
@@ -4666,7 +4706,7 @@ function renderAssignCards(){
 }
 
 
-/* ===== V4.9 / Görsel durum göstergeleri (salt okuma) ===== */
+/* ===== V4.10 / Görsel durum göstergeleri (salt okuma) ===== */
 function updateV49Overview(){
   const byId=(id,value)=>{const el=document.getElementById(id);if(el) el.textContent=String(value);};
   byId('v49TeacherCount',state.teachers?.length||0);
@@ -4715,6 +4755,8 @@ renderSlotLabels();
 bindPanelFilters();
 populatePanelFilters();
 showTopTab('step1');
+
+initV410Scaffold();
 </script>
 
 
@@ -4777,17 +4819,7 @@ function renderBranchChipsSummary(){
 // Bu fonksiyon, atanmış grupların sınıf düzeylerine göre (5, 6, 7, 8) kompakt bir
 // tablo halinde yazdırılmasını sağlar. Eğer ilgili sınıf düzeyi için grup ve
 // atama yoksa o sayfa oluşturulmaz. Her sınıf bölümü yeni bir sayfada başlar.
-(function injectPrintAllButton(){
-  const host = document.querySelector('#step6 .row.no-print');
-  if (!host || document.getElementById('btnPrintAll')) return;
-  const btn = document.createElement('button');
-  btn.id = 'btnPrintAll';
-  btn.className = 'btn warn';
-  btn.textContent = 'Tüm listeyi yazdır';
-  // Değiştirilen fonksiyon çağrısı: tüm sınıflar için liste yazdırılır
-  btn.addEventListener('click', openPrintAllGradesDialog);
-  host.appendChild(btn);
-})();
+document.getElementById('btnPrintAll')?.addEventListener('click', openPrintAllGradesDialog);
 
 /**
  * Atanmış grupları 5, 6, 7 ve 8. sınıf düzeylerine göre yazdırır. Her bir sınıf
@@ -4822,6 +4854,7 @@ function ensurePrintAllGradesDialog(){
       <div id="printAllGradesChecks" class="card" style="padding:12px">
         <div class="muted">Liste hazırlanıyor…</div>
       </div>
+      <div id="printAllGradeWarning" role="alert" class="v410-print-warning" hidden></div>
 
       <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn ghost" value="cancel">Vazgeç</button>
@@ -4838,11 +4871,14 @@ function ensurePrintAllGradesDialog(){
     e.preventDefault();
     const checks = Array.from(dlg.querySelectorAll('input[type=checkbox][data-grade]'));
     const grades = checks.filter(c=>c.checked).map(c=>+c.dataset.grade).filter(n=>!Number.isNaN(n));
-    dlg.close();
+    const warning=dlg.querySelector('#printAllGradeWarning');
     if(!grades.length){
-      uiAlert('Lütfen en az 1 sınıf seçin.');
-      return;
+      warning.hidden=false;
+      warning.textContent='En az bir sınıf seçmelisiniz. Lütfen seçim yapın.';
+      return; // Modal açık kalır.
     }
+    warning.hidden=true;
+    dlg.close();
     printAllGradesSelected(grades);
   });
 
@@ -4930,7 +4966,7 @@ function openPrintWindow(title, html){
   </head><body>
     ${html}
     <script>window.onload=()=>{ setTimeout(()=>window.print(), 50); }<\/script>
-  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.9</footer>
+  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.10</footer>
 </body></html>`);
   doc.close();
 }
@@ -5076,12 +5112,13 @@ function openPrintAllGradesDialog(){
   const dlg = ensurePrintAllGradesDialog();
   const host = dlg.querySelector('#printAllGradesChecks');
 
-  const grades = getAvailableGradesFromGroups();
+  const grades = getAvailableGradesFromGroups().slice().sort((a,b)=>a-b);
+  dlg.querySelector('#printAllGradeWarning').hidden=true;
   host.innerHTML = `
     <div class="row" style="align-items:flex-start">
       ${grades.map(g=>`
         <label style="display:flex;align-items:center;gap:8px;min-width:120px;user-select:none">
-          <input type="checkbox" data-grade="${g}" checked />
+          <input type="checkbox" data-grade="${g}" />
           <span style="font-weight:900">${g}. Sınıf</span>
         </label>
       `).join('')}
@@ -5089,7 +5126,7 @@ function openPrintAllGradesDialog(){
     <div class="muted mini" style="margin-top:8px">Not: Seçili sınıflar ayrı ayrı sayfalara bölünür.</div>
   `;
 
-  try{ dlg.showModal(); }catch(_){ uiAlert('Tarayıcı bu pencereleri (dialog) desteklemiyor.'); printAllGradesSelected([5,6,7,8]); }
+  try{ dlg.showModal(); }catch(_){ uiAlert('Tarayıcı sınıf seçim penceresini açamıyor; farklı tarayıcıda tekrar deneyin.'); }
 }
 
 /**
@@ -5097,111 +5134,137 @@ function openPrintAllGradesDialog(){
  * Her bir sınıf düzeyi yeni bir sayfada başlar.
  */
 function printAllGradesSelected(selectedGrades) {
-  const hasAny = Array.isArray(state.assignments) && state.assignments.length > 0;
-  if (!hasAny) { uiAlert('Atama yok. Önce atama yapın.'); return; }
-
-  const grades = (Array.isArray(selectedGrades) ? selectedGrades : [5,6,7,8])
-    .map(n=>+n).filter(n=>!Number.isNaN(n));
-
-  const days   = state.program?.days || ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"];
-  const S      = +state.program?.slots || 8;
-  const labels = Array.isArray(state.program?.slotLabels) ? state.program.slotLabels : [];
-
-  const esc = s => String(s ?? '')
-    .replaceAll('&','&amp;').replaceAll('<','&lt;')
-    .replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
-
-  const byGrade = (grade) => Object.values(state.groups || {})
-    .filter(g => (parseGroupName(g.name || g.id || '')?.grade === grade))
-    .filter(g => state.assignments.some(a => a.group === g.id))
-    .sort(groupComparator);
-
-  const w = window.open('', '_blank');
-  const css = `
-    @page { size: A4; margin: 8mm; }
-    * { box-sizing: border-box; }
-    body { font: 11px/1.25 system-ui, -apple-system, Segoe UI, Roboto, Arial, Helvetica, sans-serif; color:#0a0a0a; }
-    h1 { font-size: 16px; margin: 0 0 6px; text-align:center; font-weight:800; }
-    h2 { font-size: 13px; margin: 8px 0 6px; font-weight:800; border-bottom:1px solid #ddd; padding-bottom:3px; }
-    .grade-section { break-before: page; page-break-before: always; }
-    .grade-section:first-of-type { break-before: auto; page-break-before: auto; }
-    .group-block { margin: 6px 0 10px; page-break-inside: avoid; break-inside: avoid; }
-    .g-head { font-weight:700; margin-bottom:4px; }
-    .students { font-weight: 500; color:#374151; }
-    table { width:100%; border-collapse: collapse; table-layout: fixed; }
-    th, td { border:1px solid #dcdcdc; padding: 2px 4px; vertical-align: top; }
-    th { background:#f3f4f6; font-weight:700; text-align:center; }
-    td.day { white-space:nowrap; font-weight:700; }
-    .mini { font-size: 10px; color:#374151; }
-    .tight th, .tight td { padding: 2px 4px; }
-    .grade-badge { display:inline-block; padding:2px 8px; border-radius:8px; background:#eef2ff; color:#1e3a8a; font-weight:800; }
-    .muted { color:#6b7280; }
-    th,td { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  `;
-
-  w.document.write(`<!DOCTYPE html><html lang="tr"><head>
-    <meta charset="utf-8">
-    <title>Fenomen Eğitim Kurumları • Tüm Liste</title>
-    <style>${css}</style>
-  </head><body>`);
-
-  w.document.write(`<h1>Fenomen Eğitim Kurumları • Birebir ve Grup Listesi</h1>`);
-
-  grades.forEach(grade => {
-    const groups = byGrade(grade);
-    if (groups.length === 0) return;
-
-    w.document.write(`<section class="grade-section">`);
-    w.document.write(`<h2><span class="grade-badge">${grade}. Sınıflar</span></h2>`);
-
-    groups.forEach(g => {
-      const aForG = state.assignments.filter(a => a.group === g.id);
-      const daysWith = Array.from(new Set(aForG.map(a => a.day))).sort((a,b)=>a-b);
-      if (daysWith.length === 0) return;
-
-      const studentNames = (state.students || [])
-        .filter(s => s.group === g.id)
-        .map(s => esc(s.name));
-
-      w.document.write(`<div class="group-block">`);
-      w.document.write(`<div class="g-head">${esc(g.name)} — <span class="students">${studentNames.join(', ') || '<span class="muted">öğrenci yok</span>'}</span></div>`);
-
-      const thead = `<tr><th style="width:90px">Gün / Saat</th>${
-        Array.from({length:S}, (_,i)=>`<th>${esc(labels[i] || (String(i+1)+'. Ders'))}</th>`).join('')
-      }</tr>`;
-
-      let body = '';
-      daysWith.forEach(d => {
-        let row = `<tr><td class="day">${esc(days[d] || '')}</td>`;
-        for (let s=0; s<S; s++) {
-          const a = aForG.find(x => x.day === d && x.slot === s);
-          if (a) {
-            const tname = state.teachers.find(t => String(t.id) === String(a.teacherId))?.name || '';
-            const jointNames = getJointLessonGroupNames(a);
-            const jointNote = jointNames.length > 1
-              ? `<br><span class="mini">Birleşik: ${jointNames.map(esc).join(' + ')}</span>`
-              : '';
-            row += `<td><div style="text-align:center"><b>${esc(a.branch)}</b><br><span class="mini">${esc(tname)}</span>${jointNote}</div></td>`;
-          } else {
-            row += `<td></td>`;
-          }
-        }
-        row += `</tr>`;
-        body += row;
-      });
-
-      w.document.write(`<table class="tight"><thead>${thead}</thead><tbody>${body}</tbody></table>`);
-      w.document.write(`</div>`);
-    });
-
-    w.document.write(`</section>`);
-  });
-
-  w.document.write(`<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.9</footer>
-</body></html>`);
+  if(!Array.isArray(state.assignments) || !state.assignments.length) return uiAlert('Atama yok. Önce atama yapın.');
+  const grades=[...new Set((selectedGrades||[]).map(Number).filter(Number.isFinite))].sort((a,b)=>a-b);
+  if(!grades.length) return uiAlert('En az bir sınıf seçmelisiniz.');
+  const groups=Object.values(state.groups||{}).filter(g=>grades.includes(Number(parseGroupName(g.name||g.id||'')?.grade)))
+    .filter(g=>state.assignments.some(a=>a.group===g.id)).sort(groupComparator);
+  if(!groups.length) return uiAlert('Seçilen sınıflarda yazdırılacak ders ataması yok.');
+  const days=state.program.days, S=state.program.slots, labels=state.program.slotLabels||[];
+  const escText=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+  const w=window.open('','_blank');
+  if(!w) return uiAlert('Yazdırma penceresi açılamadı. Tarayıcınızın açılır pencere iznini kontrol edin.');
+  w.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>Fenomen • Tüm Liste • V4.10</title><style>
+    @page{size:A4 portrait;margin:9mm}
+    *{box-sizing:border-box}html,body{padding:0;margin:0;color:#111;background:#fff}
+    body{font:10.5px/1.24 Arial,"Segoe UI",sans-serif}
+    .print-sheet{width:100%;height:278mm;display:flex;flex-direction:column;overflow:hidden;break-after:page;page-break-after:always}
+    .print-sheet:last-child{break-after:auto;page-break-after:auto}
+    .sheet-title{font-size:14px;font-weight:800;padding:2px 0 4px;border-bottom:2px solid #111;margin:0 0 6px;text-align:center}
+    .grade-title{font-size:12px;font-weight:800;margin:5px 0 4px;padding:3px 5px;background:#eee;border:1px solid #333}
+    .group-block{margin:0 0 6px;break-inside:avoid;page-break-inside:avoid}
+    .group-name{font-weight:800;margin:0 0 3px;line-height:1.25}
+    .students{font-weight:400}
+    .gtable{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}
+    .gtable th,.gtable td{border:1px solid #333;padding:3px 3px;vertical-align:top;overflow-wrap:anywhere}
+    .gtable th{background:#eee;text-align:center;font-weight:800}
+    .gtable .day{width:67px;font-weight:800;white-space:normal;background:#f8f8f8}
+    .gtable .lesson{text-align:center;font-weight:700}
+    .gtable .teacher{display:block;font-size:9px;font-weight:400}
+    .sheet-foot{margin-top:auto;border-top:1px solid #999;padding:3px 0;font-size:9px;text-align:right}
+    .measure{position:absolute;visibility:hidden;top:0;left:0;pointer-events:none;width:192mm}
+    body.density-1{font-size:9.5px}body.density-1 .gtable th,body.density-1 .gtable td{padding:2px}
+    body.density-2{font-size:9px}body.density-2 .gtable th,body.density-2 .gtable td{padding:1px 2px}
+    @media print{.measure{display:none!important}.print-sheet{overflow:visible}th,td{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body></body></html>`);
   w.document.close();
-  w.focus();
-  setTimeout(() => { try { w.print(); } catch(_){} }, 60);
+  const doc=w.document;
+  const fragment=doc.createDocumentFragment();
+  let lastGrade=null;
+  const dayName=i=>days[i]||'';
+  for(const g of groups){
+    const grade=Number(parseGroupName(g.name||g.id||'')?.grade);
+    if(grade!==lastGrade){
+      const h=doc.createElement('h2');h.className='grade-title';h.textContent=grade+'. Sınıflar';fragment.appendChild(h);lastGrade=grade;
+    }
+    const ass=state.assignments.filter(a=>a.group===g.id);
+    const usedDays=[...new Set(ass.map(a=>a.day))].sort((a,b)=>a-b);
+    const names=(state.students||[]).filter(st=>st.group===g.id).map(st=>escText(st.name));
+    const el=doc.createElement('div');el.className='group-block';
+    const headings=Array.from({length:S},(_,i)=>`<th>${escText(labels[i]||(i+1)+'. Ders')}</th>`).join('');
+    const rows=usedDays.map(d=>{
+      const cells=Array.from({length:S},(_,s)=>{
+        const a=ass.find(x=>x.day===d&&x.slot===s);
+        if(!a) return '<td></td>';
+        const t=state.teachers.find(x=>String(x.id)===String(a.teacherId));
+        return `<td class="lesson">${escText(a.branch)}<span class="teacher">${escText(t?.name||'')}</span></td>`;
+      }).join('');
+      return `<tr><td class="day">${escText(dayName(d))}</td>${cells}</tr>`;
+    }).join('');
+    el.dataset.grade=String(grade);
+    el.innerHTML=`<div class="group-name">${escText(g.name)} — <span class="students">${names.join(', ')||'Öğrenci kaydı yok'}</span></div>
+      <table class="gtable"><thead><tr><th class="day">Gün / Saat</th>${headings}</tr></thead><tbody>${rows}</tbody></table>`;
+    fragment.appendChild(el);
+  }
+  // Sayfa yüksekliği, tarayıcının gerçek mm/px ölçümüne göre düzenlenir;
+  // çok küçük taşmalar yüzünden fazladan sayfa açılması önlenir.
+  const measure=doc.createElement('div');measure.className='measure';doc.body.appendChild(measure);
+  const elements=Array.from(fragment.children);
+  for(const element of elements)measure.appendChild(element);
+  const mm=doc.createElement('div');mm.style.cssText='height:1mm;width:1mm;position:absolute;visibility:hidden';doc.body.appendChild(mm);
+  const pxmm=mm.getBoundingClientRect().height||3.7795;mm.remove();
+  const limit=272*pxmm; // A4 279 mm içerikten, 7 mm güvenlik payı.
+  const pages=[];
+  const makePage=()=>{
+    const page=doc.createElement('section');page.className='print-sheet';
+    const title=doc.createElement('h1');title.className='sheet-title';title.textContent='Fenomen Eğitim Kurumları • Grup Ders Listesi';page.appendChild(title);
+    const content=doc.createElement('div');content.className='sheet-content';page.appendChild(content);
+    pages.push({page,content});doc.body.insertBefore(page,measure);return pages[pages.length-1];
+  };
+  let active=makePage(), gradeHeader=null;
+  for(let i=0;i<elements.length;i++){
+    const element=elements[i];
+    const groupHeading=element.classList.contains('grade-title');
+    if(groupHeading){gradeHeader=element;continue;}
+    const currentGrade=gradeHeader;
+    if(currentGrade && currentGrade.parentNode===measure){active.content.appendChild(currentGrade);}
+    active.content.appendChild(element);
+    let used=active.content.getBoundingClientRect().height+active.page.querySelector('.sheet-title').getBoundingClientRect().height+8;
+    if(used>limit && active.content.children.length>1){
+      // Mevcut sayfa sınırdan az taşıyorsa satır aralarını önce kontrollü daralt.
+      const originalFont=active.page.style.fontSize;
+      let compactFit=false;
+      for(const font of ['9.5px','9px']){
+        active.page.style.fontSize=font;
+        active.page.querySelectorAll('th,td').forEach(c=>c.style.padding=font==='9.5px'?'2px':'1px 2px');
+        used=active.content.getBoundingClientRect().height+active.page.querySelector('.sheet-title').getBoundingClientRect().height+8;
+        if(used<=limit){ compactFit=true; break; }
+      }
+      if(!compactFit){
+        active.content.removeChild(element);
+        active.page.style.fontSize=originalFont;
+        active.page.querySelectorAll('th,td').forEach(c=>c.style.removeProperty('padding'));
+        // Yeni sayfanın sınıf başlığı, grup bilgisine göre güvenli oluşturulur.
+        if(active.content.lastElementChild?.classList.contains('grade-title')){
+          gradeHeader=active.content.lastElementChild;
+          active.content.removeChild(gradeHeader);
+        }
+        active=makePage();
+        const head=gradeHeader?.cloneNode(true) || doc.createElement('h2');
+        head.className='grade-title';
+        if(!gradeHeader) head.textContent=element.dataset.grade+'. Sınıflar (Devam)';
+        active.content.appendChild(head);
+        active.content.appendChild(element);
+        used=active.content.getBoundingClientRect().height+active.page.querySelector('.sheet-title').getBoundingClientRect().height+8;
+      }
+    }
+    // Tek bir büyük grup bloğu dahi taşarsa sadece o sayfada küçült.
+    if(used>limit){
+      for(let dense=1;dense<=2&&used>limit;dense++){
+        active.page.style.fontSize=dense===1?'9.5px':'9px';
+        active.page.querySelectorAll('th,td').forEach(c=>c.style.padding=dense===1?'2px':'1px 2px');
+        used=active.content.getBoundingClientRect().height+active.page.querySelector('.sheet-title').getBoundingClientRect().height+8;
+      }
+    }
+    gradeHeader=null;
+  }
+  measure.remove();
+  pages.forEach((p,i)=>{
+    const f=doc.createElement('div');f.className='sheet-foot';f.textContent=`${i+1} / ${pages.length} • V4.10`;p.page.appendChild(f);
+  });
+  const printNow=()=>{w.focus();w.print();};
+  if(doc.fonts?.ready)doc.fonts.ready.then(()=>w.setTimeout(printNow,80));
+  else w.setTimeout(printNow,120);
 }
 
 </script>
@@ -5214,16 +5277,7 @@ function printAllGradesSelected(selectedGrades) {
    ========================================================= */
 
 /* ==== BUTON EKLE ==== */
-(function injectTeacherV2Btn(){
-  const host = document.querySelector('#step6 .row.no-print') || document.querySelector('#step6') || document.body;
-  if(!host || document.getElementById('btnTeacherV2')) return;
-  const btn = document.createElement('button');
-  btn.id = 'btnTeacherV2';
-  btn.className = 'btn';
-  btn.textContent = 'Öğretmene göre (Yeni Tasarım)';
-  btn.addEventListener('click', ()=> printTeachersV2());
-  host.appendChild(btn);
-})();
+document.getElementById('btnTeacherV2')?.addEventListener('click', printTeachersV2);
 
 /* ==== YARDIMCILAR ==== */
 function mmToPx(mm){
@@ -5430,6 +5484,7 @@ function printTeachersV2(){
     : Array.from({length:S},(_,i)=> (i+1)+'. Ders');
 
   const w = window.open('', '_blank');
+  if(!w) return uiAlert('Yazdırma penceresi açılamadı. Açılır pencere iznini kontrol edin.');
   const baseCSS = Array.from(document.querySelectorAll('style')).map(s=>s.innerHTML).join('\n');
 
   w.document.write(`<!doctype html>
@@ -5490,7 +5545,7 @@ function printTeachersV2(){
   </style>
 </head>
 <body class="print-teacher-v2">
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.9</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.10</footer>
 </body></html>`);
 
   const addPage = (html)=> w.document.body.insertAdjacentHTML('beforeend', `<section class="page">${html}</section>`);
@@ -5725,10 +5780,10 @@ if (btnProgLoadFb) {
       if (typeof buildProgramGrid === 'function') {
         buildProgramGrid(true);
         renderSlotLabels();
+        renderV410Scaffold();
         reconcileAllToProgram(getAssignPolicy());
         renderAvailGrids();
         renderAssignCards();
-        if (typeof refreshPrintFilters === 'function') refreshPrintFilters();
       }
     });
   });
@@ -5877,6 +5932,6 @@ if (btnAssgnDeleteFb) {
 
 </script>
 
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.9</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.10</footer>
 </body>
 </html>
