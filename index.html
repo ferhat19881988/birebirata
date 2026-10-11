@@ -5,7 +5,7 @@
   <link rel="icon" href="data:,">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.10</title>
+<title>Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.11</title>
 <style>
   :root{
     /* Light, modern palette */
@@ -1388,125 +1388,16 @@
 
 
 /* ===========================================================
-   V4.10 / BİLEŞEN MİMARİSİ
+   V4.11 / BİLEŞEN MİMARİSİ
    1. Önceki çizelge ve yazdırma stilleri yukarıda korunur.
    2. Branş renkleri ve öğretmen yazdırma stilleri bu bölümde.
-   3. Tasarım sistemi: tek ve kapsama alınmış V4.10 stil katmanı.
+   3. Tasarım sistemi: tek ve kapsama alınmış V4.11 stil katmanı.
    Başka yerde genel .btn/.card !important teması bulunmaz.
    =========================================================== */
 
 :root{ /* ders paleti */ --b-mat:#6366f1; /* Matematik */ --b-fen:#10b981; /* Fen Bilimleri */ --b-trk:#f97316; /* Türkçe */ --b-sos:#06b6d4; /* Sosyal Bilgiler */ --b-ing:#22c55e; /* İngilizce */ --b-din:#a78bfa; /* Din Kültürü */ /* tonlar */ --t-50: 14%; --t-150: 26%; --ring:#94a3b8; } /* üst sekmeler – daha modern görünüm */ .tabs{gap:8px;border:0;margin-bottom:10px;position:relative} .tabs:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#e5e7eb} .tab{padding:12px 16px;border-radius:12px;background:#f1f5f9;font-weight:800;color:#0f172a;box-shadow:0 1px 0 #e5e7eb inset} .tab[aria-selected="true"]{background:#fff;border:1px solid #e5e7eb;box-shadow:0 6px 18px rgba(2,8,23,.06);} /* kartlar */ .card{border-radius:16px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 10px 25px rgba(15,23,42,.06)} .card header{font-weight:800;margin-bottom:8px} /* grid hücreleri – daha “takvim” hissi */ .kgrid[data-cols]{grid-template-columns:160px repeat(var(--cols), minmax(72px,1fr));} .kcell{position:relative;border:1px solid #e5e7eb;background:#fff;min-height:58px;border-radius:12px} .kcell:hover{outline:3px solid rgba(99,102,241,.08);outline-offset:0} .kcell .mini2{opacity:.9} /* atama yapılmış hücre */ .kcell.assigned{color:#0f172a;font-weight:700} .kcell.assigned .mini2{color:#111827;font-weight:600} /* ders renkleri (UI) */ .kcell.assigned.b-mat{ background:color-mix(in srgb, var(--b-mat) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-mat) var(--t-150), #fff); } .kcell.assigned.b-fen{ background:color-mix(in srgb, var(--b-fen) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-fen) var(--t-150), #fff); } .kcell.assigned.b-trk{ background:color-mix(in srgb, var(--b-trk) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-trk) var(--t-150), #fff); } .kcell.assigned.b-sos{ background:color-mix(in srgb, var(--b-sos) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-sos) var(--t-150), #fff); } .kcell.assigned.b-ing{ background:color-mix(in srgb, var(--b-ing) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-ing) var(--t-150), #fff); } .kcell.assigned.b-din{ background:color-mix(in srgb, var(--b-din) var(--t-50), #fff); border-color:color-mix(in srgb, var(--b-din) var(--t-150), #fff); } /* mini yoğunluk modu – istersen .app'a .dense ekle */ .app.dense .kcell{min-height:44px;padding:4px 6px;border-radius:10px} /* Yazdır: ders renklerinin hafif tonu ve okunabilirlik */ @media print{ .print-table td.b-mat { background:#e6e8ff; } .print-table td.b-fen { background:#d6f7e9; } .print-table td.b-trk { background:#ffe8d6; } .print-table td.b-sos { background:#d8f6fb; } .print-table td.b-ing { background:#e3f9e9; } .print-table td.b-din { background:#ece7ff; } .print-table td[class^="b-"], .print-table td[class*=" b-"]{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .print-header{margin-bottom:10px} .print-sub{margin:8px 0 10px} } 
 
-/* ===========================
-   PRINT: Öğretmen V2 (Lüks)
-   =========================== */
-
-/* Genel değişkenler; fit fonksiyonu bunları ayarlar */
-:root{
-  --tpv2-font: 11px;
-  --tpv2-pad: 4px;
-  --tpv2-gap: 8px;
-  --tpv2-ink: #0f172a;
-  --tpv2-muted: #6b7280;
-  --tpv2-gold: #b45309;      /* lüks vurgu */
-  --tpv2-gold-ink: #78350f;
-  --tpv2-grid: #0f172a;
-}
-
-.print-teacher-v2{
-  color: var(--tpv2-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-}
-
-.print-teacher-v2 .page{
-  font-size: var(--tpv2-font);
-  line-height: 1.35;
-  position: relative;
-}
-
-.print-teacher-v2 .brandbar{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom: calc(var(--tpv2-gap) - 2px);
-  padding-bottom: 6px;
-  border-bottom: 2px solid var(--tpv2-gold);
-}
-.print-teacher-v2 .brandbar .org{
-  font-weight:900; letter-spacing:.2px; font-size:1.25em;
-}
-.print-teacher-v2 .brandbar .chip{
-  font-weight:800; font-size:.85em; color:var(--tpv2-gold-ink);
-  border:1px solid var(--tpv2-gold); padding:2px 8px; border-radius:999px;
-}
-
-.print-teacher-v2 .title{
-  font-weight:900; font-size: 1.4em; text-align:center; margin:0 0 calc(var(--tpv2-gap) - 2px) 0;
-}
-.print-teacher-v2 .t-meta{
-  display:flex; justify-content:center; gap:10px; font-weight:700;
-  margin-bottom: calc(var(--tpv2-gap) - 2px);
-}
-.print-teacher-v2 .muted{ color: var(--tpv2-muted) }
-
-/* Tablo temeli */
-.print-teacher-v2 table{
-  width:100%; border-collapse:collapse; table-layout:fixed;
-}
-.print-teacher-v2 th, .print-teacher-v2 td{
-  border: 1px solid var(--tpv2-grid);
-  padding: var(--tpv2-pad); vertical-align:top;
-}
-.print-teacher-v2 thead th{
-  background: #f7f7fb;
-}
-
-/* Haftalık plan */
-.print-teacher-v2 .sched th:first-child,
-.print-teacher-v2 .sched td:first-child{
-  width:92px; white-space:nowrap; font-weight:800; background:#fbfbfe;
-}
-.print-teacher-v2 .sched small{
-  display:block; font-size:.9em; color:#334155;
-}
-.print-teacher-v2 .slot-head{
-  font-weight:800; text-align:center;
-}
-
-/* Yoklama */
-.print-teacher-v2 .att-head{
-  margin: var(--tpv2-gap) 0 4px; font-weight:900; text-align:center;
-  border-top: 2px solid #e5e7eb; padding-top: 6px;
-}
-.print-teacher-v2 .att-grid{
-  display:grid; grid-template-columns: 1fr 1fr; gap: var(--tpv2-gap);
-}
-.print-teacher-v2 .att-card{
-  border:1.2px solid var(--tpv2-grid); border-radius:8px;
-  padding: calc(var(--tpv2-pad) - 1px);
-  break-inside: avoid; page-break-inside: avoid;
-  background: #fff;
-}
-.print-teacher-v2 .att-card .g-title{
-  font-weight:800; margin-bottom:2px;
-}
-.print-teacher-v2 .att{
-  width:100%; border-collapse:collapse;
-}
-.print-teacher-v2 .att th, .print-teacher-v2 .att td{
-  border:1.2px solid #0f172a; padding: calc(var(--tpv2-pad) - 2px);
-}
-.print-teacher-v2 .att th{ background:#f9fafb; text-align:center; }
-.print-teacher-v2 .att th:first-child, .print-teacher-v2 .att td:first-child{ text-align:left; }
-
-/* Baskı */
-@media print{
-  @page{ size: A4; margin: 12mm; }
-  .print-teacher-v2 .page{ break-after: page; page-break-after: always; }
-  th,td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-}
-
-
-
-/* ============ V4.10: TASARIM SİSTEMİ ============ */
+/* ============ V4.11: TASARIM SİSTEMİ ============ */
 :root{
   --bg:#f2f5fa; --panel:#fff; --ink:#172439; --muted:#66768c;
   --pri:#2454d4; --pri-ink:#183e9c; --acc:#0d9488;
@@ -1630,7 +1521,7 @@ tbody tr:hover td{background:#f8fbff}
 
 
 
-/* V4.10: Kopayalama, iskele yönetimi, yazdır ve grup dönüşü */
+/* V4.11: Kopayalama, iskele yönetimi, yazdır ve grup dönüşü */
 .v410-clipboard-status,.v410-status{padding:10px 13px;border:1px solid #d5e2f1;border-radius:11px;background:#f6f9ff;color:#27384f;font-size:12px}
 #step3 .avGrid .card .flex{gap:7px}#step3 .avGrid .card .right{flex-wrap:wrap;justify-content:flex-end}
 #step3 .avGrid .card .btn.xs.sec{background:#173659;color:#fff;border-color:#173659;padding:6px 9px;font-size:11px}
@@ -1659,7 +1550,7 @@ tbody tr:hover td{background:#f8fbff}
 @media(max-width:1000px){.v410-scaffold-columns{grid-template-columns:1fr 1fr}.v410-scaffold-columns>div:last-child{grid-column:span 2}}
 @media(max-width:620px){.v410-scaffold-columns,.v410-print-actions{grid-template-columns:1fr}.v410-scaffold-columns>div:last-child{grid-column:auto}}
 
-/* V4.10 – tek program düzenleyici, sabit geri dönüş, hızlı grup gezintisi */
+/* V4.11 – tek program düzenleyici, sabit geri dönüş, hızlı grup gezintisi */
 .v410-floating-back{position:fixed;right:24px;bottom:24px;z-index:700;display:inline-flex;gap:8px;align-items:center;background:#173b75!important;color:white!important;box-shadow:0 14px 35px rgba(5,24,60,.32);border:1px solid rgba(255,255,255,.35);animation:v410FloatIn .2s ease-out}
 @keyframes v410FloatIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 #v410GroupsCard{scroll-margin-top:22px}
@@ -1709,7 +1600,7 @@ tbody tr:hover td{background:#f8fbff}
     </div>
     <div class="v49-header-actions">
       <button class="v49-density" id="btnDensity" type="button" aria-pressed="false" title="Ders çizelgelerinde daha fazla hücre göster">▦ Kompakt görünüm</button>
-      <span class="v49-version">SÜRÜM V4.10</span>
+      <span class="v49-version">SÜRÜM V4.11</span>
     </div>
   </div>
 
@@ -1723,7 +1614,7 @@ tbody tr:hover td{background:#f8fbff}
     <button class="tab" data-panel="step6" role="tab"><span class="nav-step">06</span><span class="nav-label">Yazdır</span></button>
   </div>
 
-  <!-- V4.10: Salt-okunur özet; Firebase ve ders atama kayıtlarını değiştirmez. -->
+  <!-- V4.11: Salt-okunur özet; Firebase ve ders atama kayıtlarını değiştirmez. -->
   <div class="v49-overview no-print" id="v49Overview" aria-label="Planlama özeti">
     <div class="v49-stat"><div><div class="v49-stat-label">ÖĞRETMEN</div><div class="v49-stat-value" id="v49TeacherCount">0</div></div><span class="v49-stat-icon" aria-hidden="true">♙</span></div>
     <div class="v49-stat"><div><div class="v49-stat-label">AKTİF GRUP</div><div class="v49-stat-value" id="v49GroupCount">0</div></div><span class="v49-stat-icon" aria-hidden="true">▦</span></div>
@@ -2516,7 +2407,7 @@ function renderSlotLabels(){
   if(document.getElementById('progGridWrap')) buildProgramGrid(true);
 }
 
-/* V4.10 Program Düzenleyici — doğrudan değişiklik; JSON/Firebase şeması aynı. */
+/* V4.11 Program Düzenleyici — doğrudan değişiklik; JSON/Firebase şeması aynı. */
 const V410_WEEK=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
 function v410ScaffoldStatus(message){const el=$('#v410ScaffoldStatus');if(el)el.textContent=message;}
 function renderV410Scaffold(){
@@ -2608,7 +2499,7 @@ function initV410Scaffold(){
 }
 /* Programla uyum */
 function reconcileAllToProgram(policy='keep', options={}){
-  // V4.10: reset yalnızca açık program güncelleme eyleminde etkin.
+  // V4.11: reset yalnızca açık program güncelleme eyleminde etkin.
   const shouldReset = policy === 'reset' && options.explicitProgramChange === true;
   const D = state.program.days.length, S = state.program.slots;
 
@@ -2630,7 +2521,7 @@ function reconcileAllToProgram(policy='keep', options={}){
   else state.assignments = state.assignments.filter(a=> a.day<D && a.slot<S);
 }
 
-/* V4.10 / Program güncelleme işlemi: gün sırasını anahtarlarla eşleştir.
+/* V4.11 / Program güncelleme işlemi: gün sırasını anahtarlarla eşleştir.
    Bu fonksiyon salt çizim sırasında çağrılmaz; yalnızca Güncelle düğmesi çalıştırır. */
 function applyProgramDefinition(newDays=state.program.days,newSlots=state.program.slots){
   const old = state.program;
@@ -2700,7 +2591,7 @@ function slotHeadCells(container,S){
 }
 function bulkSet(matrix, val){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=val; }
 function bulkToggle(matrix){ for(let d=0; d<matrix.length; d++) for(let s=0; s<matrix[d].length; s++) matrix[d][s]=!matrix[d][s]; }
-/* V4.10: Gün kopyalaması yerine, öğretmen veya grubun tam müsaitlik çizelgesi taşınır. */
+/* V4.11: Gün kopyalaması yerine, öğretmen veya grubun tam müsaitlik çizelgesi taşınır. */
 let availabilityClipboard = null;
 function availabilityMatrixFor(type,id){ return state.availability?.[type]?.[id] || null; }
 function updateAvailabilityClipboardStatus(){
@@ -3263,7 +3154,7 @@ function listFreeTeachersAt(day, slot, max=Infinity){
   return Number.isFinite(max) ? res.slice(0, Math.max(0, max)) : res;
 }
 
-/* ===== V4.10: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
+/* ===== V4.11: Aynı sınıf şubesindeki gruplar için birleşik ders desteği =====
  * Örnek aile: G1-8A, G2-8A, G3-8A -> "8A".
  * Otomatik birleşme seçeneği veya açık manuel öneriyle en fazla iki kardeş
  * grup aynı branş ve öğretmende birleşebilir; farklı ders ihtiyacı kapanmaz.
@@ -3434,7 +3325,7 @@ function buildAutoAssignReport(_prevCount){
         .sort((a,b)=>b[1]-a[1])
         .map(([b])=>b);
 
-      // V4.10: Elle Tamamlama'da seçenekleri birbirinin alternatifi olarak gizleme.
+      // V4.11: Elle Tamamlama'da seçenekleri birbirinin alternatifi olarak gizleme.
       // Aynı slot için mümkün olan TÜM kategoriler birlikte üretilir:
       // 1) talebi karşılayan normal ders, 2) birleşik ders,
       // 3) ihtiyaç dışı / ders dışı normal ders, 4) farklı dersle birleşik seçenek.
@@ -3612,7 +3503,7 @@ function showAutoAssignReport(report, prevCount){
     }
 
     // Elle atama listesi: talebi olan ve grubun müsait olduğu tüm boş slotlar.
-    // V4.10: Her satırda bütün uygun öneri kategorileri aynı anda görünür.
+    // V4.11: Her satırda bütün uygun öneri kategorileri aynı anda görünür.
     const rows = rep.details
       .filter(x => x.kind==='onerili' || x.kind==='ogretmen-bulunamadi' || x.kind==='birlesik-onerili' || x.kind==='ders-disi-onerili' || x.kind==='birlesik-farkli-ders')
       .map(x => {
@@ -3709,7 +3600,7 @@ function showAutoAssignReport(report, prevCount){
       ${assignmentSummaryHtml()}
       <div class="grid" style="gap:10px">
         <div class="card">
-          <h3>Elle Tamamlama (tüm uygun boş slotlar) • V4.10</h3>
+          <h3>Elle Tamamlama (tüm uygun boş slotlar) • V4.11</h3>
           ${rows ? `<ol style="margin:6px 0 0 18px">${rows}</ol>` : `<div class="muted">Elle tamamlama için uygun boş slot kalmadı.</div>`}
           <div class="muted" style="margin-top:8px">Her uygun slotta sistem artık <b>tüm seçenekleri birlikte</b> gösterir: talebi karşılayan normal dersler, <b>birleşik ders önerileri</b>, boş öğretmenlerden <b>ders dışı / ihtiyaç dışı öneriler</b> ve aynı sınıf/şube ailesindeki <b>ders dışı birleşik öneriler</b>. Birleşik ders en fazla <b>2 grup</b> olabilir. “Ders dışı / ihtiyaç dışı” olarak işaretlenen seçimler grubu boş bırakmaz ancak kalan ders talebini <b>kapatmaz</b>.</div>
         </div>
@@ -3740,7 +3631,7 @@ function showAutoAssignReport(report, prevCount){
   }
 }
 
-/* V4.10 — one rule engine, shared by the UI, imports and the worker. */
+/* V4.11 — one rule engine, shared by the UI, imports and the worker. */
 function createAssignmentEngine(input) {
   const D = input.program.days.length, S = input.program.slots;
   if (!D || !Number.isInteger(S) || S < 1 || S > 12) throw Error('Program gün ve saatlerini kontrol edin.');
@@ -4132,7 +4023,7 @@ function assignmentSummaryHtml() {
   if(!meta?.solver) return '';
   const stale=meta.fingerprint!==assignmentFingerprint();
   return `<div class="card" style="border-left:4px solid ${stale?'#d97706':'#4f46e5'};padding:14px">
-    <b>V4.10${stale?' • Program değişti':''}</b>
+    <b>V4.11${stale?' • Program değişti':''}</b>
     <div style="margin-top:8px"><b>${meta.score} / ${meta.totalNeed}</b> ders talebi karşılandı • Eksik: <b>${Math.max(0,meta.totalNeed-meta.score)}</b></div>
   </div>`;
 }
@@ -4183,7 +4074,7 @@ async function autoAssign() {
     }
     state.assignments=verified.assignments;
     state.lastAvailabilityNormalization={source:'v4.9-on-dogrulama',removed:result.removed,removedCount:result.removed.length,at:Date.now()};
-    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.10',
+    state.autoAssignMeta={...result,assignments:undefined,removed:undefined,solver:true,version:'V4.11',
       prevCount:data.assignments.length,lastRunAt:Date.now(),relaxConsecutive:options.allowConsecutive,
       allowJoint:options.allowJoint,fingerprint:assignmentFingerprint()};
     onAssignmentsMutated();syncReportButtons();
@@ -4221,7 +4112,7 @@ const importAssgn = obj=>{
   }
 };
 
-/* V4.10: Yazdır bölümünde yalnızca iki bağımsız çıktı düğmesi kullanılır. */
+/* V4.11: Yazdır bölümünde yalnızca iki bağımsız çıktı düğmesi kullanılır. */
 /* ===== Olaylar ===== */
 $("#btnFetch").onclick = fetchAll;
 $("#btnClear").onclick = ()=>{
@@ -4267,7 +4158,7 @@ $("#reqGroupSelect").onchange = ()=>{renderRequests();v410UpdateReqNav();};
 $("#v410PrevGroup").onclick = ()=>v410MoveReqGroup(-1);
 $("#v410NextGroup").onclick = ()=>v410MoveReqGroup(1);
 
-// V4.10: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
+// V4.11: ortak kurallar, worker, kesin arama ve kısmi yeniden yerleştirme.
 $("#btnAutoAssign").onclick = async () => { await autoAssign(); };
 for(const id of ['chkRelaxConsecutive','chkAutoJoint']){
   document.getElementById(id).addEventListener('change',()=>{renderAssignCards();refreshAutoAssignReportIfOpen();});
@@ -4672,7 +4563,7 @@ function renderAssignCards(){
 }
 
 
-/* ===== V4.10 / Görsel durum göstergeleri (salt okuma) ===== */
+/* ===== V4.11 / Görsel durum göstergeleri (salt okuma) ===== */
 function updateV49Overview(){
   const byId=(id,value)=>{const el=document.getElementById(id);if(el) el.textContent=String(value);};
   byId('v49TeacherCount',state.teachers?.length||0);
@@ -4932,7 +4823,7 @@ function openPrintWindow(title, html){
   </head><body>
     ${html}
     <script>window.onload=()=>{ setTimeout(()=>window.print(), 50); }<\/script>
-  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.10</footer>
+  <footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.11</footer>
 </body></html>`);
   doc.close();
 }
@@ -5208,372 +5099,287 @@ function printAllGradesSelected(selectedGrades) {
 }
 
 </script>
-<!-- ==== TEACHER PRINT V2 – KOMPAKT, TEK A4 ==== -->
-
-
+<!-- ==== V4.11 / ÖĞRETMENE GÖRE • MODEL 3 (MODÜLER KARTLAR) ==== -->
 <script>
-/* =========================================================
-   PRINT: Öğretmen V2 — Lüks Tasarım + 6 slot / sayfa kuralı
-   ========================================================= */
-
-/* ==== BUTON EKLE ==== */
+/* ==============================================================
+   V4.11 — Öğretmene göre çıktı / Model 3: Modüler Kartlar
+   Yalnızca #btnTeacherV2 için bağımsız, tek baskı motoru.
+   A4: 210 × 297 mm, içeride 12 mm güvenli boşluk.
+   Ders programı en fazla 6 ders saati sütunu / sayfa.
+   Yoklama kartları gerçek yüksekliklerine göre sayfalara dağıtılır.
+   ============================================================= */
 document.getElementById('btnTeacherV2')?.addEventListener('click', printTeachersV2);
 
-/* ==== YARDIMCILAR ==== */
-function mmToPx(mm){
-  const el = document.createElement('div');
-  el.style.width='1mm'; el.style.position='absolute'; el.style.visibility='hidden';
-  document.body.appendChild(el);
-  const one = el.getBoundingClientRect().width || 3.78; el.remove();
-  return one * mm;
-}
-function esc(s){
-  return String(s ?? '')
+function tp411Escape(value){
+  return String(value ?? '')
     .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-    .replaceAll('"','&quot;').replaceAll("'","&#039;");
+    .replaceAll('"','&quot;').replaceAll("'",'&#039;');
 }
-function groupBy(arr, keyFn){
-  const m = new Map();
-  arr.forEach(x=>{
-    const k = keyFn(x);
-    if(!m.has(k)) m.set(k, []);
-    m.get(k).push(x);
-  });
-  return m;
+function tp411Group(id){
+  return state.groups?.[id] || { id, name: String(id ?? '') };
 }
-function uniq(arr){ return Array.from(new Set(arr)); }
-
-/* ==== SAYFAYI A4'E SIĞDIR ==== */
-function fitPageToA4(rootEl){
-  const A4H = 297, MARGIN = 12; // mm
-  const usableH = mmToPx(A4H - 2*MARGIN);
-
-  // Başlangıç: yükselt → gerekiyorsa kıs
-  let font = 12.5, pad = 5;
-  const MIN_F = 8, MAX_F = 13.5;
-  const apply = ()=>{
-    rootEl.style.setProperty('--tpv2-font', font+'px');
-    rootEl.style.setProperty('--tpv2-pad', pad+'px');
-    rootEl.style.setProperty('--tpv2-gap', Math.max(6, Math.round(font*0.75))+'px');
-  };
-  font = Math.min(MAX_F, font); pad = Math.max(2, Math.round(font*0.36)); apply();
-
-  if(rootEl.scrollHeight > usableH){
-    let guard = 50;
-    while(rootEl.scrollHeight > usableH && font > MIN_F && guard--){
-      font -= 0.5; pad = Math.max(1, Math.round(font*0.33)); apply();
-    }
-  }else{
-    let guard = 20;
-    while(rootEl.scrollHeight < usableH*0.96 && font < MAX_F && guard--){
-      font += 0.5; pad = Math.max(2, Math.round(font*0.36)); apply();
-      if(rootEl.scrollHeight > usableH){ font -= 0.5; pad = Math.max(1, Math.round(font*0.33)); apply(); break; }
-    }
-  }
+function tp411Teacher(id){
+  return state.teachers.find(t => String(t.id) === String(id)) || { id, name: String(id ?? '') };
 }
-
-/* ==== Yardım: veriler ==== */
-const getGroup = id => (state.groups || {})[id] || { id, name:id };
-const getTeacher = id => (state.teachers || []).find(t=>t.id===id) || { id, name:'-' };
-
-/* ==== HTML üreticiler ==== */
-function renderSchedTableForWindow(days, labels, byDay, S, start, end){
-  const cols = [];
-  for(let s=start; s<end; s++){
-    const lab = esc(labels?.[s] || ((s+1)+'. Ders'));
-    cols.push(`<th class="slot-head">${lab}</th>`);
-  }
-  const thead = `
-    <thead>
-      <tr>
-        <th>Gün / Saat</th>
-        ${cols.join('')}
-      </tr>
-    </thead>
-  `;
-
-  const bodyRows = days.map((dName, dIdx)=>{
-    const list = byDay.get(dIdx) || [];
-    const cells = [];
-    for(let s=start; s<end; s++){
-      const matches = list.filter(x=>x.slot===s);
-      if(!matches.length){ cells.push('<td></td>'); continue; }
-      const groups = matches.map(a=>getGroup(a.group));
-      const groupNames = Array.from(new Set(groups.map(g=>g.name || g.id))).map(esc);
-      const branches = Array.from(new Set(matches.map(a=>a.branch || ''))).filter(Boolean).map(esc);
-      const rooms = Array.from(new Set(groups.map(g=>g.room).filter(Boolean))).map(esc);
-      const jointIds = Array.from(new Set(matches.map(a=>a.jointLessonId).filter(Boolean)));
-      const isJoint = matches.length > 1 && jointIds.length === 1 && matches.every(a=>a.jointLessonId === jointIds[0]);
-      const room = rooms.length ? ` • ${rooms.join(' + ')}` : '';
-      const joint = isJoint ? ' • Birleşik ders' : '';
-      cells.push(`<td><b>${groupNames.join(' + ')}</b><small>${branches.join(' / ')}${room}${joint}</small></td>`);
-    }
-    return `<tr><td><b>${esc(dName)}</b></td>${cells.join('')}</tr>`;
-  }).join('');
-
-  return `<table class="sched">${thead}<tbody>${bodyRows}</tbody></table>`;
+function tp411SlotLabel(labels, slot){
+  const number = `${slot + 1}. Ders`;
+  const detail = String(labels?.[slot] || '').trim();
+  // Kodun belirlediği ders saati aralığını saklama, hücrede göster.
+  const sameAsNumber = new RegExp(`^${slot + 1}\\.\\s*(?:Ders|Saat)$`, 'i').test(detail);
+  return { number, detail: detail && !sameAsNumber ? detail : '' };
 }
-
-
-// Öğrenci yoklama: her ders oturumu için ayrı yoklama kartı üretir.
-// Aynı grup öğretmenin programında farklı gün/saatlerde tekrar ediyorsa her oturum ayrı görünür.
-function buildTeacherAttendanceEntries(assignments, days, labels){
-  if(!Array.isArray(assignments) || assignments.length===0) return [];
-
+function tp411Sessions(assignments, days, labels){
   const seen = new Set();
-  return assignments
-    .slice()
-    .sort((a,b)=>{
-      const dayDiff = (+a.day || 0) - (+b.day || 0);
-      if(dayDiff) return dayDiff;
-      const slotDiff = (+a.slot || 0) - (+b.slot || 0);
-      if(slotDiff) return slotDiff;
-      const n1 = state.groups?.[a.group]?.name || a.group || '';
-      const n2 = state.groups?.[b.group]?.name || b.group || '';
-      return String(n1).localeCompare(String(n2), 'tr');
-    })
-    .filter(a=>{
-      // Aynı öğretmen/grup/gün/saat için veri içinde kazara birebir kopya varsa tek kart bırak.
-      // Farklı gün veya saatlerdeki aynı grup ise kesinlikle korunur.
-      const key = `${a.group}::${a.day}::${a.slot}`;
-      if(seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .map(a=>{
-      const group = getGroup(a.group);
-      const dayIndex = Number(a.day);
-      const slotIndex = Number(a.slot);
-      return {
-        group,
-        groupId: a.group,
-        day: dayIndex,
-        slot: slotIndex,
-        dayLabel: days?.[dayIndex] || `${dayIndex + 1}. Gün`,
-        slotLabel: labels?.[slotIndex] || `${slotIndex + 1}. Ders`,
-        branch: a.branch || ''
-      };
+  return (assignments || []).slice().sort((a,b)=>{
+    const dd = (+a.day||0) - (+b.day||0);
+    if (dd) return dd;
+    const ds = (+a.slot||0) - (+b.slot||0);
+    if (ds) return ds;
+    return String(tp411Group(a.group).name||'').localeCompare(String(tp411Group(b.group).name||''),'tr');
+  }).filter(a=>{
+    const k = `${a.group}::${a.day}::${a.slot}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).map(a=>{
+    const group = tp411Group(a.group);
+    return {
+      groupId:a.group,
+      groupName:group.name || group.id || a.group,
+      branch:a.branch || '',
+      day:Number(a.day), slot:Number(a.slot),
+      dayLabel:days[a.day] || `${Number(a.day)+1}. Gün`,
+      slotLabel:tp411SlotLabel(labels,Number(a.slot))
+    };
+  });
+}
+
+// Her ders oturumu ayrı yoklamadır. Çok kalabalık gruplarda tek oturumun
+// öğrenci listesi sayfaya sığabilmek için parçalanır, öğrenci kaybı olmaz.
+function tp411AttendanceCards(sessions){
+  const result = [];
+  sessions.forEach((session, sessionIndex)=>{
+    const students = (state.students||[]).filter(s=>String(s.group) === String(session.groupId));
+    const parts = [];
+    if (!students.length) parts.push([]);
+    else for(let start=0; start<students.length; start+=10) parts.push(students.slice(start,start+10));
+    parts.forEach((part, partIndex)=>{
+      const lesson = session.slotLabel.number + (session.slotLabel.detail ? ` (${session.slotLabel.detail})` : '');
+      const time = `${session.dayLabel} • ${lesson}`;
+      const studentRows = part.length ? part.map(st=>`
+        <div class="tp-student">
+          <span class="tp-student-name">${tp411Escape(st.name || '')}</span>
+          <span class="tp-check" aria-label="Var"></span>
+          <span class="tp-check" aria-label="Yok"></span>
+        </div>`).join('') : '<div class="tp-no-student">Öğrenci kaydı bulunmuyor.</div>';
+      result.push(`<article class="tp-att-card" data-session="${sessionIndex}" data-part="${partIndex}">
+        <div class="tp-card-header">
+          <div class="tp-card-info">
+            <div class="tp-card-name">${tp411Escape(session.groupName)}${parts.length>1 ? ` <span class="tp-part">${partIndex+1}/${parts.length}</span>`:''}</div>
+            ${session.branch ? `<div class="tp-card-branch">${tp411Escape(session.branch)}</div>` : ''}
+            <div class="tp-card-time">${tp411Escape(time)}</div>
+          </div>
+          <div class="tp-mark-head"><span>Var</span><span>Yok</span></div>
+        </div>
+        <div class="tp-students">${studentRows}</div>
+      </article>`);
     });
+  });
+  return result;
 }
 
-function chunkInto(arr, size){
-  const out=[];
-  for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
-  return out;
-}
-
-// A4'e sığacak mini kartlar (Var/Yok): 20 ders oturumu = 1 A4.
-function renderAttendancePages(entries){
-  if(!Array.isArray(entries) || entries.length===0) return [];
-  const chunks = chunkInto(entries, 20);
-  return chunks.map((ch, ix)=> renderAttendanceChunk(ch, ix+1, chunks.length));
-}
-
-function renderAttendanceChunk(entriesChunk, pageIndex, total){
-  const cards = entriesChunk.map(entry=>{
-    // Geriye dönük uyumluluk: doğrudan grup nesnesi verilirse de çalışır.
-    const g = entry?.group || entry;
-    const students = (state.students || []).filter(s=>s.group===g.id);
-    const rows = (students.length
-      ? students.map(st=>`
-        <div class="att-row">
-          <div class="att-nm">${esc(st.name || '')}</div>
-          <div class="att-boxes">
-            <span class="box"></span>
-            <span class="box"></span>
-          </div>
-        </div>`).join('')
-      : `<div class="muted" style="padding:6px 8px">Öğrenci yok</div>`
-    );
-
-    const when = entry?.dayLabel && entry?.slotLabel
-      ? `<div class="att-time">${esc(entry.dayLabel)} • ${esc(entry.slotLabel)}</div>`
-      : '';
-
-    return `
-      <div class="att-mini">
-        <div class="att-mini-head">
-          <div class="att-title-block">
-            <div class="att-g">${esc(g.name || g.id)}</div>
-            ${when}
-          </div>
-          <div class="att-legend"><span>Var</span><span>Yok</span></div>
-        </div>
-        <div class="att-mini-body">${rows}</div>
-      </div>
-    `;
+function tp411Schedule(assignments,days,labels,start,end){
+  const count = end-start;
+  const slots = [];
+  for(let slot=start;slot<end;slot++){
+    const info=tp411SlotLabel(labels,slot);
+    slots.push(`<div class="tp-slothead"><b>${tp411Escape(info.number)}</b>${info.detail ? `<small>${tp411Escape(info.detail)}</small>` : ''}</div>`);
+  }
+  const dayRows=days.map((dayName,day)=>{
+    let html=`<div class="tp-day"><span class="tp-day-n">${String(day+1).padStart(2,'0')}</span><b>${tp411Escape(dayName)}</b></div>`;
+    for(let slot=start;slot<end;slot++){
+      const matches=(assignments||[]).filter(a=>Number(a.day)===day && Number(a.slot)===slot);
+      if(!matches.length){ html+='<div class="tp-empty">—</div>'; continue; }
+      const groups=Array.from(new Set(matches.map(a=>String(tp411Group(a.group).name || a.group))));
+      const branches=Array.from(new Set(matches.map(a=>String(a.branch||'').trim()).filter(Boolean)));
+      html+=`<div class="tp-lesson">
+        <b>${groups.map(tp411Escape).join(' + ')}</b>
+        ${branches.length ? `<small>${branches.map(tp411Escape).join(' / ')}</small>` : ''}
+      </div>`;
+    }
+    return html;
   }).join('');
-
-  return `
-    <div class="att-head">Öğrenci Yoklama${total>1 ? ` • ${pageIndex}/${total}` : ''}</div>
-    <div class="att-grid att-grid-mini">${cards}</div>
-  `;
+  return `<section class="tp-schedule">
+      <div class="tp-section-title"><span class="tp-index">01</span><strong>Haftalık Ders ve Birebir Dağılımı</strong></div>
+      <div class="tp-week" style="--tp-cols:${count}">
+        <div class="tp-day tp-corner">Gün / Saat</div>${slots.join('')}${dayRows}
+      </div>
+    </section>`;
 }
 
-/* ==== YENİ TASARIM: ÖĞRETMENE GÖRE YAZDIR ==== */
+function tp411Header(teacher){
+  return `<header class="tp-header">
+    <div class="tp-logo">F</div>
+    <div class="tp-brand"><div class="tp-org">FENOMEN EĞİTİM KURUMLARI</div><h1>Öğretmen Ders Planı</h1></div>
+  </header>
+  <div class="tp-teacher-info">
+    <div class="tp-info-cell"><span>ÖĞRETMEN</span><strong>${tp411Escape(teacher.name)}</strong></div>
+    <div class="tp-info-cell"><span>BRANŞ</span><strong>${tp411Escape(teacher.branch || '—')}</strong></div>
+  </div>`;
+}
+
+const TP411_CSS = `
+@page{ size:A4 portrait; margin:0 }
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font:10.5px/1.28 system-ui,-apple-system,'Segoe UI',Arial,sans-serif;color:#111827;background:#e6ebf3}
+.tp-page{width:210mm;height:297mm;padding:12mm;background:#fff;overflow:visible;margin:12px auto;box-shadow:0 5px 28px rgba(15,23,42,.13)}
+.tp-page-content{width:100%}
+.tp-header{display:flex;align-items:center;gap:11px;padding-bottom:10px;border-bottom:2px solid #111827}
+.tp-logo{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex:0 0 36px;border-radius:8px;background:#111827;color:#fff;font-size:23px;font-weight:850}
+.tp-brand{min-width:0}
+.tp-org{color:#66758b;font-size:9px;font-weight:800;letter-spacing:.16em}
+.tp-brand h1{font-size:20px;line-height:1.16;letter-spacing:-.03em;margin:3px 0 0;font-weight:850}
+.tp-teacher-info{display:grid;grid-template-columns:1.35fr 1fr;gap:8px;margin:9px 0 10px}
+.tp-info-cell{display:flex;flex-direction:column;gap:3px;min-width:0;background:#f8fafc;border:1px solid #d5dde8;border-radius:8px;padding:7px 10px}
+.tp-info-cell span{font-size:8px;font-weight:850;color:#718096;letter-spacing:.10em}
+.tp-info-cell strong{font-size:11.5px;font-weight:850;overflow-wrap:anywhere}
+.tp-section-title{display:flex;align-items:center;gap:7px;margin:2px 0 7px}
+.tp-section-title strong{font-size:13px;letter-spacing:-.01em}
+.tp-index{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;border-radius:7px;background:#111827;color:white;font-weight:900;font-size:11px}
+.tp-schedule{margin-bottom:10px}
+.tp-week{display:grid;grid-template-columns:70px repeat(var(--tp-cols),minmax(0,1fr));gap:4px}
+.tp-week>div{min-width:0}
+.tp-day,.tp-slothead,.tp-lesson,.tp-empty{border-radius:7px;min-height:31px;padding:4px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.tp-day{align-items:flex-start;padding-left:8px;background:#f1f5f9;border:1px solid #e0e7ef;text-align:left;font-size:9px}
+.tp-day .tp-day-n{font-size:8px;color:#8ba0b8;font-weight:800}
+.tp-day b{font-size:10px;overflow-wrap:anywhere}
+.tp-corner{min-height:28px;align-items:center;text-align:center;justify-content:center;font-weight:800;color:#475569}
+.tp-slothead{min-height:28px;background:#f8fafc;border:1px solid #dbe3ed;color:#273449}
+.tp-slothead b{font-size:8.7px;white-space:nowrap}
+.tp-slothead small{font-size:7px;line-height:1.12;color:#64748b;overflow-wrap:anywhere;white-space:normal}
+.tp-lesson{min-height:31px;border:1px solid #cad5e5;background:#fff;font-size:9.1px}
+.tp-lesson b{font-weight:850;overflow-wrap:anywhere;line-height:1.2}
+.tp-lesson small{font-size:7.1px;color:#52647b;overflow-wrap:anywhere;line-height:1.16}
+.tp-empty{min-height:31px;color:#a0adbc;border:1px dashed #dce4ed;background:#fafcff}
+.tp-att-section{margin-top:4px}
+.tp-att-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:start}
+.tp-att-card{min-width:0;border:1px solid #c7d0dd;border-radius:9px;padding:6px 7px 5px;break-inside:avoid;page-break-inside:avoid;background:white}
+.tp-card-header{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;border-bottom:1px solid #d9e1ea;padding-bottom:5px;margin-bottom:2px}
+.tp-card-info{min-width:0;flex:1}
+.tp-card-name{font-weight:900;font-size:11.2px;overflow-wrap:anywhere}
+.tp-part{font-size:8px;color:#64748b}
+.tp-card-branch{font-size:8px;font-weight:750;color:#334155;overflow-wrap:anywhere}
+.tp-card-time{font-size:8px;color:#64748b;overflow-wrap:anywhere}
+.tp-mark-head{display:grid;grid-template-columns:22px 22px;gap:2px;font-size:8px;font-weight:850;text-align:center;flex:0 0 auto;align-self:flex-end}
+.tp-student{display:grid;grid-template-columns:minmax(0,1fr) 22px 22px;gap:2px;align-items:center;min-height:18px;border-bottom:1px dotted #d8e1eb}
+.tp-student:last-child{border-bottom:0}
+.tp-student-name{font-size:9.5px;overflow-wrap:anywhere;padding-right:3px}
+.tp-check{display:block;width:10px;height:10px;border:1.15px solid #374151;margin:0 auto}
+.tp-no-student{padding:5px 0;color:#64748b;font-size:9px}
+@media print{
+  html,body{background:#fff}
+  .tp-page{margin:0;padding:12mm;width:210mm;height:297mm;box-shadow:none;break-after:page;page-break-after:always}
+  .tp-page:last-child{break-after:auto;page-break-after:auto}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+`;
+
 function printTeachersV2(){
-  const asgByTeacher = getTeacherAssignmentsMap();
-  if(!asgByTeacher.size){
-    uiAlert('Atama yok. Önce atama yapın.');
-    return;
-  }
+  const assignmentsByTeacher=getTeacherAssignmentsMap();
+  if(!assignmentsByTeacher.size){ uiAlert('Atama yok. Önce atama yapın.'); return; }
+  const days = state.program?.days || ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma'];
+  const slots = Math.min(12, Math.max(1, Number(state.program?.slots)||8));
+  const labels=Array.isArray(state.program?.slotLabels)?state.program.slotLabels:[];
+  const popup=window.open('','_blank');
+  if(!popup){ uiAlert('Yazdırma penceresi açılamadı. Açılır pencere iznini kontrol edin.'); return; }
+  popup.document.open();
+  popup.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Öğretmen Ders Planı • V4.11</title><style>${TP411_CSS}</style></head><body></body></html>`);
+  popup.document.close();
 
-  const days = state.program?.days || ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"];
-  const S = Math.min(12, +state.program?.slots || 8); // 12’ye kadar destek
-  const labels = Array.isArray(state.program?.slotLabels)
-    ? state.program.slotLabels
-    : Array.from({length:S},(_,i)=> (i+1)+'. Ders');
+  const populate=()=>{
+    const doc=popup.document;
+    const tolerance=5;
+    const createPage=(teacher,scheduleHTML)=>{
+      const page=doc.createElement('section');
+      page.className='tp-page';
+      page.innerHTML=`<div class="tp-page-content">${tp411Header(teacher)}${scheduleHTML || ''}</div>`;
+      doc.body.appendChild(page);
+      return page;
+    };
+    const createAttendanceSection=page=>{
+      const section=doc.createElement('section');
+      section.className='tp-att-section';
+      section.innerHTML=`<div class="tp-section-title"><span class="tp-index">02</span><strong>Öğrenci Yoklama Kartları</strong></div><div class="tp-att-grid"></div>`;
+      page.querySelector('.tp-page-content').appendChild(section);
+      return section;
+    };
+    const isWithinA4=page=>{
+      const content=page.querySelector('.tp-page-content');
+      const bottom=content.getBoundingClientRect().bottom;
+      const top=page.getBoundingClientRect().top;
+      const innerBottom=top + page.clientHeight - (12*96/25.4);
+      return bottom <= innerBottom-tolerance;
+    };
+    const appendCards= (page,cardHtmls,index)=>{
+      if(index>=cardHtmls.length) return index;
+      const section=createAttendanceSection(page);
+      const grid=section.querySelector('.tp-att-grid');
+      while(index<cardHtmls.length){
+        const node=doc.createElement('div');
+        node.innerHTML=cardHtmls[index];
+        const card=node.firstElementChild;
+        grid.appendChild(card);
+        if(!isWithinA4(page)){
+          card.remove();
+          break;
+        }
+        index++;
+      }
+      if(!grid.children.length)section.remove();
+      return index;
+    };
 
-  const w = window.open('', '_blank');
-  if (!w) { uiAlert('Yazdırma penceresi açılamadı. Açılır pencere iznini kontrol edin.'); return; }
-  const baseCSS = Array.from(document.querySelectorAll('style')).map(s=>s.innerHTML).join('\n');
-
-  w.document.write(`<!doctype html>
-<html lang="tr">
-<head>
-  <meta charset="utf-8" />
-  <title>Öğretmen Yazdır (Yeni)</title>
-  <style>${baseCSS}
-
-  /* Ek: Mini yoklama kartları (Var/Yok) */
-  .print-teacher-v2 .att-grid-mini{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--tpv2-gap);
-  }
-  .print-teacher-v2 .att-mini{
-    border:1.2px solid var(--tpv2-grid);
-    border-radius:10px;
-    background:#fff;
-    padding: calc(var(--tpv2-pad) - 1px);
-    break-inside: avoid;
-    page-break-inside: avoid;
-    overflow:hidden;
-  }
-  .print-teacher-v2 .att-mini-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    padding: 2px 4px 6px 4px;
-    border-bottom:1px solid rgba(15,23,42,.14);
-  }
-  .print-teacher-v2 .att-title-block{ min-width:0; display:flex; flex-direction:column; gap:1px; }
-  .print-teacher-v2 .att-g{ font-weight:900; }
-  .print-teacher-v2 .att-time{ font-size:.78em; line-height:1.1; color:#475569; font-weight:800; white-space:nowrap; }
-  .print-teacher-v2 .att-legend{ display:flex; gap:10px; font-weight:800; font-size:.9em; color:#334155; }
-  .print-teacher-v2 .att-legend span{ display:inline-flex; align-items:center; gap:6px; }
-  .print-teacher-v2 .att-mini-body{ padding: 6px 4px 2px 4px; }
-  .print-teacher-v2 .att-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    padding: 2px 0;
-    border-bottom: 1px dotted rgba(148,163,184,.9);
-  }
-  .print-teacher-v2 .att-row:last-child{ border-bottom:0; }
-  .print-teacher-v2 .att-nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .print-teacher-v2 .att-boxes{ display:flex; gap:10px; flex:0 0 auto; }
-  .print-teacher-v2 .box{ width:11px; height:11px; border:1.4px solid #0f172a; border-radius:3px; display:inline-block; }
-
-  @media print{
-    @page{ size:A4; margin: 12mm; }
-    .print-teacher-v2 .page{ break-after: page; page-break-after: always; }
-    .print-teacher-v2 .page:last-child{ break-after: auto; page-break-after: auto; }
-    th,td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  }
-  </style>
-</head>
-<body class="print-teacher-v2">
-</body></html>`);
-
-  const addPage = (html)=> w.document.body.insertAdjacentHTML('beforeend', `<section class="page">${html}</section>`);
-
-  // === TOPLAM SAYFA HESABI (20 grup / A4) ===
-  const windowsPerTeacher = Math.max(1, Math.ceil(S / 6));
-  const teacherIds = Array.from(asgByTeacher.keys());
-  const teacherMeta = new Map();
-
-  let totalPages = 0;
-  teacherIds.forEach(tId=>{
-    const asgList = asgByTeacher.get(tId) || [];
-
-    // Yoklama sırası doğrudan öğretmenin ders programındaki gün + saat sırasıdır.
-    // Aynı grup kaç farklı ders oturumunda yer alıyorsa o kadar ayrı yoklama kartı oluşur.
-    const attendanceEntries = buildTeacherAttendanceEntries(asgList, days, labels);
-    const attPages = renderAttendancePages(attendanceEntries); // 20 ders oturumu / sayfa
-    const extraAtt = Math.max(0, attPages.length - 1); // ilk parça zaten son program sayfasına eklenir
-    const pagesThisTeacher = windowsPerTeacher + extraAtt;
-
-    teacherMeta.set(tId, { attendanceEntries, attPages, pagesThisTeacher });
-    totalPages += pagesThisTeacher;
-  });
-
-  // === GLOBAL SAYFA SAYACI ===
-  let pageNo = 0;
-
-  teacherIds.forEach((tId)=>{
-    const asgList = asgByTeacher.get(tId) || [];
-    const t = getTeacher(tId);
-    const byDay = groupBy(asgList, a=>a.day);
-
-    const meta = teacherMeta.get(tId) || { attendanceEntries:[], attPages:[] };
-    const attPages = meta.attPages || [];
-
-    // Program pencereleri
-    for(let wIx=0; wIx<windowsPerTeacher; wIx++){
-      const start = wIx*6;
-      const end   = Math.min(start+6, S);
-
-      const head = `
-        <div class="brandbar">
-          <div class="org">Fenomen Eğitim Kurumları</div>
-          <div class="chip">${++pageNo}. Sayfa / ${totalPages}</div>
-        </div>
-        <div class="title">Öğretmen Ders Planı</div>
-        <div class="t-meta">
-          <div>${esc(t.name)}</div>
-          ${t.branch ? `<div class="muted">— ${esc(t.branch)}</div>` : ''}
-        </div>
-      `;
-
-      const sched = renderSchedTableForWindow(days, labels, byDay, S, start, end);
-
-      // Yoklama sadece SON program sayfasına eklenir (ilk 20 grup)
-      const showAttendanceHere = (wIx === windowsPerTeacher - 1);
-      const att = (showAttendanceHere && attPages.length) ? attPages[0] : '';
-
-
-      addPage(`${head}${sched}${att}`);
+    let allSessions=0, renderedSessions=0;
+    for(const [tId,teacherAssignments] of assignmentsByTeacher){
+      const teacher=tp411Teacher(tId);
+      const sessions=tp411Sessions(teacherAssignments,days,labels);
+      const cards=tp411AttendanceCards(sessions);
+      allSessions+=sessions.length;
+      let cursor=0;
+      // A4 alanını verimli kullan: iki çizelge penceresi de yoklamaya yer açar.
+      // Her kart kendi gününü ve ders saatini ayrıca gösterir.
+      for(let start=0; start<slots;start+=6){
+        const end=Math.min(start+6,slots);
+        const page=createPage(teacher,tp411Schedule(teacherAssignments,days,labels,start,end));
+        cursor=appendCards(page,cards,cursor);
+      }
+      while(cursor<cards.length){
+        const page=createPage(teacher,'');
+        const next=appendCards(page,cards,cursor);
+        if(next===cursor){
+          page.remove();
+          throw new Error('Bir yoklama kartı A4 sayfasına sığmadı.');
+        }
+        cursor=next;
+      }
+      renderedSessions+=sessions.length;
     }
-
-    // Ek yoklama sayfaları (21. grup ve sonrası)
-    for(let i=1; i<attPages.length; i++){
-      const head = `
-        <div class="brandbar">
-          <div class="org">Fenomen Eğitim Kurumları</div>
-          <div class="chip">${++pageNo}. Sayfa / ${totalPages}</div>
-        </div>
-        <div class="title">Öğretmen Yoklama</div>
-        <div class="t-meta">
-          <div>${esc(t.name)}</div>
-          ${t.branch ? `<div class="muted">— ${esc(t.branch)}</div>` : ''}
-        </div>
-      `;
-      addPage(`${head}${attPages[i]}`);
-    }
-  });
-
-  w.document.close();
-
-  const onReady = ()=>{
-    const pages = w.document.querySelectorAll('.print-teacher-v2 .page');
-    pages.forEach(pg=> fitPageToA4(pg));
-    try{ w.focus(); w.print(); }catch(_){ }
+    if(allSessions!==renderedSessions) throw new Error('Yoklama oturumu tutarsızlığı.');
+    // Yazdırma penceresinde yalnızca sayfalar bulunur: footer/dipnot yok.
+    popup.document.title='Öğretmen Ders Planı • V4.11';
+    popup.focus();
+    popup.print();
   };
-  if (w.document.readyState === 'complete') onReady();
-  else w.addEventListener('load', onReady);
+  const safePopulate=()=>{
+    try{ populate(); }
+    catch(error){
+      uiAlert('Öğretmene göre çıktı hazırlanamadı: '+error.message);
+      try{ popup.close(); }catch(_){}
+    }
+  };
+  if(popup.document.readyState==='complete') safePopulate();
+  else popup.addEventListener('load',safePopulate,{once:true});
 }
 
 </script>
@@ -5858,6 +5664,6 @@ if (btnAssgnDeleteFb) {
 
 </script>
 
-<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.10</footer>
+<footer class="no-print" style="text-align:center;padding:18px;color:#64748b;font-size:12px">Fenomen Eğitim Kurumları • Grup Ders Planlama • V4.11</footer>
 </body>
 </html>
